@@ -290,6 +290,8 @@ var Subleerunker = GameObject.$extend({
             }).html( "<div class='high'></div><div class='my'></div>" ),
             preload = $( "<div class='preload'></div>" ).css({
                 position: "absolute",
+                top: -9999,
+                left: -9999
             });
 
         el.append( score );
