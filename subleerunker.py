@@ -20,7 +20,7 @@ class GameHandler(webapp.RequestHandler):
     high_score = property(high_score, set_high_score)
 
     def get(self):
-        context = dict(high_score=self.high_score)
+        context = dict(high_score=self.high_score, request=self.request)
         self.response.out.write(template.render('game.html', context))
 
 
