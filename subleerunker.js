@@ -287,7 +287,10 @@ var Subleerunker = GameObject.$extend({
                 color: "#fff",
                 fontSize: 11,
                 fontFamily: "monospace"
-            }).html( "<div class='high'></div><div class='my'></div>" );
+            }).html( "<div class='high'></div><div class='my'></div>" ),
+            preload = $( "<div class='preload'></div>" ).css({
+                position: "absolute",
+            });
 
         el.append( score );
         el.myScore = score.find( "> .my" );
@@ -296,6 +299,12 @@ var Subleerunker = GameObject.$extend({
         el.myScore.text( this.score );
         el.highScore.css({
             color: "#999"
+        });
+
+        el.append( preload );
+        $.each([ Subleerunker.Player, Subleerunker.Flame ], function( i, cls ) {
+            var img = $( "<img />" ).attr( "src", cls.prototype.chipset );
+            img.appendTo( preload );
         });
 
         return el;
