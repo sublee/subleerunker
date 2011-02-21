@@ -270,7 +270,7 @@ var Subleerunker = GameObject.$extend({
 
     __init__: function() {
         this.$super.apply( this, arguments );
-        this.score = 0;
+
         this.css = {
             left: "50%",
             top: "50%",
@@ -280,6 +280,15 @@ var Subleerunker = GameObject.$extend({
             backgroundImage: "url(" + baseUrl + "/beginning.gif)",
             backgroundRepeat: "no-repeat"
         }
+
+        var m = /mybestscore=(\d+)/.exec( document.cookie );
+        this.score = {
+            current: 0,
+            myBest: m ? m[ 1 ] : 0,
+            high: 0
+        };
+
+        this.updateScore();
         this.reset();
     },
 
@@ -293,22 +302,24 @@ var Subleerunker = GameObject.$extend({
                 color: "#fff",
                 fontSize: 11,
                 fontFamily: "monospace"
-            }).html( "<div class='high'></div><div class='my'></div>" ),
+            }).html([
+                "<div class='high'></div>",
+                "<div class='mybest'></div>",
+                "<div class='current'></div>"
+            ].join( "" ) ),
             preload = $( "<div class='preload'></div>" ).css({
                 position: "absolute",
                 top: -9999,
                 left: -9999
             });
 
+        // Score Display
         el.append( score );
-        el.myScore = score.find( "> .my" );
-        el.highScore = score.find( "> .high" );
+        el.currentScore = score.find( ">.current" ).text( this.score.current );
+        el.myBestScore = score.find( ">.mybest" ).css( "color", "#ccc" );
+        el.highScore = score.find( ">.high" ).css( "color", "#999" );
 
-        el.myScore.text( this.score );
-        el.highScore.css({
-            color: "#999"
-        });
-
+        // Preload
         el.append( preload );
         $.each([ Subleerunker.Player, Subleerunker.Flame ], function( i, cls ) {
             var img = $( "<img />" ).attr( "src", cls.prototype.chipset );
@@ -342,32 +353,48 @@ var Subleerunker = GameObject.$extend({
             this.player.friction *= 0.25;
         }
         this.player.elem().appendTo( this.elem() );
-        this.score = 0;
+        this.score.current = 0;
         this.updateScore();
         this.elem().css( "background-position", "-9999px 0" );
     },
 
     upScore: function() {
-        this.score++;
+        this.score.current++;
         this.updateScore();
     },
 
     updateScore: function( score ) {
         if ( score !== undefined ) {
-            this.score = score;
+            this.score.current = score;
         }
+        this.updateMyBestScore();
         this.updateHighScore();
-        this.elem().myScore.text( this.score );
+        this.elem().currentScore.text( this.score.current );
     },
 
-    updateHighScore: function( highScore ) {
-        if ( highScore !== undefined ) {
-            this.highScore = highScore;
+    updateMyBestScore: function( score ) {
+        if ( score !== undefined ) {
+            this.score.myBest = score;
         }
-        if ( this.highScore <= this.score ) {
+        if ( this.score.myBest <= this.score.current ) {
+            this.elem().myBestScore.text( "" );
+        } else {
+            this.elem().myBestScore.text( this.score.myBest );
+        }
+    },
+
+    updateHighScore: function( score ) {
+        if ( score !== undefined ) {
+            this.score.high = score;
+        }
+
+        var greaterThanCurrentScore = this.score.high > this.score.current,
+            greaterThanMyBestScore = this.score.high > this.score.myBest;
+
+        if ( !greaterThanCurrentScore || !greaterThanMyBestScore ) {
             this.elem().highScore.text( "" );
         } else {
-            this.elem().highScore.text( this.highScore );
+            this.elem().highScore.text( this.score.high );
         }
     },
 
@@ -381,19 +408,30 @@ var Subleerunker = GameObject.$extend({
     },
 
     challengeHighScore: function() {
-        this.updateHighScore( this.score );
+        this.updateHighScore( this.score.current );
         if ( GameObject.debug ) {
             return;
         }
         $.post( "/high-score", {
-            my_score: this.score
+            my_score: this.score.current
         });
     },
 
     gameOver: function() {
         this.player.die();
-        if ( this.highScore < this.score ) {
+        if ( this.score.high < this.score.current ) {
+            // Save high score
             this.challengeHighScore();
+        }
+        if ( this.score.myBest < this.score.current ) {
+            // Save my best score
+            var expires = new Date(),
+                cookie = "mybestscore=" + this.score.current + "; "
+            expires.setMonth( expires.getMonth() + 1 );
+            cookie += "expires=" + expires.toUTCString() + "; ";
+            cookie += "path=/";
+            document.cookie = cookie;
+            this.updateMyBestScore( this.score.current );
         }
     },
 
