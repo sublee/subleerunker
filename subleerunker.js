@@ -410,7 +410,7 @@ var Subleerunker = GameObject.$extend({
     challengeHighScore: function() {
         this.updateHighScore( this.score.current );
         if ( GameObject.debug ) {
-            //return;
+            return;
         }
         $.post( "/high-score", {
             my_score: this.score.current
