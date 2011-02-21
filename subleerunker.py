@@ -7,14 +7,23 @@ from google.appengine.api import memcache
 
 class GameHandler(webapp.RequestHandler):
 
-    TIME = 3600 # an hour
+    TIME = 3600 * 24 # a day
 
     def high_score(self):
         return memcache.get('high_score') or 0
 
     def set_high_score(self, higher_score):
+        try:
+            user_high_score = int(self.request.cookies.get('high_score'))
+            if higher_score != user_high_score:
+                raise TypeError
+        except TypeError:
+            raise ValueError('it seems to be abusing')
         if higher_score <= self.high_score:
             raise ValueError('the given score is less then the high score')
+        self.response.headers.add_header('Set-Cookie',
+                                         'high_score=-1; expires=' \
+                                         'Sun, 31-May-2009 23:59:59 GMT')
         memcache.set('high_score', higher_score, self.TIME)
 
     high_score = property(high_score, set_high_score)

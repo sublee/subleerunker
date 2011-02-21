@@ -281,7 +281,7 @@ var Subleerunker = GameObject.$extend({
             backgroundRepeat: "no-repeat"
         }
 
-        var m = /mybestscore=(\d+)/.exec( document.cookie );
+        var m = /my_best_score=(\d+)/.exec( document.cookie );
         this.score = {
             current: 0,
             myBest: m ? m[ 1 ] : 0,
@@ -410,7 +410,7 @@ var Subleerunker = GameObject.$extend({
     challengeHighScore: function() {
         this.updateHighScore( this.score.current );
         if ( GameObject.debug ) {
-            return;
+            //return;
         }
         $.post( "/high-score", {
             my_score: this.score.current
@@ -419,19 +419,23 @@ var Subleerunker = GameObject.$extend({
 
     gameOver: function() {
         this.player.die();
-        if ( this.score.high < this.score.current ) {
-            // Save high score
-            this.challengeHighScore();
-        }
+
+        var cookie, expires = new Date();
+        expires.setMonth( expires.getMonth() + 1 );
+
         if ( this.score.myBest < this.score.current ) {
             // Save my best score
-            var expires = new Date(),
-                cookie = "mybestscore=" + this.score.current + "; "
-            expires.setMonth( expires.getMonth() + 1 );
+            cookie = "my_best_score=" + this.score.current + "; "
             cookie += "expires=" + expires.toUTCString() + "; ";
             cookie += "path=/";
             document.cookie = cookie;
             this.updateMyBestScore( this.score.current );
+        }
+        if ( this.score.high < this.score.current ) {
+            // Save high score
+            cookie = "high_score=" + this.score.current + "; path=/";
+            document.cookie = cookie;
+            this.challengeHighScore();
         }
     },
 
