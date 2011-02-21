@@ -7,7 +7,7 @@ from google.appengine.api import memcache
 
 class GameHandler(webapp.RequestHandler):
 
-    TIME = 3600 * 24 # a day
+    TIME = 3600 * 24 * 7 # a week
 
     def high_score(self):
         return memcache.get('high_score') or 0
