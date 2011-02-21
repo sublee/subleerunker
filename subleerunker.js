@@ -609,7 +609,8 @@ $.extend( Subleerunker, {
                 this.forward();
                 this.updatePosition();
 
-                var max = this.parent.height - this.outerHeight();
+                var max = this.parent.height - this.outerHeight(),
+                    min = this.parent.height - player.outerHeight();
 
                 if ( this.position > max ) {
                     this.position = max;
@@ -618,6 +619,8 @@ $.extend( Subleerunker, {
                     this.scene( "land" );
                     this.frameRate = 1;
                     this.landed = true;
+                } else if ( this.position < min ) {
+                    return;
                 }
 
                 if ( !player.dead && this.hitted( player ) ) {
