@@ -420,21 +420,24 @@ var Subleerunker = GameObject.$extend({
     gameOver: function() {
         this.player.die();
 
-        var cookie, expires = new Date();
-        expires.setMonth( expires.getMonth() + 1 );
-
+        var cookie;
         if ( this.score.myBest < this.score.current ) {
             // Save my best score
+            var expires = new Date();
+            expires.setMonth( expires.getMonth() + 1 );
+
             cookie = "my_best_score=" + this.score.current + "; "
             cookie += "expires=" + expires.toUTCString() + "; ";
             cookie += "path=/";
             document.cookie = cookie;
+
             this.updateMyBestScore( this.score.current );
         }
         if ( this.score.high < this.score.current ) {
             // Save high score
             cookie = "high_score=" + this.score.current + "; path=/";
             document.cookie = cookie;
+
             this.challengeHighScore();
         }
     },
