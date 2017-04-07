@@ -294,6 +294,7 @@ var Subleerunker = GameObject.$extend({
       top: '50%',
       marginLeft: this.outerWidth() / -2,
       marginTop: this.outerHeight() / -2,
+      outline: '1px solid #222',
       backgroundColor: '#000',
       backgroundImage: 'url(beginning.gif)',
       backgroundRepeat: 'no-repeat'
