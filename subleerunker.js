@@ -148,6 +148,10 @@ var GameObject = Class.$extend({
     }).on('touchend', function(e) {
       touchEvent(e, false, true);
     });
+
+    $(window).on('resize', function(e) {
+      self.adjustZoom();
+    });
   },
 
   /* Animation */
@@ -298,7 +302,7 @@ var Subleerunker = GameObject.$extend({
       backgroundColor: '#000',
       backgroundImage: 'url(beginning.gif)',
       backgroundRepeat: 'no-repeat'
-    }
+    };
 
     var m = /my_best_score=(\d+)/.exec(document.cookie);
     this.score = {
@@ -309,6 +313,11 @@ var Subleerunker = GameObject.$extend({
 
     this.updateScore();
     this.reset();
+    this.adjustZoom();
+  },
+
+  adjustZoom: function() {
+    this.elem().css('zoom', Math.floor(window.innerHeight / this.height));
   },
 
   elem: function() {
