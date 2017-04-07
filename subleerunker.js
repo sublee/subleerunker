@@ -1,7 +1,3 @@
-if ( window.baseUrl === undefined ) {
-    var baseUrl = "/static";
-}
-
 var limit = function( n, min, max ) {
     return Math.max( min, Math.min( max, n ) );
 };
@@ -277,7 +273,7 @@ var Subleerunker = GameObject.$extend({
             marginLeft: this.outerWidth() / -2,
             marginTop: this.outerHeight() / -2,
             backgroundColor: "#000",
-            backgroundImage: "url(" + baseUrl + "/beginning.gif)",
+            backgroundImage: "url(beginning.gif)",
             backgroundRepeat: "no-repeat"
         }
 
@@ -498,7 +494,7 @@ $.extend( Subleerunker, {
     Player: GameObject.$extend({
 
         "class": "player",
-        chipset: baseUrl + "/player.gif",
+        chipset: "player.gif",
 
         __init__: function( parent ) {
             this.$super.apply( this, arguments );
@@ -590,7 +586,7 @@ $.extend( Subleerunker, {
     Flame: GameObject.$extend({
 
         "class": "flame",
-        chipset: baseUrl + "/flame.gif",
+        chipset: "flame.gif",
 
         __init__: function( parent ) {
             this.$super.apply( this, arguments );

@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8" />
+<meta http-equiv="X-UA-Compatible" content="chrome=1" />
+<link rel="shortcut icon" type="image/icon" href="favicon.ico" />
+<title>Subleerunker</title>
+<script src="jquery-1.5.min.js"></script>
+<script src="classy.js"></script>
+<style type="text/css">
+  html {
+    height: 100%;
+  }
+  body {
+    position: relative;
+    margin: 0;
+    padding: 0;
+    width: 100%;
+    height: 100%;
+    min-width: 320px;
+    min-height: 480px;
+    overflow: hidden;
+    background: #000 url(wrap.gif) no-repeat center center;
+  }
+</style>
+</head>
+<body>
+<script src="/subleerunker.js"></script>
+<script>
+  if ( !$.browser.msie ) {
+    GameObject.debug = (location.hash === "#debug");
+    var game = Subleerunker();
+    game.elem().appendTo( document.body );
+    game.captureKeys( window );
+    game.start();
+  }
+</script>
+</div>
+</body>
+</html>
