@@ -114,9 +114,8 @@ var GameObject = Class.$extend({
       return name;
     }
     var self = this;
-    var $win = $(window);
 
-    $win.on('keydown', function(e) {
+    $(window).on('keydown', function(e) {
       var handler = self.keyEvents[keyName(e.which)];
       if ($.isFunction(handler)) {
         handler.call(self, e, true, false);
@@ -128,7 +127,7 @@ var GameObject = Class.$extend({
       }
     });
 
-    $win.on('touchstart touchmove touchend', function(e) {
+    $(document).on('touchstart touchmove touchend', function(e) {
       var pressed;
       if (!e.touches.length) {
         // pass
@@ -141,7 +140,7 @@ var GameObject = Class.$extend({
       self.keyEvents.right.call(self, e, pressed == 'r', pressed != 'r');
     });
 
-    $win.on('resize', function(e) {
+    $(window).on('resize', function(e) {
       self.adjustZoom();
     });
   },
