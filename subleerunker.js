@@ -64,14 +64,14 @@ var GameObject = Class.$extend({
 
   elem: function() {
     var css = $.extend({
-        position: 'absolute',
-        overflow: 'hidden',
-        width: this.width,
-        height: this.height,
-        padding: this.padding.join('px ') + 'px',
-        backgroundImage: 'url(' + this.chipset + ')',
-        backgroundRepeat: 'no-repeat'
-      }, this.css);
+      position: 'absolute',
+      overflow: 'hidden',
+      width: this.width,
+      height: this.height,
+      padding: this.padding.join('px ') + 'px',
+      backgroundImage: 'url(' + this.chipset + ')',
+      backgroundRepeat: 'no-repeat'
+    }, this.css);
 
     if (GameObject.debug) {
       css.outline = '1px dashed rgba(255, 255, 255, 0.25)';
@@ -250,8 +250,8 @@ var GameObject = Class.$extend({
     }
 
     if (this._animation) {
-      var i = Math.floor(this.frame % this._animation.length),
-        point = this._animation[i];
+      var i = Math.floor(this.frame % this._animation.length);
+      var point = this._animation[i];
       this.frame += this.frameRate * this.resist();
       this.cell.apply(this, point);
     }
@@ -312,25 +312,25 @@ var Subleerunker = GameObject.$extend({
   },
 
   elem: function() {
-    var el = this.$super(),
-      score = $('<div class="score"></div>').css({
-        position: 'absolute',
-        right: 2,
-        top: 2,
-        textAlign: 'right',
-        color: '#fff',
-        fontSize: 11,
-        fontFamily: 'monospace'
-      }).html([
-        '<div class="high"></div>',
-        '<div class="mybest"></div>',
-        '<div class="current"></div>'
-     ].join('')),
-      preload = $('<div class="preload"></div>').css({
-        position: 'absolute',
-        top: -9999,
-        left: -9999
-      });
+    var el = this.$super();
+    var score = $('<div class="score"></div>').css({
+      position: 'absolute',
+      right: 2,
+      top: 2,
+      textAlign: 'right',
+      color: '#fff',
+      fontSize: 11,
+      fontFamily: 'monospace'
+    }).html([
+      '<div class="high"></div>',
+      '<div class="mybest"></div>',
+      '<div class="current"></div>'
+    ].join(''));
+    var preload = $('<div class="preload"></div>').css({
+      position: 'absolute',
+      top: -9999,
+      left: -9999
+    });
 
     // Score Display
     el.append(score);
@@ -407,8 +407,8 @@ var Subleerunker = GameObject.$extend({
       this.score.high = score;
     }
 
-    var greaterThanCurrentScore = this.score.high > this.score.current,
-      greaterThanMyBestScore = this.score.high > this.score.myBest;
+    var greaterThanCurrentScore = this.score.high > this.score.current;
+    var greaterThanMyBestScore = this.score.high > this.score.myBest;
 
     if (!greaterThanCurrentScore || !greaterThanMyBestScore) {
       this.elem().highScore.text('');
@@ -620,8 +620,8 @@ $.extend(Subleerunker, {
     __init__: function(parent) {
       this.$super.apply(this, arguments);
 
-      var W = parent.outerWidth(),
-        w = this.outerWidth();
+      var W = parent.outerWidth();
+      var w = this.outerWidth();
       this.xPosition = (W - w * 2) * Math.random() + w / 2;
       this.position = -this.outerHeight();
     },
@@ -641,8 +641,8 @@ $.extend(Subleerunker, {
         this.forward();
         this.updatePosition();
 
-        var max = this.parent.height - this.outerHeight(),
-          min = this.parent.height - player.outerHeight();
+        var max = this.parent.height - this.outerHeight();
+        var min = this.parent.height - player.outerHeight();
 
         if (this.position > max) {
           this.position = max;
@@ -696,25 +696,25 @@ $.extend(Subleerunker, {
     /* Own */
 
     hitted: function(player) {
-      var prevPosition = this.position - this.speed * this.step,
-        H = this.parent.outerHeight(),
+      var prevPosition = this.position - this.speed * this.step;
+      var H = this.parent.outerHeight();
 
-        top = prevPosition + this.padding[0],
-        bottom = this.position + this.outerHeight() - this.padding[2],
-        left = this.xPosition + this.padding[3],
-        right = left + this.width,
+      var top = prevPosition + this.padding[0];
+      var bottom = this.position + this.outerHeight() - this.padding[2];
+      var left = this.xPosition + this.padding[3];
+      var right = left + this.width;
 
-        pTop = player.outerHeight() - player.padding[0],
-        pBottom = player.padding[2],
-        pLeft = player.position + player.padding[3],
-        pRight = pLeft + player.width;
+      var pTop = player.outerHeight() - player.padding[0];
+      var pBottom = player.padding[2];
+      var pLeft = player.position + player.padding[3];
+      var pRight = pLeft + player.width;
 
       pTop = H - pTop;
       pBottom = H - pBottom;
 
-      var checkAltitude = top <= pBottom && pTop <= bottom,
-        checkLeft = pLeft <= left && left <= pRight,
-        checkRight = pLeft <= right && right <= pRight;
+      var checkAltitude = top <= pBottom && pTop <= bottom;
+      var checkLeft = pLeft <= left && left <= pRight;
+      var checkRight = pLeft <= right && right <= pRight;
 
       return checkAltitude && (checkLeft || checkRight);
     }
