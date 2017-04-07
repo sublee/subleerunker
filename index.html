@@ -5,7 +5,9 @@
 <meta http-equiv="X-UA-Compatible" content="chrome=1" />
 <link rel="shortcut icon" type="image/icon" href="favicon.ico" />
 <title>Subleerunker</title>
-<script src="jquery-1.5.min.js"></script>
+<script src="https://code.jquery.com/jquery-3.2.1.min.js"
+        integrity="sha256-hwg4gsxgFZhOsEEamdOYGBf13FyQuiTwlAQgxVSNgt4="
+        crossorigin="anonymous"></script>
 <script src="classy.js"></script>
 <style type="text/css">
   html {
@@ -27,13 +29,11 @@
 <body>
 <script src="/subleerunker.js"></script>
 <script>
-  if ( !$.browser.msie ) {
-    GameObject.debug = (location.hash === "#debug");
-    var game = Subleerunker();
-    game.elem().appendTo( document.body );
-    game.captureKeys( window );
-    game.start();
-  }
+  GameObject.debug = (location.hash === "#debug");
+  var game = Subleerunker();
+  game.elem().appendTo( document.body );
+  game.captureKeys( window );
+  game.start();
 </script>
 </div>
 </body>
