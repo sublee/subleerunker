@@ -115,16 +115,38 @@ var GameObject = Class.$extend({
     }
     var self = this;
 
-    $(window).keydown(function(e) {
+    $(window).on('keydown', function(e) {
       var handler = self.keyEvents[keyName(e.which)];
       if ($.isFunction(handler)) {
         handler.call(self, e, true, false);
       }
-    }).keyup(function(e) {
+    }).on('keyup', function(e) {
       var handler = self.keyEvents[keyName(e.which)];
       if ($.isFunction(handler)) {
         handler.call(self, e, false, true);
       }
+    });
+
+    function touchEvent(e, down, up) {
+      var handlers = [];
+      if (!e.touches.length) {
+        handlers.push(self.keyEvents.left);
+        handlers.push(self.keyEvents.right);
+      } else if (e.touches[0].pageX / window.innerWidth < 0.5) {
+        handlers.push(self.keyEvents.left);
+      } else {
+        handlers.push(self.keyEvents.right);
+      }
+      $.each(handlers, function(i, handler) {
+        handler.call(self, e, down, up);
+      });
+    }
+    $(window).on('touchstart', function(e) {
+      touchEvent(e, true, false);
+    }).on('touchmove', function(e) {
+      touchEvent(e, true, false);
+    }).on('touchend', function(e) {
+      touchEvent(e, false, true);
     });
   },
 
