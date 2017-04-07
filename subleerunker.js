@@ -395,12 +395,15 @@ var Subleerunker = GameObject.$extend({
     },
 
     fetchHighScore: function() {
+        // Not Implemented.
+        /*
         $.getJSON( "/high-score", $.proxy(function( highScore ) {
             this.updateHighScore( highScore );
             if ( !this.killed ) {
                 setTimeout( $.proxy( this.fetchHighScore, this ), 10 * 1000 );
             }
         }, this ) );
+        */
     },
 
     challengeHighScore: function() {
@@ -408,9 +411,12 @@ var Subleerunker = GameObject.$extend({
         if ( GameObject.debug ) {
             return;
         }
+        // Not Implemented.
+        /*
         $.post( "/high-score", {
             my_score: this.score.current
         });
+        */
     },
 
     gameOver: function() {
