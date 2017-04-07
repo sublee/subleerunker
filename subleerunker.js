@@ -128,18 +128,16 @@ var GameObject = Class.$extend({
     });
 
     function touchEvent(e, down, up) {
-      var handlers = [];
+      var pressed;
       if (!e.touches.length) {
-        handlers.push(self.keyEvents.left);
-        handlers.push(self.keyEvents.right);
+        // pass
       } else if (e.touches[0].pageX / window.innerWidth < 0.5) {
-        handlers.push(self.keyEvents.left);
+        pressed = 'l';
       } else {
-        handlers.push(self.keyEvents.right);
+        pressed = 'r';
       }
-      $.each(handlers, function(i, handler) {
-        handler.call(self, e, down, up);
-      });
+      self.keyEvents.left.call(self, e, pressed == 'l', pressed != 'l');
+      self.keyEvents.right.call(self, e, pressed == 'r', pressed != 'r');
     }
     $(window).on('touchstart', function(e) {
       touchEvent(e, true, false);
