@@ -39,8 +39,8 @@
   <script>
     GameObject.debug = (location.hash === '#debug');
     var game = Subleerunker();
-    game.elem().appendTo( document.body );
-    game.captureKeys( window );
+    game.elem().appendTo(document.body);
+    game.captureKeys(window, document);
     game.start();
   </script>
   <script src="ga.js"></script>

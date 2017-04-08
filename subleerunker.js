@@ -102,7 +102,7 @@ var GameObject = Class.$extend({
 
   /* Events */
 
-  captureKeys: function(window) {
+  captureKeys: function(window, document) {
     function keyName(which) {
       var name;
       $.each(GameObject.keys, function(n, v) {
