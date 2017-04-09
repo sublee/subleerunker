@@ -121,6 +121,13 @@ var GameObject = Class.$extend({
 
     $(document).on('touchstart touchmove touchend', function(e) {
       e.preventDefault();
+      if (e.type == 'touchstart' && e.touches.length == 3) {
+        // Toggle shift by 3 fingers.
+        var shiftPressed = self.shiftPressed;
+        self.keyEvents.released.call(self);
+        self.keyEvents.shift.call(self, !shiftPressed);
+        return;
+      }
       var leftPressed = false;
       var rightPressed = false;
       if (!e.touches.length) {
