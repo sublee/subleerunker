@@ -217,14 +217,16 @@ var GameObject = Class.$extend({
     this.position += this.speed * this.step * this.resist();
   },
 
-  slow: false,
+  slow: function() {
+    return false;
+  },
 
   resist: function() {
-    var cur = this;
-    while (cur.parent) {
-      cur = cur.parent;
+    var root = this;
+    while (root.parent) {
+      root = root.parent;
     }
-    return cur.slow ? 0.25 : 1;
+    return root.slow() ? 0.25 : 1;
   },
 
   /* Schedule */
@@ -366,7 +368,6 @@ var Subleerunker = GameObject.$extend({
     },
     shift: function(press) {
       this.shiftPressed = press;
-      this.slow = GameObject.debug && pressed;
     },
     released: function() {
       this.leftPressed = false;
@@ -375,10 +376,13 @@ var Subleerunker = GameObject.$extend({
     }
   },
 
+  slow: function() {
+    return GameObject.debug && this.shiftPressed;
+  },
+
   reset: function() {
     this.difficulty = 0.25;
     this.shouldPlay = false;
-    this.keyEvents.released.call(this);
     this.elem().css('background-position', '0 0');
   },
 
