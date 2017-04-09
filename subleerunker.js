@@ -128,6 +128,7 @@ var GameObject = Class.$extend({
     });
 
     $(document).on('touchstart touchmove touchend', function(e) {
+      e.preventDefault();
       var pressed;
       if (!e.touches.length) {
         // pass
