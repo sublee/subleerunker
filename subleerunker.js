@@ -123,24 +123,24 @@ var GameObject = Class.$extend({
       e.preventDefault();
       if (e.type == 'touchstart' && e.touches.length == 3) {
         // Toggle shift by 3 fingers.
-        var shiftPressed = self.shiftPressed;
+        var pressShift = !self.shiftPressed;
         self.keyEvents.released.call(self);
-        self.keyEvents.shift.call(self, !shiftPressed);
+        self.keyEvents.shift.call(self, pressShift);
         self.shouldPlay = true;
         return;
       }
-      var leftPressed = false;
-      var rightPressed = false;
+      var pressLeft = false;
+      var pressRight = false;
       if (e.touches.length) {
         var lastTouch = e.touches[e.touches.length - 1];
         if (lastTouch.pageX / window.innerWidth < 0.5) {
-          leftPressed = true;
+          pressLeft = true;
         } else {
-          rightPressed = true;
+          pressRight = true;
         }
       }
-      self.keyEvents.left.call(self, leftPressed);
-      self.keyEvents.right.call(self, rightPressed);
+      self.keyEvents.left.call(self, pressLeft);
+      self.keyEvents.right.call(self, pressRight);
     });
 
     $(window).on('resize', function(e) {
@@ -354,18 +354,18 @@ var Subleerunker = GameObject.$extend({
   },
 
   keyEvents: {
-    left: function(pressed) {
-      this.leftPressed = pressed;
-      this.shouldPlay = pressed;
+    left: function(press) {
+      this.leftPressed = press;
+      this.shouldPlay = press;
       this.leftPrior = true;  // evaluate left first
     },
-    right: function(pressed) {
-      this.rightPressed = pressed;
-      this.shouldPlay = pressed;
+    right: function(press) {
+      this.rightPressed = press;
+      this.shouldPlay = press;
       this.leftPrior = false;  // evaluate right first
     },
-    shift: function(pressed) {
-      this.shiftPressed = pressed;
+    shift: function(press) {
+      this.shiftPressed = press;
       this.slow = GameObject.debug && pressed;
     },
     released: function() {
