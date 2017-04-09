@@ -7,10 +7,10 @@ var GameObject = Class.$extend({
   __classvars__: {
     debug: false,
     keys: {
-      backspace: 8, tab: 9, enter: 13, shift: 16, ctrl: 17, alt: 18,
-      pause: 19, capsLock: 20, esc: 27, pageUp: 33, pageDown: 34,
-      end: 35, home: 36, left: 37, up: 38, right: 39, down: 40,
-      insert: 45, 'delete': 46
+      8: 'backspace', 9: 'tab', 13: 'enter', 16: 'shift', 17: 'ctrl',
+      18: 'alt', 19: 'pause', 20: 'capsLock', 27: 'esc', 33: 'pageUp',
+      34: 'pageDown', 35: 'end', 36: 'home', 37: 'left', 38: 'up',
+      39: 'right', 40: 'down', 45: 'insert', 46: 'delete'
     }
   },
 
@@ -103,42 +103,35 @@ var GameObject = Class.$extend({
   /* Events */
 
   captureKeys: function(window, document) {
-    function keyName(which) {
-      var name;
-      $.each(GameObject.keys, function(n, v) {
-        if (which === v) {
-          name = n;
-          return false;
-        }
-      });
-      return name;
-    }
     var self = this;
 
     $(window).on('keydown', function(e) {
-      var handler = self.keyEvents[keyName(e.which)];
+      var handler = self.keyEvents[GameObject.keys[e.which]];
       if ($.isFunction(handler)) {
-        handler.call(self, e, true, false);
+        handler.call(self, true);
       }
     }).on('keyup', function(e) {
-      var handler = self.keyEvents[keyName(e.which)];
+      var handler = self.keyEvents[GameObject.keys[e.which]];
       if ($.isFunction(handler)) {
-        handler.call(self, e, false, true);
+        handler.call(self, false);
       }
+    }).on('blur', function(e) {
+      self.keyEvents.released.call(self);
     });
 
     $(document).on('touchstart touchmove touchend', function(e) {
       e.preventDefault();
-      var pressed;
+      var leftPressed = false;
+      var rightPressed = false;
       if (!e.touches.length) {
         // pass
       } else if (e.touches[0].pageX / window.innerWidth < 0.5) {
-        pressed = 'l';
+        leftPressed = true;
       } else {
-        pressed = 'r';
+        rightPressed = true;
       }
-      self.keyEvents.left.call(self, e, pressed == 'l', pressed != 'l');
-      self.keyEvents.right.call(self, e, pressed == 'r', pressed != 'r');
+      self.keyEvents.left.call(self, leftPressed);
+      self.keyEvents.right.call(self, rightPressed);
     });
 
     $(window).on('resize', function(e) {
@@ -278,6 +271,7 @@ var Subleerunker = GameObject.$extend({
   height: 480 - 2,
   padding: [0, 0, 2, 0],
 
+  leftPrior: true,
   leftPressed: false,
   rightPressed: false,
   shiftPressed: false,
@@ -350,15 +344,22 @@ var Subleerunker = GameObject.$extend({
   },
 
   keyEvents: {
-    left: function(e, down, up) {
-      this.leftPressed = down;
+    left: function(pressed) {
+      this.leftPressed = pressed;
+      this.leftPrior = true;  // evaluate left first
     },
-    right: function(e, down, up) {
-      this.rightPressed = down;
+    right: function(pressed) {
+      this.rightPressed = pressed;
+      this.leftPrior = false;  // evaluate right first
     },
-    shift: function(e, down, up) {
-      this.shiftPressed = down;
-      this.slow = GameObject.debug && down;
+    shift: function(pressed) {
+      this.shiftPressed = pressed;
+      this.slow = GameObject.debug && pressed;
+    },
+    released: function() {
+      this.leftPressed = false;
+      this.rightPressed = false;
+      this.shiftPressed = false;
     }
   },
 
@@ -470,10 +471,14 @@ var Subleerunker = GameObject.$extend({
 
   loop: function() {
     if (this.player) {
-      if (this.leftPressed) {
-        this.player.left();
-      } else if (this.rightPressed) {
-        this.player.right();
+      var movements = [[this.leftPressed, this.player.left],
+                       [this.rightPressed, this.player.right]];
+      for (var i = 0; i < 2; ++i) {
+        var mov = movements[this.leftPrior ? i : 1 - i];
+        if (mov[0]) {
+          mov[1].call(this.player);
+          break;
+        }
       }
       if (this.leftPressed || this.rightPressed) {
         this.player.forward();
