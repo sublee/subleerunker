@@ -379,6 +379,7 @@ var Subleerunker = GameObject.$extend({
   play: function() {
     this.player = new Subleerunker.Player(this);
     if (this.shiftPressed) {
+      // Hommarju for SUBERUNKER's shift-enter easter egg.
       this.player.friction *= 0.25;
     }
     this.player.elem().appendTo(this.elem());
