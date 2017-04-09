@@ -482,6 +482,9 @@ var Subleerunker = GameObject.$extend({
 
       this.challengeHighScore();
     }
+
+    // Trigger custom event to track the score by outside.
+    $(window).trigger('score', [this.score.current]);
   },
 
   loop: function() {
