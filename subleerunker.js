@@ -130,12 +130,13 @@ var GameObject = Class.$extend({
       }
       var leftPressed = false;
       var rightPressed = false;
-      if (!e.touches.length) {
-        // pass
-      } else if (e.touches[0].pageX / window.innerWidth < 0.5) {
-        leftPressed = true;
-      } else {
-        rightPressed = true;
+      if (e.touches.length) {
+        var lastTouch = e.touches[e.touches.length - 1];
+        if (lastTouch.pageX / window.innerWidth < 0.5) {
+          leftPressed = true;
+        } else {
+          rightPressed = true;
+        }
       }
       self.keyEvents.left.call(self, leftPressed);
       self.keyEvents.right.call(self, rightPressed);
