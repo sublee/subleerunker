@@ -126,6 +126,7 @@ var GameObject = Class.$extend({
         var shiftPressed = self.shiftPressed;
         self.keyEvents.released.call(self);
         self.keyEvents.shift.call(self, !shiftPressed);
+        self.shouldPlay = true;
         return;
       }
       var leftPressed = false;
@@ -283,6 +284,7 @@ var Subleerunker = GameObject.$extend({
   leftPressed: false,
   rightPressed: false,
   shiftPressed: false,
+  shouldPlay: false,
 
   __init__: function() {
     this.$super.apply(this, arguments);
@@ -354,10 +356,12 @@ var Subleerunker = GameObject.$extend({
   keyEvents: {
     left: function(pressed) {
       this.leftPressed = pressed;
+      this.shouldPlay = pressed;
       this.leftPrior = true;  // evaluate left first
     },
     right: function(pressed) {
       this.rightPressed = pressed;
+      this.shouldPlay = pressed;
       this.leftPrior = false;  // evaluate right first
     },
     shift: function(pressed) {
@@ -373,6 +377,8 @@ var Subleerunker = GameObject.$extend({
 
   reset: function() {
     this.difficulty = 0.25;
+    this.shouldPlay = false;
+    this.keyEvents.released.call(this);
     this.elem().css('background-position', '0 0');
   },
 
@@ -495,8 +501,9 @@ var Subleerunker = GameObject.$extend({
         this.player.rest();
       }
     } else {
-      if (this.leftPressed || this.rightPressed) {
+      if (this.shouldPlay) {
         this.play();
+        this.shouldPlay = false;
       }
       return;
     }
