@@ -533,8 +533,9 @@ var Subleerunker = GameObject.$extend({
     }
 
     if (!this.player.dead) {
-      if (this.count % 2 == 0) {
-        if (Math.random() < this.difficulty * this.resist()) {
+      if ((this.count * this.resist()) % 2 == 0) {
+        this.difficulty *= 1.001;
+        if (Math.random() < this.difficulty) {
           var flame = new Subleerunker.Flame(this);
           flame.elem().appendTo(this.elem());
         }
@@ -555,7 +556,6 @@ var Subleerunker = GameObject.$extend({
       }
     }
 
-    this.difficulty *= 1.0005;
     ++this.count;
 
     this.$super();
