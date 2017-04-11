@@ -359,13 +359,13 @@ var Subleerunker = GameObject.$extend({
   keyEvents: {
     left: function(press) {
       this.leftPressed = press;
-      this.shouldPlay = press;
       this.leftPrior = true;  // evaluate left first
+      this.shouldPlay = press;
     },
     right: function(press) {
       this.rightPressed = press;
-      this.shouldPlay = press;
       this.leftPrior = false;  // evaluate right first
+      this.shouldPlay = press;
     },
     shift: function(press, lock) {
       this.shiftPressed = press;
@@ -379,26 +379,30 @@ var Subleerunker = GameObject.$extend({
     }
   },
 
+  releaseLockedShift: function() {
+    if (this.shiftLocked) {
+      this.shiftPressed = false;
+      this.shiftLocked = false;
+    }
+  },
+
   slow: function() {
     return GameObject.debug && this.shiftPressed;
   },
 
   reset: function() {
     this.difficulty = 0.25;
-    this.shouldPlay = false;
-    this.keyEvents.released.call(this);
+    this.releaseLockedShift();
     this.elem().css('background-position', '0 0');
   },
 
   play: function() {
+    this.shouldPlay = false;
     this.player = new Subleerunker.Player(this);
     if (this.shiftPressed) {
       // Hommarju for SUBERUNKER's shift-enter easter egg.
       this.player.friction *= 0.25;
-      // Released locked shift.
-      if (this.shiftLocked) {
-        this.shiftPressed = false;
-      }
+      this.releaseLockedShift();
     }
     this.player.elem().appendTo(this.elem());
     this.score.current = 0;
