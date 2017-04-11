@@ -150,7 +150,7 @@ var GameObject = Class.$extend({
 
   /* Animation */
 
-  fps: 30,
+  fps: 60,
   frameRate: 1,
   animations: null,
   defaultScene: null,
@@ -397,6 +397,7 @@ var Subleerunker = GameObject.$extend({
   },
 
   play: function() {
+    this.count = 0;
     this.shouldPlay = false;
     this.player = new Subleerunker.Player(this);
     if (this.shiftPressed) {
@@ -528,9 +529,11 @@ var Subleerunker = GameObject.$extend({
     }
 
     if (!this.player.dead) {
-      if (Math.random() < this.difficulty * this.resist()) {
-        var flame = new Subleerunker.Flame(this);
-        flame.elem().appendTo(this.elem());
+      if (this.count % 2 == 0) {
+        if (Math.random() < this.difficulty * this.resist()) {
+          var flame = new Subleerunker.Flame(this);
+          flame.elem().appendTo(this.elem());
+        }
       }
     } else {
       var done = true;
@@ -548,7 +551,8 @@ var Subleerunker = GameObject.$extend({
       }
     }
 
-    this.difficulty *= 1.001;
+    this.difficulty *= 1.0005;
+    ++this.count;
 
     this.$super();
   },
@@ -594,7 +598,7 @@ $.extend(Subleerunker, {
 
     /* Animation */
 
-    frameRate: 0.33,
+    frameRate: 0.167,
     animations: {
       rightWait: [[0,0], [1,0], [2,0], [3,0], [4,0], [5,0], [6,0]],
       leftWait: [[0,1], [1,1], [2,1], [3,1], [4,1], [5,1], [6,1]],
@@ -608,8 +612,8 @@ $.extend(Subleerunker, {
 
     speed: 0,
     duration: 1,
-    friction: 0.2,
-    step: 10,
+    friction: 0.1,
+    step: 5,
 
     left: function() {
       this.$super();
@@ -646,7 +650,7 @@ $.extend(Subleerunker, {
     die: function() {
       this.dead = true;
       this.speed = 0;
-      this.frameRate = 0.5;
+      this.frameRate = 0.25;
       this.scene('die');
       this.left = this.right = this.forward = this.rest = $.noop;
     }
@@ -690,7 +694,7 @@ $.extend(Subleerunker, {
           this.speed = 0;
           this.updatePosition();
           this.scene('land');
-          this.frameRate = 1;
+          this.frameRate = 0.5;
           this.landed = true;
         } else if (this.position < min) {
           return;
@@ -711,7 +715,7 @@ $.extend(Subleerunker, {
 
     /* Animation */
 
-    frameRate: 0.33,
+    frameRate: 0.167,
     animations: {
       burn: [[0,0], [0,1], [1,1], [2,1], [3,1], [4,1], [5,1]],
       land: [[2,0], [3,0], [4,0]]
@@ -722,8 +726,8 @@ $.extend(Subleerunker, {
 
     speed: 0,
     duration: 1,
-    friction: 0.02,
-    step: 20,
+    friction: 0.01,
+    step: 10,
 
     updatePosition: function() {
       this.$super();
