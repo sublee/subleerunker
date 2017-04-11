@@ -602,7 +602,7 @@ $.extend(Subleerunker, {
 
     /* Animation */
 
-    frameRate: 0.167,
+    frameRate: 0.15,
     animations: {
       rightWait: [[0,0], [1,0], [2,0], [3,0], [4,0], [5,0], [6,0]],
       leftWait: [[0,1], [1,1], [2,1], [3,1], [4,1], [5,1], [6,1]],
@@ -654,7 +654,7 @@ $.extend(Subleerunker, {
     die: function() {
       this.dead = true;
       this.speed = 0;
-      this.frameRate = 0.25;
+      this.frameRate = 0.2;
       this.scene('die');
       this.left = this.right = this.forward = this.rest = $.noop;
     }
@@ -698,7 +698,7 @@ $.extend(Subleerunker, {
           this.speed = 0;
           this.updatePosition();
           this.scene('land');
-          this.frameRate = 0.5;
+          this.frameRate = 0.4;
           this.landed = true;
         } else if (this.position < min) {
           return;
@@ -719,7 +719,7 @@ $.extend(Subleerunker, {
 
     /* Animation */
 
-    frameRate: 0.167,
+    frameRate: 0.15,
     animations: {
       burn: [[0,0], [0,1], [1,1], [2,1], [3,1], [4,1], [5,1]],
       land: [[2,0], [3,0], [4,0]]
