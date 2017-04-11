@@ -123,10 +123,7 @@ var GameObject = Class.$extend({
       e.preventDefault();
       if (e.type == 'touchstart' && e.touches.length == 3) {
         // Toggle shift by 3 fingers.
-        var pressShift = !self.shiftPressed;
-        self.keyEvents.released.call(self);
-        self.keyEvents.shift.call(self, pressShift, true);
-        self.shouldPlay = true;
+        self.keyEvents.shift.call(self, !self.shiftPressed, true);
         return;
       }
       var pressLeft = false;
@@ -360,16 +357,23 @@ var Subleerunker = GameObject.$extend({
     left: function(press) {
       this.leftPressed = press;
       this.leftPrior = true;  // evaluate left first
-      this.shouldPlay = press;
+      if (press) {
+        this.shouldPlay = true;
+      }
     },
     right: function(press) {
       this.rightPressed = press;
       this.leftPrior = false;  // evaluate right first
-      this.shouldPlay = press;
+      if (press) {
+        this.shouldPlay = true;
+      }
     },
     shift: function(press, lock) {
       this.shiftPressed = press;
       this.shiftLocked = !!lock;
+      if (press && lock) {
+        this.shouldPlay = true;
+      }
     },
     released: function() {
       this.leftPressed = false;
@@ -392,13 +396,13 @@ var Subleerunker = GameObject.$extend({
 
   reset: function() {
     this.difficulty = 0.25;
+    this.shouldPlay = false;
     this.releaseLockedShift();
     this.elem().css('background-position', '0 0');
   },
 
   play: function() {
     this.count = 0;
-    this.shouldPlay = false;
     this.player = new Subleerunker.Player(this);
     if (this.shiftPressed) {
       // Hommarju for SUBERUNKER's shift-enter easter egg.
