@@ -15,7 +15,6 @@ var GameObject = Class.$extend({
   },
 
   'class': null,
-  chipset: null,
 
   __init__: function(parent) {
     this.parent = parent;
@@ -69,7 +68,7 @@ var GameObject = Class.$extend({
       width: this.width,
       height: this.height,
       padding: this.padding.join('px ') + 'px',
-      backgroundImage: 'url(' + this.chipset + ')',
+      backgroundImage: 'url(' + this.atlas + ')',
       backgroundRepeat: 'no-repeat'
     }, this.css);
 
@@ -147,6 +146,8 @@ var GameObject = Class.$extend({
 
   /* Animation */
 
+  atlas: null,
+  atlasStarts: [0, 0],
   fps: 60,
   frameRate: 1,
   animations: null,
@@ -155,6 +156,8 @@ var GameObject = Class.$extend({
   cell: function(x, y) {
     x *= -this.outerWidth();
     y *= -this.outerHeight();
+    x -= this.atlasStarts[0];
+    y -= this.atlasStarts[1];
     var pos = x + 'px ' + y + 'px';
     this.elem().css('background-position', pos);
   },
@@ -346,7 +349,7 @@ var Subleerunker = GameObject.$extend({
     // Preload
     el.append(preload);
     $.each([Subleerunker.Player, Subleerunker.Flame], function(i, cls) {
-      var img = $('<img />').attr('src', cls.prototype.chipset);
+      var img = $('<img />').attr('src', cls.prototype.atlas);
       img.appendTo(preload);
     });
 
@@ -572,7 +575,6 @@ $.extend(Subleerunker, {
   Player: GameObject.$extend({
 
     'class': 'player',
-    chipset: 'player.gif',
 
     __init__: function(parent) {
       this.$super.apply(this, arguments);
@@ -602,13 +604,14 @@ $.extend(Subleerunker, {
 
     /* Animation */
 
+    atlas: 'atlas.gif',
     frameRate: 0.15,
     animations: {
-      rightWait: [[0,0], [1,0], [2,0], [3,0], [4,0], [5,0], [6,0]],
-      leftWait: [[0,1], [1,1], [2,1], [3,1], [4,1], [5,1], [6,1]],
-      rightRun: [[0,2], [1,2], [2,2], [3,2], [4,2], [5,2]],
-      leftRun: [[0,3], [1,3], [2,3], [3,3], [4,3], [5,3]],
-      die: [[0,4], [1,4], [2,4], [3,4], [4,4], [5,4], [6,4], [7,4]]
+      rightWait: [[0, 0], [1, 0], [2, 0], [3, 0], [4, 0], [5, 0], [6, 0]],
+      leftWait: [[0, 1], [1, 1], [2, 1], [3, 1], [4, 1], [5, 1], [6, 1]],
+      rightRun: [[0, 2], [1, 2], [2, 2], [3, 2], [4, 2], [5, 2]],
+      leftRun: [[0, 3], [1, 3], [2, 3], [3, 3], [4, 3], [5, 3]],
+      die: [[0, 4], [1, 4], [2, 4], [3, 4], [4, 4], [5, 4], [6, 4], [7, 4]]
     },
     defaultScene: 'rightWait',
 
@@ -664,7 +667,6 @@ $.extend(Subleerunker, {
   Flame: GameObject.$extend({
 
     'class': 'flame',
-    chipset: 'flame.gif',
 
     __init__: function(parent) {
       this.$super.apply(this, arguments);
@@ -715,14 +717,16 @@ $.extend(Subleerunker, {
 
     width: 6,
     height: 6,
-    padding: [9, 8, 2],
+    padding: [8, 8, 2],
 
     /* Animation */
 
+    atlas: 'atlas.gif',
+    atlasStarts: [288, 184],
     frameRate: 0.15,
     animations: {
-      burn: [[0,0], [0,1], [1,1], [2,1], [3,1], [4,1], [5,1]],
-      land: [[2,0], [3,0], [4,0]]
+      burn: [[0, 0], [0, 2], [1, 2], [2, 2], [0, 3], [1, 3], [2, 3]],
+      land: [[1, 0], [2, 0], [0, 1], [1, 1]]
     },
     defaultScene: 'burn',
 
