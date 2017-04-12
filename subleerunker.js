@@ -348,9 +348,14 @@ var Subleerunker = GameObject.$extend({
 
     // Preload
     el.append(preload);
+    var atlases = [];
     $.each([Subleerunker.Player, Subleerunker.Flame], function(i, cls) {
-      var img = $('<img />').attr('src', cls.prototype.atlas);
-      img.appendTo(preload);
+      if (atlases.indexOf(cls.prototype.atlas) === -1) {
+        atlases.push(cls.prototype.atlas);
+      }
+    });
+    $.each(atlases, function(i, atlas) {
+      $('<img />').attr('src', atlas).appendTo(preload);
     });
 
     return el;
