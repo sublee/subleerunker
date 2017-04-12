@@ -148,14 +148,15 @@ var GameObject = Class.$extend({
 
   atlas: null,
   atlasStarts: [0, 0],
+  atlasMargin: 0,
   fps: 60,
   frameRate: 1,
   animations: null,
   defaultScene: null,
 
   cell: function(x, y) {
-    x *= -this.outerWidth();
-    y *= -this.outerHeight();
+    x *= -(this.outerWidth() + this.atlasMargin);
+    y *= -(this.outerHeight() + this.atlasMargin);
     x -= this.atlasStarts[0];
     y -= this.atlasStarts[1];
     var pos = x + 'px ' + y + 'px';
@@ -727,7 +728,8 @@ $.extend(Subleerunker, {
     /* Animation */
 
     atlas: 'atlas.gif',
-    atlasStarts: [288, 184],
+    atlasStarts: [288, 181],
+    atlasMargin: 2,
     frameRate: 0.15,
     animations: {
       burn: [[0, 0], [0, 2], [1, 2], [2, 2], [0, 3], [1, 3], [2, 3]],
