@@ -506,10 +506,6 @@ var Subleerunker = GameObject.$extend({
       this.updateMyBestScore(this.score.current);
     }
     if (this.score.high < this.score.current) {
-      // Save high score
-      cookie = 'high_score=' + this.score.current + '; path=/';
-      document.cookie = cookie;
-
       this.challengeHighScore();
     }
 
