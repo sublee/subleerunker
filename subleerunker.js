@@ -36,8 +36,8 @@ var GameObject = Class.$extend({
       this.jobs = [];
     }
 
-    if (this.defaultScene) {
-      this.scene(this.defaultScene);
+    if (this.sceneName) {
+      this.scene(this.sceneName);
     }
 
     this.killed = false;
@@ -152,7 +152,7 @@ var GameObject = Class.$extend({
   fps: 60,
   frameRate: 1,
   animations: null,
-  defaultScene: null,
+  sceneName: null,
 
   cell: function(x, y) {
     x *= -(this.outerWidth() + this.atlasMargin);
@@ -166,6 +166,7 @@ var GameObject = Class.$extend({
   frame: null,
 
   scene: function(sceneName, keepFrame) {
+    this.sceneName = sceneName;
     this._animation = this.animations[sceneName];
     if (!keepFrame) {
       this.frame = 0;
@@ -614,7 +615,7 @@ $.extend(Subleerunker, {
       leftRun: [[0, 3], [1, 3], [2, 3], [3, 3], [4, 3], [5, 3]],
       die: [[0, 4], [1, 4], [2, 4], [3, 4], [4, 4], [5, 4], [6, 4], [7, 4]]
     },
-    defaultScene: 'rightWait',
+    sceneName: 'rightIdle',
 
     /* Move */
 
@@ -730,7 +731,7 @@ $.extend(Subleerunker, {
       burn: [[0, 0], [0, 2], [1, 2], [2, 2], [0, 3], [1, 3], [2, 3]],
       land: [[1, 0], [0, 1], [1, 1]]
     },
-    defaultScene: 'burn',
+    sceneName: 'burn',
 
     /* Move */
 
