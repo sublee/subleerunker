@@ -404,7 +404,6 @@ var Subleerunker = GameObject.$extend({
   },
 
   reset: function() {
-    this.difficulty = 0.25;
     this.shouldPlay = false;
     this.releaseLockedShift();
     this.elem().css('background-position', '0 0');
@@ -539,8 +538,8 @@ var Subleerunker = GameObject.$extend({
 
     if (!this.player.dead) {
       if ((this.count * this.resist()) % 2 == 0) {
-        this.difficulty *= 1.001;
-        if (Math.random() < this.difficulty) {
+        var difficulty = 0.25 + (this.count / 1000);
+        if (Math.random() < difficulty) {
           var flame = new Subleerunker.Flame(this);
           flame.elem().appendTo(this.elem());
         }
