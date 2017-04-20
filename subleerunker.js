@@ -99,51 +99,6 @@ var GameObject = Class.$extend({
     return this.height + this.padding[0] + this.padding[2];
   },
 
-  /* Events */
-
-  captureKeys: function(window, document) {
-    var self = this;
-
-    $(window).on('keydown', function(e) {
-      var handler = self.keyEvents[GameObject.keys[e.which]];
-      if ($.isFunction(handler)) {
-        handler.call(self, true);
-      }
-    }).on('keyup', function(e) {
-      var handler = self.keyEvents[GameObject.keys[e.which]];
-      if ($.isFunction(handler)) {
-        handler.call(self, false);
-      }
-    }).on('blur', function(e) {
-      self.keyEvents.released.call(self);
-    });
-
-    $(document).on('touchstart touchmove touchend', function(e) {
-      e.preventDefault();
-      if (e.type == 'touchstart' && e.touches.length == 3) {
-        // Toggle shift by 3 fingers.
-        self.keyEvents.shift.call(self, !self.shiftPressed, true);
-        return;
-      }
-      var pressLeft = false;
-      var pressRight = false;
-      if (e.touches.length) {
-        var lastTouch = e.touches[e.touches.length - 1];
-        if (lastTouch.pageX / window.innerWidth < 0.5) {
-          pressLeft = true;
-        } else {
-          pressRight = true;
-        }
-      }
-      self.keyEvents.left.call(self, pressLeft);
-      self.keyEvents.right.call(self, pressRight);
-    });
-
-    $(window).on('resize', function(e) {
-      self.adjustZoom();
-    });
-  },
-
   /* Animation */
 
   atlas: null,
@@ -398,6 +353,49 @@ var Subleerunker = GameObject.$extend({
       this.shiftPressed = false;
       this.shiftLocked = false;
     }
+  },
+
+  captureKeys: function(window, document) {
+    var self = this;
+
+    $(window).on('keydown', function(e) {
+      var handler = self.keyEvents[GameObject.keys[e.which]];
+      if ($.isFunction(handler)) {
+        handler.call(self, true);
+      }
+    }).on('keyup', function(e) {
+      var handler = self.keyEvents[GameObject.keys[e.which]];
+      if ($.isFunction(handler)) {
+        handler.call(self, false);
+      }
+    }).on('blur', function(e) {
+      self.keyEvents.released.call(self);
+    });
+
+    $(document).on('touchstart touchmove touchend', function(e) {
+      e.preventDefault();
+      if (e.type == 'touchstart' && e.touches.length == 3) {
+        // Toggle shift by 3 fingers.
+        self.keyEvents.shift.call(self, !self.shiftPressed, true);
+        return;
+      }
+      var pressLeft = false;
+      var pressRight = false;
+      if (e.touches.length) {
+        var lastTouch = e.touches[e.touches.length - 1];
+        if (lastTouch.pageX / window.innerWidth < 0.5) {
+          pressLeft = true;
+        } else {
+          pressRight = true;
+        }
+      }
+      self.keyEvents.left.call(self, pressLeft);
+      self.keyEvents.right.call(self, pressRight);
+    });
+
+    $(window).on('resize', function(e) {
+      self.adjustZoom();
+    });
   },
 
   slow: function() {
