@@ -129,7 +129,7 @@ var GameObject = Class.$extend({
   },
 
   isLastFrame: function() {
-    return this.frame >= this._animation.length;
+    return this.frame >= this._animation.offsets.length;
   },
 
   /* Move */
@@ -211,11 +211,13 @@ var GameObject = Class.$extend({
       return;
     }
 
-    if (this._animation) {
-      var i = Math.floor(this.frame % this._animation.length);
-      var point = this._animation[i];
-      this.frame += this.frameRate * this.resist();
-      this.cell.apply(this, point);
+    var anim = this._animation;
+    if (anim) {
+      var i = Math.floor(this.frame % anim.offsets.length);
+      var offset = anim.offsets[i];
+      var frameRate = anim.frameRate || this.frameRate;
+      this.frame += frameRate * this.resist();
+      this.cell.apply(this, offset);
     }
   },
 
@@ -605,13 +607,23 @@ $.extend(Subleerunker, {
     /* Animation */
 
     atlas: 'atlas.gif',
-    frameRate: 0.15,
+    frameRate: 0.2,
     animations: {
-      rightWait: [[0, 0], [1, 0], [2, 0], [3, 0], [4, 0], [5, 0], [6, 0]],
-      leftWait: [[0, 1], [1, 1], [2, 1], [3, 1], [4, 1], [5, 1], [6, 1]],
-      rightRun: [[0, 2], [1, 2], [2, 2], [3, 2], [4, 2], [5, 2]],
-      leftRun: [[0, 3], [1, 3], [2, 3], [3, 3], [4, 3], [5, 3]],
-      die: [[0, 4], [1, 4], [2, 4], [3, 4], [4, 4], [5, 4], [6, 4], [7, 4]]
+      rightIdle: {
+        offsets: [[0,0], [1,0], [2,0], [3,0], [4,0], [5,0], [6,0]]
+      },
+      leftIdle: {
+        offsets: [[0,1], [1,1], [2,1], [3,1], [4,1], [5,1], [6,1]]
+      },
+      rightRun: {
+        offsets: [[0,2], [1,2], [2,2], [3,2], [4,2], [5,2], [6,2], [7,2]]
+      },
+      leftRun: {
+        offsets: [[0,3], [1,3], [2,3], [3,3], [4,3], [5,3], [6,3], [7,3]]
+      },
+      die: {
+        offsets: [[0,4], [1,4], [2,4], [3,4], [4,4], [5,4], [6,4], [7,4]]
+      }
     },
     sceneName: 'rightIdle',
 
@@ -622,20 +634,34 @@ $.extend(Subleerunker, {
     friction: 0.1,
     step: 5,
 
+    runScene: function(direction) {
+      var sceneName = direction + 'Run';
+      if (this.sceneName == sceneName) {
+        return;
+      }
+      if (/Idle$/.exec(this.sceneName)) {
+        this.frame = 0;
+      } else if (/Run$/.exec(this.sceneName)) {
+        // Inverse same pose.
+        this.frame += 4;
+      }
+      this.scene(sceneName, /* keepFrame */ true);
+    },
+
     left: function() {
       this.$super();
-      this.scene('leftRun', true);
+      this.runScene('left');
     },
 
     right: function() {
       this.$super();
-      this.scene('rightRun', true);
+      this.runScene('right');
     },
 
     rest: function() {
       this.$super();
       var prefix = {'-1': 'left', '1': 'right'}[this.duration];
-      this.scene(prefix + 'Wait', true);
+      this.scene(prefix + 'Idle', true);
     },
 
     updatePosition: function() {
@@ -657,7 +683,6 @@ $.extend(Subleerunker, {
     die: function() {
       this.dead = true;
       this.speed = 0;
-      this.frameRate = 0.2;
       this.scene('die');
       this.left = this.right = this.forward = this.rest = $.noop;
     }
@@ -700,7 +725,6 @@ $.extend(Subleerunker, {
           this.speed = 0;
           this.updatePosition();
           this.scene('land');
-          this.frameRate = 0.4;
           this.landed = true;
         } else if (this.position < min) {
           return;
@@ -722,12 +746,17 @@ $.extend(Subleerunker, {
     /* Animation */
 
     atlas: 'atlas.gif',
-    atlasStarts: [288, 181],
+    atlasStarts: [337, 1],
     atlasMargin: 2,
-    frameRate: 0.15,
     animations: {
-      burn: [[0, 0], [0, 2], [1, 2], [2, 2], [0, 3], [1, 3], [2, 3]],
-      land: [[1, 0], [0, 1], [1, 1]]
+      burn: {
+        frameRate: 0.2,
+        offsets: [[0,0], [0,2], [1,2], [0,3], [1,3], [0,4], [1,4]]
+      },
+      land: {
+        frameRate: 0.4,
+        offsets: [[1,0], [0,1], [1,1]]
+      }
     },
     sceneName: 'burn',
 
