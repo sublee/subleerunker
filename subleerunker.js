@@ -291,7 +291,7 @@ var Subleerunker = GameObject.$extend({
       textAlign: 'right',
       color: '#fff',
       fontSize: 11,
-      fontFamily: 'monospace'
+      fontFamily: '"Share Tech Mono", monospace'
     }).html([
       '<div class="high"></div>',
       '<div class="mybest"></div>',
