@@ -607,6 +607,7 @@ $.extend(Subleerunker, {
     /* Animation */
 
     atlas: 'atlas.gif',
+    atlasMargin: 2,
     frameRate: 0.2,
     animations: {
       rightIdle: {
@@ -746,7 +747,7 @@ $.extend(Subleerunker, {
     /* Animation */
 
     atlas: 'atlas.gif',
-    atlasStarts: [337, 1],
+    atlasStarts: [350, 2],
     atlasMargin: 2,
     animations: {
       burn: {
