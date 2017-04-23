@@ -58,7 +58,7 @@ var GameObject = Class.$extend({
 
   width: null,
   height: null,
-  padding: [],
+  padding: [0, 0, 0, 0],
   css: null,
 
   elem: function() {
@@ -68,8 +68,11 @@ var GameObject = Class.$extend({
       width: this.width,
       height: this.height,
       padding: this.padding.join('px ') + 'px',
-      backgroundImage: 'url(' + this.atlas + ')',
-      backgroundRepeat: 'no-repeat'
+      backgroundImage: (this.atlas ? 'url(' + this.atlas + ')' : 'none'),
+      backgroundRepeat: 'no-repeat',
+      backgroundPosition: (
+        -this.atlasStarts[0] + 'px ' + -this.atlasStarts[1] + 'px'
+      )
     }, this.css);
 
     if (GameObject.debug) {
@@ -85,6 +88,7 @@ var GameObject = Class.$extend({
       }));
     }
 
+    // Cache the element.
     this.elem = function() {
       return el;
     };
@@ -101,9 +105,9 @@ var GameObject = Class.$extend({
 
   /* Animation */
 
-  atlas: null,
+  atlas: 'atlas.gif',
   atlasStarts: [0, 0],
-  atlasMargin: 0,
+  atlasMargin: 2,
   fps: 60,
   frameRate: 1,
   animations: null,
@@ -129,7 +133,7 @@ var GameObject = Class.$extend({
   },
 
   isLastFrame: function() {
-    return this.frame >= this._animation.length;
+    return this.frame >= this._animation.offsets.length;
   },
 
   /* Move */
@@ -211,11 +215,13 @@ var GameObject = Class.$extend({
       return;
     }
 
-    if (this._animation) {
-      var i = Math.floor(this.frame % this._animation.length);
-      var point = this._animation[i];
-      this.frame += this.frameRate * this.resist();
-      this.cell.apply(this, point);
+    var anim = this._animation;
+    if (anim) {
+      var i = Math.floor(this.frame % anim.offsets.length);
+      var offset = anim.offsets[i];
+      var frameRate = anim.frameRate || this.frameRate;
+      this.frame += frameRate * this.resist();
+      this.cell.apply(this, offset);
     }
   },
 
@@ -246,6 +252,8 @@ var Subleerunker = GameObject.$extend({
   shiftLocked: false,
   shouldPlay: false,
 
+  atlas: null,  // Don't use atlas.
+
   __init__: function() {
     this.$super.apply(this, arguments);
 
@@ -255,16 +263,14 @@ var Subleerunker = GameObject.$extend({
       marginLeft: this.outerWidth() / -2,
       marginTop: this.outerHeight() / -2,
       outline: '1px solid #222',
-      backgroundColor: '#000',
-      backgroundImage: 'url(beginning.gif)',
-      backgroundRepeat: 'no-repeat'
+      backgroundColor: '#000'
     };
 
     var m = /my_best_score=(\d+)/.exec(document.cookie);
     this.score = {
       current: 0,
-      myBest: m ? m[1] : 0,
-      high: 0
+      localBest: m ? m[1] : 0,
+      worldBest: 0
     };
 
     this.updateScore();
@@ -280,30 +286,28 @@ var Subleerunker = GameObject.$extend({
     var el = this.$super();
     var score = $('<div class="score"></div>').css({
       position: 'absolute',
-      right: 2,
-      top: 2,
+      right: 5,
+      top: 3,
       textAlign: 'right',
       color: '#fff',
-      fontSize: 11,
-      fontFamily: 'monospace'
+      fontSize: 12,
+      fontFamily: '"Share Tech Mono", monospace'
     }).html([
-      '<div class="high"></div>',
-      '<div class="mybest"></div>',
+      '<div class="world-best"></div>',
+      '<div class="local-best"></div>',
       '<div class="current"></div>'
     ].join(''));
+    el.append(score);
+    el.currentScore = score.find('>.current').text(this.score.current);
+    el.localBestScore = score.find('>.local-best').css('color', '#a6b2b1');
+    el.highScore = score.find('>.world-best').css('color', '#809190');
+
+    // Preload
     var preload = $('<div class="preload"></div>').css({
       position: 'absolute',
       top: -9999,
       left: -9999
     });
-
-    // Score Display
-    el.append(score);
-    el.currentScore = score.find('>.current').text(this.score.current);
-    el.myBestScore = score.find('>.mybest').css('color', '#ccc');
-    el.highScore = score.find('>.high').css('color', '#999');
-
-    // Preload
     el.append(preload);
     var atlases = [];
     $.each([Subleerunker.Player, Subleerunker.Flame], function(i, cls) {
@@ -316,6 +320,51 @@ var Subleerunker = GameObject.$extend({
     });
 
     return el;
+  },
+
+  showSplash: function() {
+    var Logo = GameObject.$extend({
+      'class': 'logo',
+      width: 148, height: 66,
+      atlasStarts: [0, 370],
+      css: {top: 156, left: '50%', marginLeft: -74}
+    });
+    if (typeof window.orientation !== 'undefined') {
+      // mobile
+      var control = {
+        width: 33, height: 35,
+        atlasStarts: [217, 370],
+        animationOffsets: [[0,0], [1,0]]
+      };
+    } else {
+      // desktop
+      var control = {
+        width: 65, height: 14,
+        atlasStarts: [150, 370],
+        animationOffsets: [[0,0], [0,1]]
+      };
+    }
+    var Control = GameObject.$extend({
+      'class': 'control',
+      width: control.width,
+      height: control.height,
+      css: {bottom: 30, left: '50%', marginLeft: -(control.width / 2)},
+      frameRate: 0.02,
+      atlasStarts: control.atlasStarts,
+      animations: {'blink': {offsets: control.animationOffsets}},
+      sceneName: 'blink'
+    });
+    this.logo = new Logo(this);
+    this.control = new Control(this);
+    this.elem().append(this.logo.elem()).append(this.control.elem());
+  },
+
+  hideSplash: function() {
+    this.logo.kill();
+    this.logo.destroy();
+    this.control.kill();
+    this.control.destroy();
+    delete this.logo, this.control;
   },
 
   keyEvents: {
@@ -405,7 +454,7 @@ var Subleerunker = GameObject.$extend({
   reset: function() {
     this.shouldPlay = false;
     this.releaseLockedShift();
-    this.elem().css('background-position', '0 0');
+    this.showSplash();
   },
 
   play: function() {
@@ -419,7 +468,7 @@ var Subleerunker = GameObject.$extend({
     this.player.elem().appendTo(this.elem());
     this.score.current = 0;
     this.updateScore();
-    this.elem().css('background-position', '-9999px 0');
+    this.hideSplash();
   },
 
   upScore: function() {
@@ -431,51 +480,51 @@ var Subleerunker = GameObject.$extend({
     if (score !== undefined) {
       this.score.current = score;
     }
-    this.updateMyBestScore();
-    this.updateHighScore();
+    this.renderLocalBestScore();
+    this.renderWorldBestScore();
     this.elem().currentScore.text(this.score.current);
   },
 
-  updateMyBestScore: function(score) {
+  renderLocalBestScore: function(score) {
     if (score !== undefined) {
-      this.score.myBest = score;
+      this.score.localBest = score;
     }
-    if (this.score.myBest <= this.score.current) {
-      this.elem().myBestScore.text('');
+    if (this.score.localBest <= this.score.current) {
+      this.elem().localBestScore.text('');
     } else {
-      this.elem().myBestScore.text(this.score.myBest);
+      this.elem().localBestScore.text(this.score.localBest);
     }
   },
 
-  updateHighScore: function(score) {
+  renderWorldBestScore: function(score) {
     if (score !== undefined) {
       this.score.high = score;
     }
 
     var greaterThanCurrentScore = this.score.high > this.score.current;
-    var greaterThanMyBestScore = this.score.high > this.score.myBest;
+    var greaterThanLocalBestScore = this.score.high > this.score.localBest;
 
-    if (!greaterThanCurrentScore || !greaterThanMyBestScore) {
+    if (!greaterThanCurrentScore || !greaterThanLocalBestScore) {
       this.elem().highScore.text('');
     } else {
       this.elem().highScore.text(this.score.high);
     }
   },
 
-  fetchHighScore: function() {
+  fetchWorldBest: function() {
     // Not Implemented.
     /*
     $.getJSON('/high-score', $.proxy(function(highScore) {
-      this.updateHighScore(highScore);
+      this.renderWorldBestScore(highScore);
       if (!this.killed) {
-        setTimeout($.proxy(this.fetchHighScore, this), 10 * 1000);
+        setTimeout($.proxy(this.fetchWorldBest, this), 10 * 1000);
       }
     }, this));
     */
   },
 
-  challengeHighScore: function() {
-    this.updateHighScore(this.score.current);
+  challengeWorldBest: function() {
+    this.renderWorldBestScore(this.score.current);
     if (GameObject.debug) {
       return;
     }
@@ -491,8 +540,8 @@ var Subleerunker = GameObject.$extend({
     this.player.die();
 
     var cookie;
-    if (this.score.myBest < this.score.current) {
-      // Save my best score
+    if (this.score.localBest < this.score.current) {
+      // Save local best score in Cookie.
       var expires = new Date();
       expires.setMonth(expires.getMonth() + 1);
 
@@ -501,10 +550,10 @@ var Subleerunker = GameObject.$extend({
       cookie += 'path=/';
       document.cookie = cookie;
 
-      this.updateMyBestScore(this.score.current);
+      this.renderLocalBestScore(this.score.current);
     }
-    if (this.score.high < this.score.current) {
-      this.challengeHighScore();
+    if (this.score.worldBest < this.score.current) {
+      this.challengeWorldBest();
     }
 
     // Trigger custom event to track the score by outside.
@@ -512,27 +561,28 @@ var Subleerunker = GameObject.$extend({
   },
 
   loop: function() {
-    if (this.player) {
-      var movements = [[this.leftPressed, this.player.left],
-                       [this.rightPressed, this.player.right]];
-      for (var i = 0; i < 2; ++i) {
-        var mov = movements[this.leftPrior ? i : 1 - i];
-        if (mov[0]) {
-          mov[1].call(this.player);
-          break;
-        }
-      }
-      if (this.leftPressed || this.rightPressed) {
-        this.player.forward();
-      } else {
-        this.player.rest();
-      }
-    } else {
+    if (!this.player) {
       if (this.shouldPlay) {
         this.play();
         this.shouldPlay = false;
       }
+      this.$super();
       return;
+    }
+
+    var movements = [[this.leftPressed, this.player.left],
+                     [this.rightPressed, this.player.right]];
+    for (var i = 0; i < 2; ++i) {
+      var mov = movements[this.leftPrior ? i : 1 - i];
+      if (mov[0]) {
+        mov[1].call(this.player);
+        break;
+      }
+    }
+    if (this.leftPressed || this.rightPressed) {
+      this.player.forward();
+    } else {
+      this.player.rest();
     }
 
     if (!this.player.dead) {
@@ -560,13 +610,12 @@ var Subleerunker = GameObject.$extend({
     }
 
     ++this.count;
-
     this.$super();
   },
 
   start: function() {
     this.$super();
-    this.fetchHighScore();
+    this.fetchWorldBest();
   }
 });
 
@@ -604,14 +653,24 @@ $.extend(Subleerunker, {
 
     /* Animation */
 
-    atlas: 'atlas.gif',
-    frameRate: 0.15,
+    atlasMargin: 2,
+    frameRate: 0.2,
     animations: {
-      rightWait: [[0, 0], [1, 0], [2, 0], [3, 0], [4, 0], [5, 0], [6, 0]],
-      leftWait: [[0, 1], [1, 1], [2, 1], [3, 1], [4, 1], [5, 1], [6, 1]],
-      rightRun: [[0, 2], [1, 2], [2, 2], [3, 2], [4, 2], [5, 2]],
-      leftRun: [[0, 3], [1, 3], [2, 3], [3, 3], [4, 3], [5, 3]],
-      die: [[0, 4], [1, 4], [2, 4], [3, 4], [4, 4], [5, 4], [6, 4], [7, 4]]
+      rightIdle: {
+        offsets: [[0,0], [1,0], [2,0], [3,0], [4,0], [5,0], [6,0]]
+      },
+      leftIdle: {
+        offsets: [[0,1], [1,1], [2,1], [3,1], [4,1], [5,1], [6,1]]
+      },
+      rightRun: {
+        offsets: [[0,2], [1,2], [2,2], [3,2], [4,2], [5,2], [6,2], [7,2]]
+      },
+      leftRun: {
+        offsets: [[0,3], [1,3], [2,3], [3,3], [4,3], [5,3], [6,3], [7,3]]
+      },
+      die: {
+        offsets: [[0,4], [1,4], [2,4], [3,4], [4,4], [5,4], [6,4], [7,4]]
+      }
     },
     sceneName: 'rightIdle',
 
@@ -622,20 +681,34 @@ $.extend(Subleerunker, {
     friction: 0.1,
     step: 5,
 
+    runScene: function(direction) {
+      var sceneName = direction + 'Run';
+      if (this.sceneName == sceneName) {
+        return;
+      }
+      if (/Idle$/.exec(this.sceneName)) {
+        this.frame = 0;
+      } else if (/Run$/.exec(this.sceneName)) {
+        // Inverse same pose.
+        this.frame += 4;
+      }
+      this.scene(sceneName, /* keepFrame */ true);
+    },
+
     left: function() {
       this.$super();
-      this.scene('leftRun', true);
+      this.runScene('left');
     },
 
     right: function() {
       this.$super();
-      this.scene('rightRun', true);
+      this.runScene('right');
     },
 
     rest: function() {
       this.$super();
       var prefix = {'-1': 'left', '1': 'right'}[this.duration];
-      this.scene(prefix + 'Wait', true);
+      this.scene(prefix + 'Idle', true);
     },
 
     updatePosition: function() {
@@ -657,7 +730,6 @@ $.extend(Subleerunker, {
     die: function() {
       this.dead = true;
       this.speed = 0;
-      this.frameRate = 0.2;
       this.scene('die');
       this.left = this.right = this.forward = this.rest = $.noop;
     }
@@ -700,7 +772,6 @@ $.extend(Subleerunker, {
           this.speed = 0;
           this.updatePosition();
           this.scene('land');
-          this.frameRate = 0.4;
           this.landed = true;
         } else if (this.position < min) {
           return;
@@ -721,13 +792,17 @@ $.extend(Subleerunker, {
 
     /* Animation */
 
-    atlas: 'atlas.gif',
-    atlasStarts: [288, 181],
+    atlasStarts: [350, 2],
     atlasMargin: 2,
-    frameRate: 0.15,
     animations: {
-      burn: [[0, 0], [0, 2], [1, 2], [2, 2], [0, 3], [1, 3], [2, 3]],
-      land: [[1, 0], [0, 1], [1, 1]]
+      burn: {
+        frameRate: 0.2,
+        offsets: [[0,0], [0,2], [1,2], [0,3], [1,3], [0,4], [1,4]]
+      },
+      land: {
+        frameRate: 0.4,
+        offsets: [[1,0], [0,1], [1,1]]
+      }
     },
     sceneName: 'burn',
 
