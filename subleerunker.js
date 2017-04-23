@@ -269,8 +269,8 @@ var Subleerunker = GameObject.$extend({
     var m = /my_best_score=(\d+)/.exec(document.cookie);
     this.score = {
       current: 0,
-      myBest: m ? m[1] : 0,
-      high: 0
+      localBest: m ? m[1] : 0,
+      worldBest: 0
     };
 
     this.updateScore();
@@ -293,14 +293,14 @@ var Subleerunker = GameObject.$extend({
       fontSize: 11,
       fontFamily: '"Share Tech Mono", monospace'
     }).html([
-      '<div class="high"></div>',
-      '<div class="mybest"></div>',
+      '<div class="world-best"></div>',
+      '<div class="local-best"></div>',
       '<div class="current"></div>'
     ].join(''));
     el.append(score);
     el.currentScore = score.find('>.current').text(this.score.current);
-    el.myBestScore = score.find('>.mybest').css('color', '#a6b2b1');
-    el.highScore = score.find('>.high').css('color', '#809190');
+    el.localBestScore = score.find('>.local-best').css('color', '#a6b2b1');
+    el.highScore = score.find('>.world-best').css('color', '#809190');
 
     // Preload
     var preload = $('<div class="preload"></div>').css({
@@ -480,51 +480,51 @@ var Subleerunker = GameObject.$extend({
     if (score !== undefined) {
       this.score.current = score;
     }
-    this.updateMyBestScore();
-    this.updateHighScore();
+    this.renderLocalBestScore();
+    this.renderWorldBestScore();
     this.elem().currentScore.text(this.score.current);
   },
 
-  updateMyBestScore: function(score) {
+  renderLocalBestScore: function(score) {
     if (score !== undefined) {
-      this.score.myBest = score;
+      this.score.localBest = score;
     }
-    if (this.score.myBest <= this.score.current) {
-      this.elem().myBestScore.text('');
+    if (this.score.localBest <= this.score.current) {
+      this.elem().localBestScore.text('');
     } else {
-      this.elem().myBestScore.text(this.score.myBest);
+      this.elem().localBestScore.text(this.score.localBest);
     }
   },
 
-  updateHighScore: function(score) {
+  renderWorldBestScore: function(score) {
     if (score !== undefined) {
       this.score.high = score;
     }
 
     var greaterThanCurrentScore = this.score.high > this.score.current;
-    var greaterThanMyBestScore = this.score.high > this.score.myBest;
+    var greaterThanLocalBestScore = this.score.high > this.score.localBest;
 
-    if (!greaterThanCurrentScore || !greaterThanMyBestScore) {
+    if (!greaterThanCurrentScore || !greaterThanLocalBestScore) {
       this.elem().highScore.text('');
     } else {
       this.elem().highScore.text(this.score.high);
     }
   },
 
-  fetchHighScore: function() {
+  fetchWorldBest: function() {
     // Not Implemented.
     /*
     $.getJSON('/high-score', $.proxy(function(highScore) {
-      this.updateHighScore(highScore);
+      this.renderWorldBestScore(highScore);
       if (!this.killed) {
-        setTimeout($.proxy(this.fetchHighScore, this), 10 * 1000);
+        setTimeout($.proxy(this.fetchWorldBest, this), 10 * 1000);
       }
     }, this));
     */
   },
 
-  challengeHighScore: function() {
-    this.updateHighScore(this.score.current);
+  challengeWorldBest: function() {
+    this.renderWorldBestScore(this.score.current);
     if (GameObject.debug) {
       return;
     }
@@ -540,8 +540,8 @@ var Subleerunker = GameObject.$extend({
     this.player.die();
 
     var cookie;
-    if (this.score.myBest < this.score.current) {
-      // Save my best score
+    if (this.score.localBest < this.score.current) {
+      // Save local best score in Cookie.
       var expires = new Date();
       expires.setMonth(expires.getMonth() + 1);
 
@@ -550,10 +550,10 @@ var Subleerunker = GameObject.$extend({
       cookie += 'path=/';
       document.cookie = cookie;
 
-      this.updateMyBestScore(this.score.current);
+      this.renderLocalBestScore(this.score.current);
     }
-    if (this.score.high < this.score.current) {
-      this.challengeHighScore();
+    if (this.score.worldBest < this.score.current) {
+      this.challengeWorldBest();
     }
 
     // Trigger custom event to track the score by outside.
@@ -615,7 +615,7 @@ var Subleerunker = GameObject.$extend({
 
   start: function() {
     this.$super();
-    this.fetchHighScore();
+    this.fetchWorldBest();
   }
 });
 
