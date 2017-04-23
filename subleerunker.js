@@ -327,41 +327,33 @@ var Subleerunker = GameObject.$extend({
       'class': 'logo',
       width: 148, height: 66,
       atlasStarts: [0, 370],
-      css: {
-        top: 156,
-        left: '50%',
-        marginLeft: -74
-      }
+      css: {top: 156, left: '50%', marginLeft: -74}
     });
-    if (typeof window.orientation === 'undefined') {
-    var Control = GameObject.$extend({
-      'class': 'control',
-      width: 65, height: 14,
-      frameRate: 0.02,
-      atlasStarts: [150, 370],
-      animations: {'default': {offsets: [[0,0], [0,1]]}},
-      sceneName: 'default',
-      css: {
-        bottom: 30,
-        left: '50%',
-        marginLeft: -33
-      }
-    });
+    if (typeof window.orientation !== 'undefined') {
+      // mobile
+      var control = {
+        width: 33, height: 35,
+        atlasStarts: [217, 370],
+        animationOffsets: [[0,0], [1,0]]
+      };
     } else {
+      // desktop
+      var control = {
+        width: 65, height: 14,
+        atlasStarts: [150, 370],
+        animationOffsets: [[0,0], [0,1]]
+      };
+    }
     var Control = GameObject.$extend({
       'class': 'control',
-      width: 33, height: 35,
+      width: control.width,
+      height: control.height,
+      css: {bottom: 30, left: '50%', marginLeft: -(control.width / 2)},
       frameRate: 0.02,
-      atlasStarts: [217, 370],
-      animations: {'default': {offsets: [[0,0], [1,0]]}},
-      sceneName: 'default',
-      css: {
-        bottom: 30,
-        left: '50%',
-        marginLeft: -17
-      }
+      atlasStarts: control.atlasStarts,
+      animations: {'blink': {offsets: control.animationOffsets}},
+      sceneName: 'blink'
     });
-    }
     this.logo = new Logo(this);
     this.control = new Control(this);
     this.elem().append(this.logo.elem()).append(this.control.elem());
