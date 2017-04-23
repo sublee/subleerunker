@@ -299,8 +299,8 @@ var Subleerunker = GameObject.$extend({
     ].join(''));
     el.append(score);
     el.currentScore = score.find('>.current').text(this.score.current);
-    el.myBestScore = score.find('>.mybest').css('color', '#ccc');
-    el.highScore = score.find('>.high').css('color', '#999');
+    el.myBestScore = score.find('>.mybest').css('color', '#a6b2b1');
+    el.highScore = score.find('>.high').css('color', '#809190');
 
     // Preload
     var preload = $('<div class="preload"></div>').css({
