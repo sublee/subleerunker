@@ -677,7 +677,6 @@ $.extend(Subleerunker, {
     /* Move */
 
     speed: 0,
-    duration: 1,
     friction: 0.1,
     step: 5,
 
@@ -809,7 +808,6 @@ $.extend(Subleerunker, {
     /* Move */
 
     speed: 0,
-    duration: 1,
     friction: 0.01,
     step: 10,
 
