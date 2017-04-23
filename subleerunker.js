@@ -286,11 +286,11 @@ var Subleerunker = GameObject.$extend({
     var el = this.$super();
     var score = $('<div class="score"></div>').css({
       position: 'absolute',
-      right: 2,
-      top: 2,
+      right: 6,
+      top: 4,
       textAlign: 'right',
       color: '#fff',
-      fontSize: 11,
+      fontSize: 12,
       fontFamily: '"Share Tech Mono", monospace'
     }).html([
       '<div class="world-best"></div>',
