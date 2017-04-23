@@ -286,8 +286,8 @@ var Subleerunker = GameObject.$extend({
     var el = this.$super();
     var score = $('<div class="score"></div>').css({
       position: 'absolute',
-      right: 6,
-      top: 4,
+      right: 5,
+      top: 3,
       textAlign: 'right',
       color: '#fff',
       fontSize: 12,
