@@ -58,7 +58,7 @@ var GameObject = Class.$extend({
 
   width: null,
   height: null,
-  padding: [],
+  padding: [0, 0, 0, 0],
   css: null,
 
   elem: function() {
@@ -68,8 +68,11 @@ var GameObject = Class.$extend({
       width: this.width,
       height: this.height,
       padding: this.padding.join('px ') + 'px',
-      backgroundImage: 'url(' + this.atlas + ')',
-      backgroundRepeat: 'no-repeat'
+      backgroundImage: (this.atlas ? 'url(' + this.atlas + ')' : 'none'),
+      backgroundRepeat: 'no-repeat',
+      backgroundPosition: (
+        -this.atlasStarts[0] + 'px ' + -this.atlasStarts[1] + 'px'
+      )
     }, this.css);
 
     if (GameObject.debug) {
@@ -85,6 +88,7 @@ var GameObject = Class.$extend({
       }));
     }
 
+    // Cache the element.
     this.elem = function() {
       return el;
     };
@@ -101,9 +105,9 @@ var GameObject = Class.$extend({
 
   /* Animation */
 
-  atlas: null,
+  atlas: 'atlas.gif',
   atlasStarts: [0, 0],
-  atlasMargin: 0,
+  atlasMargin: 2,
   fps: 60,
   frameRate: 1,
   animations: null,
@@ -248,6 +252,8 @@ var Subleerunker = GameObject.$extend({
   shiftLocked: false,
   shouldPlay: false,
 
+  atlas: null,  // Don't use atlas.
+
   __init__: function() {
     this.$super.apply(this, arguments);
 
@@ -257,9 +263,7 @@ var Subleerunker = GameObject.$extend({
       marginLeft: this.outerWidth() / -2,
       marginTop: this.outerHeight() / -2,
       outline: '1px solid #222',
-      backgroundColor: '#000',
-      backgroundImage: 'url(splash.gif)',
-      backgroundRepeat: 'no-repeat'
+      backgroundColor: '#000'
     };
 
     var m = /my_best_score=(\d+)/.exec(document.cookie);
@@ -293,19 +297,17 @@ var Subleerunker = GameObject.$extend({
       '<div class="mybest"></div>',
       '<div class="current"></div>'
     ].join(''));
-    var preload = $('<div class="preload"></div>').css({
-      position: 'absolute',
-      top: -9999,
-      left: -9999
-    });
-
-    // Score Display
     el.append(score);
     el.currentScore = score.find('>.current').text(this.score.current);
     el.myBestScore = score.find('>.mybest').css('color', '#ccc');
     el.highScore = score.find('>.high').css('color', '#999');
 
     // Preload
+    var preload = $('<div class="preload"></div>').css({
+      position: 'absolute',
+      top: -9999,
+      left: -9999
+    });
     el.append(preload);
     var atlases = [];
     $.each([Subleerunker.Player, Subleerunker.Flame], function(i, cls) {
@@ -318,6 +320,59 @@ var Subleerunker = GameObject.$extend({
     });
 
     return el;
+  },
+
+  showSplash: function() {
+    var Logo = GameObject.$extend({
+      'class': 'logo',
+      width: 148, height: 66,
+      atlasStarts: [0, 370],
+      css: {
+        top: 156,
+        left: '50%',
+        marginLeft: -74
+      }
+    });
+    if (typeof window.orientation === 'undefined') {
+    var Control = GameObject.$extend({
+      'class': 'control',
+      width: 65, height: 14,
+      frameRate: 0.02,
+      atlasStarts: [150, 370],
+      animations: {'default': {offsets: [[0,0], [0,1]]}},
+      sceneName: 'default',
+      css: {
+        bottom: 30,
+        left: '50%',
+        marginLeft: -33
+      }
+    });
+    } else {
+    var Control = GameObject.$extend({
+      'class': 'control',
+      width: 33, height: 35,
+      frameRate: 0.02,
+      atlasStarts: [217, 370],
+      animations: {'default': {offsets: [[0,0], [1,0]]}},
+      sceneName: 'default',
+      css: {
+        bottom: 30,
+        left: '50%',
+        marginLeft: -17
+      }
+    });
+    }
+    this.logo = new Logo(this);
+    this.control = new Control(this);
+    this.elem().append(this.logo.elem()).append(this.control.elem());
+  },
+
+  hideSplash: function() {
+    this.logo.kill();
+    this.logo.destroy();
+    this.control.kill();
+    this.control.destroy();
+    delete this.logo, this.control;
   },
 
   keyEvents: {
@@ -407,7 +462,7 @@ var Subleerunker = GameObject.$extend({
   reset: function() {
     this.shouldPlay = false;
     this.releaseLockedShift();
-    this.elem().css('background-position', '0 0');
+    this.showSplash();
   },
 
   play: function() {
@@ -421,7 +476,7 @@ var Subleerunker = GameObject.$extend({
     this.player.elem().appendTo(this.elem());
     this.score.current = 0;
     this.updateScore();
-    this.elem().css('background-position', '-9999px 0');
+    this.hideSplash();
   },
 
   upScore: function() {
@@ -514,27 +569,28 @@ var Subleerunker = GameObject.$extend({
   },
 
   loop: function() {
-    if (this.player) {
-      var movements = [[this.leftPressed, this.player.left],
-                       [this.rightPressed, this.player.right]];
-      for (var i = 0; i < 2; ++i) {
-        var mov = movements[this.leftPrior ? i : 1 - i];
-        if (mov[0]) {
-          mov[1].call(this.player);
-          break;
-        }
-      }
-      if (this.leftPressed || this.rightPressed) {
-        this.player.forward();
-      } else {
-        this.player.rest();
-      }
-    } else {
+    if (!this.player) {
       if (this.shouldPlay) {
         this.play();
         this.shouldPlay = false;
       }
+      this.$super();
       return;
+    }
+
+    var movements = [[this.leftPressed, this.player.left],
+                     [this.rightPressed, this.player.right]];
+    for (var i = 0; i < 2; ++i) {
+      var mov = movements[this.leftPrior ? i : 1 - i];
+      if (mov[0]) {
+        mov[1].call(this.player);
+        break;
+      }
+    }
+    if (this.leftPressed || this.rightPressed) {
+      this.player.forward();
+    } else {
+      this.player.rest();
     }
 
     if (!this.player.dead) {
@@ -562,7 +618,6 @@ var Subleerunker = GameObject.$extend({
     }
 
     ++this.count;
-
     this.$super();
   },
 
@@ -606,7 +661,6 @@ $.extend(Subleerunker, {
 
     /* Animation */
 
-    atlas: 'atlas.gif',
     atlasMargin: 2,
     frameRate: 0.2,
     animations: {
@@ -746,7 +800,6 @@ $.extend(Subleerunker, {
 
     /* Animation */
 
-    atlas: 'atlas.gif',
     atlasStarts: [350, 2],
     atlasMargin: 2,
     animations: {
