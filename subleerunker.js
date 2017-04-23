@@ -333,14 +333,14 @@ var Subleerunker = GameObject.$extend({
       // mobile
       var control = {
         width: 33, height: 35,
-        atlasStarts: [217, 370],
+        atlasStarts: [222, 388],
         animationOffsets: [[0,0], [1,0]]
       };
     } else {
       // desktop
       var control = {
         width: 65, height: 14,
-        atlasStarts: [150, 370],
+        atlasStarts: [150, 406],
         animationOffsets: [[0,0], [0,1]]
       };
     }
@@ -792,16 +792,16 @@ $.extend(Subleerunker, {
 
     /* Animation */
 
-    atlasStarts: [350, 2],
+    atlasStarts: [150, 370],
     atlasMargin: 2,
     animations: {
       burn: {
         frameRate: 0.2,
-        offsets: [[0,0], [0,2], [1,2], [0,3], [1,3], [0,4], [1,4]]
+        offsets: [[0,0], [1,0], [2,0], [3,0], [4,0], [5,0], [6,0]]
       },
       land: {
         frameRate: 0.4,
-        offsets: [[1,0], [0,1], [1,1]]
+        offsets: [[0,1], [1,1], [2,1]]
       }
     },
     sceneName: 'burn',
