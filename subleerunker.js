@@ -2,6 +2,13 @@ var limit = function(n, min, max) {
   return Math.max(min, Math.min(max, n));
 };
 
+var X = 0;
+var Y = 1;
+var TOP = 0;
+var RIGHT = 1;
+var BOTTOM = 2;
+var LEFT = 3;
+
 var GameObject = Class.$extend({
 
   __classvars__: {
@@ -73,7 +80,7 @@ var GameObject = Class.$extend({
       backgroundImage: (this.atlas ? 'url(' + this.atlas + ')' : 'none'),
       backgroundRepeat: 'no-repeat',
       backgroundPosition: (
-        -this.atlasStarts[0] + 'px ' + -this.atlasStarts[1] + 'px'
+        -this.atlasStarts[X] + 'px ' + -this.atlasStarts[Y] + 'px'
       )
     }, this.css);
 
@@ -98,11 +105,11 @@ var GameObject = Class.$extend({
   },
 
   outerWidth: function() {
-    return this.width + this.padding[1] + this.padding[3];
+    return this.width + this.padding[RIGHT] + this.padding[LEFT];
   },
 
   outerHeight: function() {
-    return this.height + this.padding[0] + this.padding[2];
+    return this.height + this.padding[TOP] + this.padding[BOTTOM];
   },
 
   /* Animation */
@@ -118,8 +125,8 @@ var GameObject = Class.$extend({
   cell: function(x, y) {
     x *= -(this.outerWidth() + this.atlasMargin);
     y *= -(this.outerHeight() + this.atlasMargin);
-    x -= this.atlasStarts[0];
-    y -= this.atlasStarts[1];
+    x -= this.atlasStarts[X];
+    y -= this.atlasStarts[Y];
     var pos = x + 'px ' + y + 'px';
     this.elem().css('background-position', pos);
   },
@@ -651,7 +658,7 @@ $.extend(Subleerunker, {
     width: 12,
     height: 12,
     padding: [10, 18, 50],
-    css: {bottom: 0 },
+    css: {bottom: 0},
 
     /* Animation */
 
@@ -828,7 +835,7 @@ $.extend(Subleerunker, {
       var prevPosition = this.position - this.speed * this.step;
       var H = this.parent.outerHeight();
 
-      var top = prevPosition + this.padding[0];
+      var top = prevPosition + this.padding[TOP];
       var bottom = this.position + this.outerHeight() - this.padding[2];
       var left = this.xPosition + this.padding[3];
       var right = left + this.width;
