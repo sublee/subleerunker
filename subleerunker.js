@@ -2,6 +2,9 @@ var limit = function(n, min, max) {
   return Math.max(min, Math.min(max, n));
 };
 
+var X = 0;
+var Y = 1;
+
 var GameObject = Class.$extend({
 
   __classvars__: {
@@ -73,7 +76,7 @@ var GameObject = Class.$extend({
       backgroundImage: (this.atlas ? 'url(' + this.atlas + ')' : 'none'),
       backgroundRepeat: 'no-repeat',
       backgroundPosition: (
-        -this.atlasStarts[0] + 'px ' + -this.atlasStarts[1] + 'px'
+        -this.atlasStarts[X] + 'px ' + -this.atlasStarts[Y] + 'px'
       )
     }, this.css);
 
@@ -115,27 +118,46 @@ var GameObject = Class.$extend({
   animations: null,
   sceneName: null,
 
-  cell: function(x, y) {
-    x *= -(this.outerWidth() + this.atlasMargin);
-    y *= -(this.outerHeight() + this.atlasMargin);
-    x -= this.atlasStarts[0];
-    y -= this.atlasStarts[1];
-    var pos = x + 'px ' + y + 'px';
-    this.elem().css('background-position', pos);
-  },
-
   frame: null,
 
   scene: function(sceneName, keepFrame) {
+    var anim = this.animations[sceneName];
+    var w = (this.outerWidth() + this.atlasMargin);
+    var h = (this.outerHeight() + this.atlasMargin);
+    var offset = anim.offset || [0, 0];
+    var from = [this.atlasStarts[X] + w * offset[X],
+                this.atlasStarts[Y] + h * offset[Y]];
+    var to = from.slice(0);
+    if (!anim.direction || anim.direction == 'horizontal') {
+      to[X] += w * anim.frames;
+    } else if (anim.direction == 'vertical') {
+      to[Y] += h * anim.frames;
+    }
+    var keyframes = this['class'] + '-' + sceneName;
+    var $head = $(document.head);
+    if (!$head.find('> style.' + keyframes).length) {
+      var buf = [];
+      buf.push('@keyframes ' + keyframes + ' {');
+      buf.push('from { background-position: ' + -from[0] + 'px ' + -from[1] + 'px; }');
+      buf.push('to { background-position: ' + -to[0] + 'px ' + -to[1] + 'px; }');
+      buf.push('}');
+      var style = $('<style>').addClass(keyframes).text(buf.join('\n'));
+      $head.append(style);
+    }
     this.sceneName = sceneName;
     this._animation = this.animations[sceneName];
     if (!keepFrame) {
       this.frame = 0;
     }
+    var duration = 1/60/this.frameRate*anim.frames;
+    var el = this.elem();
+    if (el.css('animation-name') != keyframes) {
+      el.css('animation', keyframes + ' ' + duration + 's steps(' + anim.frames + ') infinite');
+    }
   },
 
   isLastFrame: function() {
-    return this.frame >= this._animation.offsets.length;
+    return this.frame >= this._animation.frames;
   },
 
   /* Move */
@@ -215,15 +237,6 @@ var GameObject = Class.$extend({
 
     if (this.killed) {
       return;
-    }
-
-    var anim = this._animation;
-    if (anim) {
-      var i = Math.floor(this.frame % anim.offsets.length);
-      var offset = anim.offsets[i];
-      var frameRate = anim.frameRate || this.frameRate;
-      this.frame += frameRate * this.resist();
-      this.cell.apply(this, offset);
     }
   },
 
@@ -336,14 +349,14 @@ var Subleerunker = GameObject.$extend({
       var control = {
         width: 33, height: 35,
         atlasStarts: [222, 388],
-        animationOffsets: [[0,0], [1,0]]
+        atlasDirection: 'horizontal'
       };
     } else {
       // desktop
       var control = {
         width: 65, height: 14,
         atlasStarts: [150, 406],
-        animationOffsets: [[0,0], [0,1]]
+        atlasDirection: 'vertical'
       };
     }
     var Control = GameObject.$extend({
@@ -353,7 +366,7 @@ var Subleerunker = GameObject.$extend({
       css: {bottom: 30, left: '50%', marginLeft: -(control.width / 2)},
       frameRate: 0.02,
       atlasStarts: control.atlasStarts,
-      animations: {'blink': {offsets: control.animationOffsets}},
+      animations: {'blink': {direction: control.atlasDirection, frames: 2}},
       sceneName: 'blink'
     });
     this.logo = new Logo(this);
@@ -658,21 +671,11 @@ $.extend(Subleerunker, {
     atlasMargin: 2,
     frameRate: 0.2,
     animations: {
-      rightIdle: {
-        offsets: [[0,0], [1,0], [2,0], [3,0], [4,0], [5,0], [6,0]]
-      },
-      leftIdle: {
-        offsets: [[0,1], [1,1], [2,1], [3,1], [4,1], [5,1], [6,1]]
-      },
-      rightRun: {
-        offsets: [[0,2], [1,2], [2,2], [3,2], [4,2], [5,2], [6,2], [7,2]]
-      },
-      leftRun: {
-        offsets: [[0,3], [1,3], [2,3], [3,3], [4,3], [5,3], [6,3], [7,3]]
-      },
-      die: {
-        offsets: [[0,4], [1,4], [2,4], [3,4], [4,4], [5,4], [6,4], [7,4]]
-      }
+      rightIdle: {offset: [0, 0], frames: 7},
+      leftIdle: {offset: [0, 1], frames: 7},
+      rightRun: {offset: [0, 2], frames: 8},
+      leftRun: {offset: [0, 3], frames: 8},
+      die: {offset: [0, 4], frames: 8}
     },
     sceneName: 'rightIdle',
 
@@ -796,14 +799,8 @@ $.extend(Subleerunker, {
     atlasStarts: [150, 370],
     atlasMargin: 2,
     animations: {
-      burn: {
-        frameRate: 0.2,
-        offsets: [[0,0], [1,0], [2,0], [3,0], [4,0], [5,0], [6,0]]
-      },
-      land: {
-        frameRate: 0.4,
-        offsets: [[0,1], [1,1], [2,1]]
-      }
+      burn: {frameRate: 0.2, offset: [0, 0], frames: 7},
+      land: {frameRate: 0.4, offset: [0, 1], frames: 3, loop: false},
     },
     sceneName: 'burn',
 
