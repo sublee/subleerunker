@@ -80,7 +80,7 @@ var GameObject = Class.$extend({
       backgroundImage: (this.atlas ? 'url(' + this.atlas + ')' : 'none'),
       backgroundRepeat: 'no-repeat',
       backgroundPosition: (
-        -this.atlasStarts[X] + 'px ' + -this.atlasStarts[Y] + 'px'
+        -this.atlasPivot[X] + 'px ' + -this.atlasPivot[Y] + 'px'
       )
     }, this.css);
 
@@ -115,7 +115,7 @@ var GameObject = Class.$extend({
   /* Animation */
 
   atlas: 'atlas.gif',
-  atlasStarts: [0, 0],
+  atlasPivot: [0, 0],
   atlasMargin: 2,
   fps: 60,
   frameRate: 1,
@@ -125,8 +125,8 @@ var GameObject = Class.$extend({
   cell: function(x, y) {
     x *= -(this.outerWidth() + this.atlasMargin);
     y *= -(this.outerHeight() + this.atlasMargin);
-    x -= this.atlasStarts[X];
-    y -= this.atlasStarts[Y];
+    x -= this.atlasPivot[X];
+    y -= this.atlasPivot[Y];
     var pos = x + 'px ' + y + 'px';
     this.elem().css('background-position', pos);
   },
@@ -335,21 +335,21 @@ var Subleerunker = GameObject.$extend({
     var Logo = GameObject.$extend({
       'class': 'logo',
       width: 148, height: 66,
-      atlasStarts: [0, 370],
+      atlasPivot: [0, 370],
       css: {top: 156, left: '50%', marginLeft: -74}
     });
     if (typeof window.orientation !== 'undefined') {
       // mobile
       var control = {
         width: 33, height: 35,
-        atlasStarts: [222, 388],
+        atlasPivot: [222, 388],
         animationOffsets: [[0,0], [1,0]]
       };
     } else {
       // desktop
       var control = {
         width: 65, height: 14,
-        atlasStarts: [150, 406],
+        atlasPivot: [150, 406],
         animationOffsets: [[0,0], [0,1]]
       };
     }
@@ -359,7 +359,7 @@ var Subleerunker = GameObject.$extend({
       height: control.height,
       css: {bottom: 30, left: '50%', marginLeft: -(control.width / 2)},
       frameRate: 0.02,
-      atlasStarts: control.atlasStarts,
+      atlasPivot: control.atlasPivot,
       animations: {'blink': {offsets: control.animationOffsets}},
       sceneName: 'blink'
     });
@@ -800,7 +800,7 @@ $.extend(Subleerunker, {
 
     /* Animation */
 
-    atlasStarts: [150, 370],
+    atlasPivot: [150, 370],
     atlasMargin: 2,
     animations: {
       burn: {
