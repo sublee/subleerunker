@@ -20,7 +20,9 @@ var GameObject = Class.$extend({
     this.parent = parent;
 
     var p = this.padding;
-    if (p.length === 1) {
+    if (!p) {
+      this.padding = [0, 0, 0, 0];
+    } else if (p.length === 1) {
       this.padding = [p[0], p[0], p[0], p[0]];
     } else if (p.length === 2) {
       this.padding = [p[0], p[1], p[0], p[1]];
@@ -58,7 +60,7 @@ var GameObject = Class.$extend({
 
   width: null,
   height: null,
-  padding: [0, 0, 0, 0],
+  padding: null,
   css: null,
 
   elem: function() {
