@@ -119,6 +119,7 @@ var GameObject = Class.$extend({
   sceneName: null,
 
   frame: null,
+  animationFinished: false,
 
   scene: function(sceneName, keepFrame) {
     var anim = this.animations[sceneName];
@@ -156,14 +157,14 @@ var GameObject = Class.$extend({
       var duration = 1 / this.fps / frameRate * anim.frames;
       el.css('animation', keyframes + ' ' + duration + 's steps(' +
                           anim.frames + ') ' + (anim.once ? '1' : 'infinite'));
+      this.animationFinished = false;
       if (anim.once) {
         el.css('background-position', '-9999px -9999px');
+        el.on('animationend', $.proxy(function(e) {
+          this.animationFinished = true;
+        }, this));
       }
     }
-  },
-
-  isLastFrame: function() {
-    return this.frame >= this._animation.frames;
   },
 
   /* Move */
@@ -657,7 +658,7 @@ $.extend(Subleerunker, {
       this.$super();
 
       if (this.dead) {
-        if (this.isLastFrame()) {
+        if (this.animationFinished) {
           this.kill();
         }
       } else if (this.speed) {
@@ -764,7 +765,7 @@ $.extend(Subleerunker, {
       var player = this.parent.player;
 
       if (this.landed) {
-        if (this.isLastFrame()) {
+        if (this.animationFinished) {
           this.destroy();
           if (!player.dead) {
             this.parent.upScore();
