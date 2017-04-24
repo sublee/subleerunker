@@ -122,37 +122,43 @@ var GameObject = Class.$extend({
 
   scene: function(sceneName, keepFrame) {
     var anim = this.animations[sceneName];
-    var w = (this.outerWidth() + this.atlasMargin);
-    var h = (this.outerHeight() + this.atlasMargin);
-    var offset = anim.offset || [0, 0];
-    var from = [this.atlasStarts[X] + w * offset[X],
-                this.atlasStarts[Y] + h * offset[Y]];
-    var to = from.slice(0);
-    if (!anim.direction || anim.direction == 'horizontal') {
-      to[X] += w * anim.frames;
-    } else if (anim.direction == 'vertical') {
-      to[Y] += h * anim.frames;
-    }
-    var keyframes = this['class'] + '-' + sceneName;
-    var $head = $(document.head);
-    if (!$head.find('> style.' + keyframes).length) {
+    this._animation = anim;
+    var head = $(document.head);
+    var keyframes = '--' + this['class'] + '-' + sceneName + '--';
+    if (!head.find('> style.' + keyframes).length) {
+      var w = (this.outerWidth() + this.atlasMargin);
+      var h = (this.outerHeight() + this.atlasMargin);
+      var offset = anim.offset || [0, 0];
+      var from = [this.atlasStarts[X] + w * offset[X],
+                  this.atlasStarts[Y] + h * offset[Y]];
+      var to = from.slice(0);
+      if (!anim.direction || anim.direction == 'horizontal') {
+        to[X] += w * anim.frames;
+      } else if (anim.direction == 'vertical') {
+        to[Y] += h * anim.frames;
+      }
       var buf = [];
       buf.push('@keyframes ' + keyframes + ' {');
-      buf.push('from { background-position: ' + -from[0] + 'px ' + -from[1] + 'px; }');
-      buf.push('to { background-position: ' + -to[0] + 'px ' + -to[1] + 'px; }');
+      buf.push('from { background-position: ' +
+               -from[X] + 'px ' + -from[Y] + 'px; }');
+      buf.push('to { background-position: ' +
+               -to[X] + 'px ' + -to[Y] + 'px; }');
       buf.push('}');
-      var style = $('<style>').addClass(keyframes).text(buf.join('\n'));
-      $head.append(style);
+      head.append($('<style>').addClass(keyframes).text(buf.join('\n')));
     }
     this.sceneName = sceneName;
-    this._animation = this.animations[sceneName];
     if (!keepFrame) {
       this.frame = 0;
     }
-    var duration = 1/60/this.frameRate*anim.frames;
     var el = this.elem();
     if (el.css('animation-name') != keyframes) {
-      el.css('animation', keyframes + ' ' + duration + 's steps(' + anim.frames + ') infinite');
+      var frameRate = anim.frameRate || this.frameRate;
+      var duration = 1 / this.fps / frameRate * anim.frames;
+      el.css('animation', keyframes + ' ' + duration + 's steps(' +
+                          anim.frames + ') ' + (anim.once ? '1' : 'infinite'));
+      if (anim.once) {
+        el.css('background-position', '-9999px -9999px');
+      }
     }
   },
 
@@ -675,7 +681,7 @@ $.extend(Subleerunker, {
       leftIdle: {offset: [0, 1], frames: 7},
       rightRun: {offset: [0, 2], frames: 8},
       leftRun: {offset: [0, 3], frames: 8},
-      die: {offset: [0, 4], frames: 8}
+      die: {offset: [0, 4], frames: 8, once: true}
     },
     sceneName: 'rightIdle',
 
@@ -800,7 +806,7 @@ $.extend(Subleerunker, {
     atlasMargin: 2,
     animations: {
       burn: {frameRate: 0.2, offset: [0, 0], frames: 7},
-      land: {frameRate: 0.4, offset: [0, 1], frames: 3, loop: false},
+      land: {frameRate: 0.4, offset: [0, 1], frames: 3, once: true},
     },
     sceneName: 'burn',
 
