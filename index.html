@@ -33,17 +33,34 @@
   </style>
 </head>
 <body>
-  <script src="https://code.jquery.com/jquery-3.2.1.min.js"
-          integrity="sha256-hwg4gsxgFZhOsEEamdOYGBf13FyQuiTwlAQgxVSNgt4="
-          crossorigin="anonymous"></script>
+  <script
+    src="https://code.jquery.com/jquery-3.2.1.min.js"
+    integrity="sha256-hwg4gsxgFZhOsEEamdOYGBf13FyQuiTwlAQgxVSNgt4="
+    crossorigin="anonymous"></script>
+  <script
+    src="https://cdnjs.cloudflare.com/ajax/libs/pixi.js/4.4.3/pixi.js">
+  </script>
   <script src="classy.js"></script>
   <script src="subleerunker.js"></script>
   <script>
     GameObject.debug = (location.hash === '#debug');
-    var game = Subleerunker();
-    game.elem().appendTo(document.body);
-    game.captureKeys(window, document);
-    game.start();
+
+    var renderer = PIXI.autoDetectRenderer(320, 480);
+    renderer.view.style.border = '1px solid #222';
+    $(document.body).append(renderer.view);
+
+    PIXI.SCALE_MODES.DEFAULT = PIXI.SCALE_MODES.NEAREST;
+    PIXI.loader.add('atlas.json').load(function() {
+      var game = Subleerunker();
+      var stage = game.disp();
+      function update() {
+        requestAnimationFrame(update);
+        game.update();
+        renderer.render(stage);
+      }
+      game.captureKeys(window, document);
+      update();
+    });
   </script>
   <script src="ga.js"></script>
 </body>

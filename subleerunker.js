@@ -9,6 +9,10 @@ var RIGHT = 1;
 var BOTTOM = 2;
 var LEFT = 3;
 
+var getTexture = function(name) {
+  return PIXI.loader.resources['atlas.json'].textures[name];
+};
+
 var GameObject = Class.$extend({
 
   __classvars__: {
@@ -40,13 +44,13 @@ var GameObject = Class.$extend({
     if (parent) {
       this.jobs = parent.jobs;
       this.jobIndex = parent.jobs.length;
-      parent.jobs.push($.proxy(this.loop, this));
+      parent.jobs.push($.proxy(this.update, this));
     } else {
       this.jobs = [];
     }
 
-    if (this.sceneName) {
-      this.scene(this.sceneName);
+    if (this.currentAnimationName) {
+      this.scene(this.currentAnimationName);
     }
 
     this.killed = false;
@@ -59,7 +63,11 @@ var GameObject = Class.$extend({
   },
 
   destroy: function() {
-    this.elem().remove();
+    var disp = this.disp();
+    if (disp) {
+      disp.destroy();
+    }
+    // this.elem().remove();
     delete this.parent.jobs[this.jobIndex];
   },
 
@@ -70,39 +78,57 @@ var GameObject = Class.$extend({
   padding: null,
   css: null,
 
-  elem: function() {
-    var css = $.extend({
-      position: 'absolute',
-      overflow: 'hidden',
-      width: this.width,
-      height: this.height,
-      padding: this.padding.join('px ') + 'px',
-      backgroundImage: (this.atlas ? 'url(' + this.atlas + ')' : 'none'),
-      backgroundRepeat: 'no-repeat',
-      backgroundPosition: (
-        -this.atlasPivot[X] + 'px ' + -this.atlasPivot[Y] + 'px'
-      )
-    }, this.css);
-
-    if (GameObject.debug) {
-      css.outline = '1px dashed rgba(255, 255, 255, 0.25)';
+  disp: function() {
+    // Returns cached a PIXI.DisplayObject.
+    var disp = this.__disp__();
+    if (disp) {
+      this.disp = function() { return disp; };
     }
-
-    var el = $('<div class="' + this['class'] + '"></div>').css(css);
-
-    if (GameObject.debug) {
-      el.append($('<div></div>').css({
-        height: '100%',
-        outline: '1px solid #fff'
-      }));
-    }
-
-    // Cache the element.
-    this.elem = function() {
-      return el;
-    };
-    return el;
+    return disp;
   },
+
+  __disp__: function() {
+    var anim = this.currentAnimation();
+    if (!anim || !anim.textureNames) {
+      return null;
+    }
+    var texture = getTexture(anim.textureNames[0]);
+    return new PIXI.Sprite(texture);
+  },
+
+  // elem: function() {
+  //   var css = $.extend({
+  //     position: 'absolute',
+  //     overflow: 'hidden',
+  //     width: this.width,
+  //     height: this.height,
+  //     padding: this.padding.join('px ') + 'px',
+  //     backgroundImage: (this.atlas ? 'url(' + this.atlas + ')' : 'none'),
+  //     backgroundRepeat: 'no-repeat',
+  //     backgroundPosition: (
+  //       -this.atlasPivot[X] + 'px ' + -this.atlasPivot[Y] + 'px'
+  //     )
+  //   }, this.css);
+
+  //   if (GameObject.debug) {
+  //     css.outline = '1px dashed rgba(255, 255, 255, 0.25)';
+  //   }
+
+  //   var el = $('<div class="' + this['class'] + '"></div>').css(css);
+
+  //   if (GameObject.debug) {
+  //     el.append($('<div></div>').css({
+  //       height: '100%',
+  //       outline: '1px solid #fff'
+  //     }));
+  //   }
+
+  //   // Cache the element.
+  //   this.elem = function() {
+  //     return el;
+  //   };
+  //   return el;
+  // },
 
   outerWidth: function() {
     return this.width + this.padding[RIGHT] + this.padding[LEFT];
@@ -114,35 +140,39 @@ var GameObject = Class.$extend({
 
   /* Animation */
 
-  atlas: 'atlas.gif',
-  atlasPivot: [0, 0],
-  atlasMargin: 2,
   fps: 60,
-  frameRate: 1,
+  animationSpeed: 1,
   animations: null,
-  sceneName: null,
+  currentAnimationName: null,
 
-  cell: function(x, y) {
-    x *= -(this.outerWidth() + this.atlasMargin);
-    y *= -(this.outerHeight() + this.atlasMargin);
-    x -= this.atlasPivot[X];
-    y -= this.atlasPivot[Y];
-    var pos = x + 'px ' + y + 'px';
-    this.elem().css('background-position', pos);
+  currentAnimation: function() {
+    // console.log([this, this.animations, this.currentAnimationName]);
+    if (!this.animations || !this.currentAnimationName) {
+      return null;
+    }
+    return this.animations[this.currentAnimationName] || null;
   },
+
+  // cell: function(x, y) {
+  //   x *= -(this.outerWidth() + this.atlasMargin);
+  //   y *= -(this.outerHeight() + this.atlasMargin);
+  //   x -= this.atlasPivot[X];
+  //   y -= this.atlasPivot[Y];
+  //   var pos = x + 'px ' + y + 'px';
+  //   this.elem().css('background-position', pos);
+  // },
 
   frame: null,
 
-  scene: function(sceneName, keepFrame) {
-    this.sceneName = sceneName;
-    this._animation = this.animations[sceneName];
+  scene: function(animationName, keepFrame, disp) {
+    this.currentAnimationName = animationName;
     if (!keepFrame) {
       this.frame = 0;
     }
   },
 
   isLastFrame: function() {
-    return this.frame >= this._animation.offsets.length;
+    return this.frame >= (this.currentAnimation().textureNames || []).length;
   },
 
   /* Move */
@@ -201,7 +231,7 @@ var GameObject = Class.$extend({
 
   /* Schedule */
 
-  loop: function() {
+  update: function() {
     var self = this;
 
     if (this.parent === undefined) {
@@ -224,29 +254,36 @@ var GameObject = Class.$extend({
       return;
     }
 
-    var anim = this._animation;
+    var anim = this.currentAnimation();
     if (anim) {
-      var i = Math.floor(this.frame % anim.offsets.length);
-      var offset = anim.offsets[i];
-      var frameRate = anim.frameRate || this.frameRate;
-      this.frame += frameRate * this.resist();
-      this.cell.apply(this, offset);
+      var i = Math.floor(this.frame % anim.textureNames.length);
+      this.disp().texture = getTexture(anim.textureNames[i]);
+      var animationSpeed = anim.animationSpeed || this.animationSpeed;
+      this.frame += animationSpeed * this.resist();
     }
-  },
-
-  start: function() {
-    var delay = 1000 / this.fps;
-    this.process = setInterval($.proxy(this.loop, this), delay);
-  },
-
-  stop: function() {
-    clearInterval(this.process);
-    delete this.process;
   }
+
+  // start: function() {
+  //   var delay = 1000 / this.fps;
+  //   this.process = setInterval($.proxy(this.update, this), delay);
+  // },
+
+  // stop: function() {
+  //   clearInterval(this.process);
+  //   delete this.process;
+  // }
 
 });
 
-var Subleerunker = GameObject.$extend({
+var Stage = GameObject.$extend({
+
+  __disp__: function() {
+    return new PIXI.Container();
+  },
+
+});
+
+var Subleerunker = Stage.$extend({
 
   'class': 'subleerunker',
 
@@ -288,69 +325,69 @@ var Subleerunker = GameObject.$extend({
   },
 
   adjustZoom: function() {
-    this.elem().css('zoom', Math.floor(window.innerHeight / this.height));
+    // this.elem().css('zoom', Math.floor(window.innerHeight / this.height));
   },
 
-  elem: function() {
-    var el = this.$super();
-    var score = $('<div class="score"></div>').css({
-      position: 'absolute',
-      right: 5,
-      top: 3,
-      textAlign: 'right',
-      color: '#fff',
-      fontSize: 12,
-      fontFamily: '"Share Tech Mono", monospace'
-    }).html([
-      '<div class="world-best"></div>',
-      '<div class="local-best"></div>',
-      '<div class="current"></div>'
-    ].join(''));
-    el.append(score);
-    el.currentScore = score.find('>.current').text(this.score.current);
-    el.localBestScore = score.find('>.local-best').css('color', '#a6b2b1');
-    el.highScore = score.find('>.world-best').css('color', '#809190');
+  // elem: function() {
+  //   var el = this.$super();
+  //   var score = $('<div class="score"></div>').css({
+  //     position: 'absolute',
+  //     right: 5,
+  //     top: 3,
+  //     textAlign: 'right',
+  //     color: '#fff',
+  //     fontSize: 12,
+  //     fontFamily: '"Share Tech Mono", monospace'
+  //   }).html([
+  //     '<div class="world-best"></div>',
+  //     '<div class="local-best"></div>',
+  //     '<div class="current"></div>'
+  //   ].join(''));
+  //   el.append(score);
+  //   el.currentScore = score.find('>.current').text(this.score.current);
+  //   el.localBestScore = score.find('>.local-best').css('color', '#a6b2b1');
+  //   el.highScore = score.find('>.world-best').css('color', '#809190');
 
-    // Preload
-    var preload = $('<div class="preload"></div>').css({
-      position: 'absolute',
-      top: -9999,
-      left: -9999
-    });
-    el.append(preload);
-    var atlases = [];
-    $.each([Subleerunker.Player, Subleerunker.Flame], function(i, cls) {
-      if (atlases.indexOf(cls.prototype.atlas) === -1) {
-        atlases.push(cls.prototype.atlas);
-      }
-    });
-    $.each(atlases, function(i, atlas) {
-      $('<img />').attr('src', atlas).appendTo(preload);
-    });
+  //   // Preload
+  //   var preload = $('<div class="preload"></div>').css({
+  //     position: 'absolute',
+  //     top: -9999,
+  //     left: -9999
+  //   });
+  //   el.append(preload);
+  //   var atlases = [];
+  //   $.each([Subleerunker.Player, Subleerunker.Flame], function(i, cls) {
+  //     if (atlases.indexOf(cls.prototype.atlas) === -1) {
+  //       atlases.push(cls.prototype.atlas);
+  //     }
+  //   });
+  //   $.each(atlases, function(i, atlas) {
+  //     $('<img />').attr('src', atlas).appendTo(preload);
+  //   });
 
-    return el;
-  },
+  //   return el;
+  // },
 
   showSplash: function() {
     var Logo = GameObject.$extend({
       'class': 'logo',
       width: 148, height: 66,
-      atlasPivot: [0, 370],
+      animationSpeed: 0.02,
+      animations: {'default': {textureNames: ['logo']}},
+      currentAnimationName: 'default',
       css: {top: 156, left: '50%', marginLeft: -74}
     });
     if (typeof window.orientation !== 'undefined') {
       // mobile
       var control = {
         width: 33, height: 35,
-        atlasPivot: [222, 388],
-        animationOffsets: [[0,0], [1,0]]
+        animationTextureNames: ['touch-0', 'touch-1']
       };
     } else {
       // desktop
       var control = {
         width: 65, height: 14,
-        atlasPivot: [150, 406],
-        animationOffsets: [[0,0], [0,1]]
+        animationTextureNames: ['key-0', 'key-1']
       };
     }
     var Control = GameObject.$extend({
@@ -358,14 +395,15 @@ var Subleerunker = GameObject.$extend({
       width: control.width,
       height: control.height,
       css: {bottom: 30, left: '50%', marginLeft: -(control.width / 2)},
-      frameRate: 0.02,
-      atlasPivot: control.atlasPivot,
-      animations: {'blink': {offsets: control.animationOffsets}},
-      sceneName: 'blink'
+      animationSpeed: 0.02,
+      animations: {'blink': {textureNames: control.animationTextureNames}},
+      currentAnimationName: 'blink'
     });
     this.logo = new Logo(this);
     this.control = new Control(this);
-    this.elem().append(this.logo.elem()).append(this.control.elem());
+    var disp = this.disp();
+    disp.addChild(this.logo.disp());
+    disp.addChild(this.control.disp());
   },
 
   hideSplash: function() {
@@ -474,7 +512,7 @@ var Subleerunker = GameObject.$extend({
       this.player.friction *= 0.25;
       this.releaseLockedShift();
     }
-    this.player.elem().appendTo(this.elem());
+    this.disp().addChild(this.player.disp());
     this.score.current = 0;
     this.updateScore();
     this.hideSplash();
@@ -491,7 +529,7 @@ var Subleerunker = GameObject.$extend({
     }
     this.renderLocalBestScore();
     this.renderWorldBestScore();
-    this.elem().currentScore.text(this.score.current);
+    // this.elem().currentScore.text(this.score.current);
   },
 
   renderLocalBestScore: function(score) {
@@ -499,9 +537,9 @@ var Subleerunker = GameObject.$extend({
       this.score.localBest = score;
     }
     if (this.score.localBest <= this.score.current) {
-      this.elem().localBestScore.text('');
+      // this.elem().localBestScore.text('');
     } else {
-      this.elem().localBestScore.text(this.score.localBest);
+      // this.elem().localBestScore.text(this.score.localBest);
     }
   },
 
@@ -514,9 +552,9 @@ var Subleerunker = GameObject.$extend({
     var greaterThanLocalBestScore = this.score.high > this.score.localBest;
 
     if (!greaterThanCurrentScore || !greaterThanLocalBestScore) {
-      this.elem().highScore.text('');
+      // this.elem().highScore.text('');
     } else {
-      this.elem().highScore.text(this.score.high);
+      // this.elem().highScore.text(this.score.high);
     }
   },
 
@@ -569,7 +607,7 @@ var Subleerunker = GameObject.$extend({
     $(window).trigger('score', [this.score.current]);
   },
 
-  loop: function() {
+  update: function() {
     if (!this.player) {
       if (this.shouldPlay) {
         this.play();
@@ -599,7 +637,7 @@ var Subleerunker = GameObject.$extend({
         var difficulty = 0.25 * (1 + (this.count / 1000));
         if (Math.random() < difficulty) {
           var flame = new Subleerunker.Flame(this);
-          flame.elem().appendTo(this.elem());
+          this.disp().addChild(flame.disp());
         }
       }
     } else {
@@ -620,12 +658,12 @@ var Subleerunker = GameObject.$extend({
 
     ++this.count;
     this.$super();
-  },
-
-  start: function() {
-    this.$super();
-    this.fetchWorldBest();
   }
+
+  // start: function() {
+  //   this.$super();
+  //   this.fetchWorldBest();
+  // }
 });
 
 $.extend(Subleerunker, {
@@ -641,7 +679,7 @@ $.extend(Subleerunker, {
       this.updatePosition();
     },
 
-    loop: function() {
+    update: function() {
       this.$super();
 
       if (this.dead) {
@@ -651,6 +689,22 @@ $.extend(Subleerunker, {
       } else if (this.speed) {
         this.updatePosition();
       }
+    },
+
+    animationSpeed: 0.2,
+    animations: {
+      idle: {textureNames: [
+        'player-idle-0', 'player-idle-1', 'player-idle-2', 'player-idle-3',
+        'player-idle-4', 'player-idle-5', 'player-idle-6'
+      ]},
+      run: {textureNames: [
+        'player-run-0', 'player-run-1', 'player-run-2', 'player-run-3',
+        'player-run-4', 'player-run-5', 'player-run-6', 'player-run-7'
+      ]},
+      die: {textureNames: [
+        'player-die-0', 'player-die-1', 'player-die-2', 'player-die-3',
+        'player-die-4', 'player-die-5', 'player-die-6', 'player-die-7'
+      ]}
     },
 
     /* DOM */
@@ -663,25 +717,8 @@ $.extend(Subleerunker, {
     /* Animation */
 
     atlasMargin: 2,
-    frameRate: 0.2,
-    animations: {
-      rightIdle: {
-        offsets: [[0,0], [1,0], [2,0], [3,0], [4,0], [5,0], [6,0]]
-      },
-      leftIdle: {
-        offsets: [[0,1], [1,1], [2,1], [3,1], [4,1], [5,1], [6,1]]
-      },
-      rightRun: {
-        offsets: [[0,2], [1,2], [2,2], [3,2], [4,2], [5,2], [6,2], [7,2]]
-      },
-      leftRun: {
-        offsets: [[0,3], [1,3], [2,3], [3,3], [4,3], [5,3], [6,3], [7,3]]
-      },
-      die: {
-        offsets: [[0,4], [1,4], [2,4], [3,4], [4,4], [5,4], [6,4], [7,4]]
-      }
-    },
-    sceneName: 'rightIdle',
+    animationSpeed: 0.2,
+    currentAnimationName: 'idle',
 
     /* Move */
 
@@ -689,34 +726,45 @@ $.extend(Subleerunker, {
     friction: 0.1,
     step: 5,
 
-    runScene: function(direction) {
-      var sceneName = direction + 'Run';
-      if (this.sceneName == sceneName) {
-        return;
+    runScene: function(duration) {
+      switch (this.currentAnimationName) {
+        case 'idle':
+          this.frame = 0;
+          break;
+        case 'run':
+          // Inverse same pose.
+          if (duration != this.duration) {
+            this.frame += 4;
+          }
+          break;
       }
-      if (/Idle$/.exec(this.sceneName)) {
-        this.frame = 0;
-      } else if (/Run$/.exec(this.sceneName)) {
-        // Inverse same pose.
-        this.frame += 4;
+      var disp = this.disp();
+      switch (duration) {
+        case -1:
+          disp.scale.x = -1;
+          disp.anchor.x = 1;
+          break;
+        case +1:
+          disp.scale.x = +1;
+          disp.anchor.x = 0;
+          break;
       }
-      this.scene(sceneName, /* keepFrame */ true);
+      this.scene('run', /* keepFrame */ true);
     },
 
     left: function() {
       this.$super();
-      this.runScene('left');
+      this.runScene(-1);
     },
 
     right: function() {
       this.$super();
-      this.runScene('right');
+      this.runScene(+1);
     },
 
     rest: function() {
       this.$super();
-      var prefix = {'-1': 'left', '1': 'right'}[this.duration];
-      this.scene(prefix + 'Idle', true);
+      this.scene('idle', /* keepFrame */true);
     },
 
     updatePosition: function() {
@@ -730,7 +778,8 @@ $.extend(Subleerunker, {
         this.speed = 0;
       }
 
-      this.elem().css('left', this.position);
+      this.disp().x = this.position;
+      // this.elem().css('left', this.position);
     },
 
     /* Own */
@@ -757,7 +806,7 @@ $.extend(Subleerunker, {
       this.position = -this.outerHeight();
     },
 
-    loop: function() {
+    update: function() {
       this.$super();
       var player = this.parent.player;
 
@@ -804,15 +853,20 @@ $.extend(Subleerunker, {
     atlasMargin: 2,
     animations: {
       burn: {
-        frameRate: 0.2,
-        offsets: [[0,0], [1,0], [2,0], [3,0], [4,0], [5,0], [6,0]]
+        animationSpeed: 0.2,
+        textureNames: [
+          'flame-burn-0', 'flame-burn-1', 'flame-burn-2', 'flame-burn-3',
+          'flame-burn-4', 'flame-burn-5', 'flame-burn-6'
+        ]
       },
       land: {
-        frameRate: 0.4,
-        offsets: [[0,1], [1,1], [2,1]]
+        animationSpeed: 0.4,
+        textureNames: [
+          'flame-land-0', 'flame-land-1', 'flame-land-2'
+        ]
       }
     },
-    sceneName: 'burn',
+    currentAnimationName: 'burn',
 
     /* Move */
 
@@ -823,10 +877,15 @@ $.extend(Subleerunker, {
     updatePosition: function() {
       this.$super();
 
-      this.elem().css({
-        left: this.xPosition,
-        top: this.position
-      });
+      var disp = this.disp();
+      if (disp) {
+        disp.x = this.xPosition;
+        disp.y = this.position;
+      }
+      // this.elem().css({
+      //   left: this.xPosition,
+      //   top: this.position
+      // });
     },
 
     /* Own */
