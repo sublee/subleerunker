@@ -76,12 +76,27 @@ var GameObject = Class.$extend({
   width: null,
   height: null,
   padding: null,
-  css: null,
+
+  anchor: [0, 0],
+  offset: [0, 0],
 
   disp: function() {
     // Returns cached a PIXI.DisplayObject.
     var disp = this.__disp__();
     if (disp) {
+      if (disp.anchor) {
+        disp.anchor.set(this.anchor[X], this.anchor[Y]);
+      }
+      if (this.offset[X] < 0) {
+        disp.position.x = this.parent.width + this.offset[X] + 1;
+      } else {
+        disp.position.x = this.offset[X];
+      }
+      if (this.offset[Y] < 0) {
+        disp.position.y = this.parent.height + this.offset[Y] + 1;
+      } else {
+        disp.position.y = this.offset[Y];
+      }
       this.disp = function() { return disp; };
     }
     return disp;
@@ -372,10 +387,11 @@ var Subleerunker = Stage.$extend({
     var Logo = GameObject.$extend({
       'class': 'logo',
       width: 148, height: 66,
+      anchor: [0.5, 0],
+      offset: [this.width / 2, 156],
       animationSpeed: 0.02,
       animations: {'default': {textureNames: ['logo']}},
       currentAnimationName: 'default',
-      css: {top: 156, left: '50%', marginLeft: -74}
     });
     if (typeof window.orientation !== 'undefined') {
       // mobile
@@ -394,7 +410,8 @@ var Subleerunker = Stage.$extend({
       'class': 'control',
       width: control.width,
       height: control.height,
-      css: {bottom: 30, left: '50%', marginLeft: -(control.width / 2)},
+      anchor: [0.5, 1],
+      offset: [this.width / 2, -31],
       animationSpeed: 0.02,
       animations: {'blink': {textureNames: control.animationTextureNames}},
       currentAnimationName: 'blink'
@@ -712,7 +729,8 @@ $.extend(Subleerunker, {
     width: 12,
     height: 12,
     padding: [10, 18, 50],
-    css: {bottom: 0},
+    anchor: [0, 1],
+    offset: [0, -1],
 
     /* Animation */
 
@@ -779,7 +797,6 @@ $.extend(Subleerunker, {
       }
 
       this.disp().x = this.position;
-      // this.elem().css('left', this.position);
     },
 
     /* Own */
@@ -882,10 +899,6 @@ $.extend(Subleerunker, {
         disp.x = this.xPosition;
         disp.y = this.position;
       }
-      // this.elem().css({
-      //   left: this.xPosition,
-      //   top: this.position
-      // });
     },
 
     /* Own */
