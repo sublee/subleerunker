@@ -834,7 +834,7 @@ $.extend(Subleerunker, {
           return;
         }
 
-        if (!player.dead && this.hit(player)) {
+        if (!player.dead && this.hits(player)) {
           this.destroy();
           this.parent.gameOver();
         }
@@ -890,7 +890,7 @@ $.extend(Subleerunker, {
 
     /* Own */
 
-    hit: function(player) {
+    hits: function(player) {
       var prevPosition = this.position - this.speed * this.step;
       var H = this.parent.outerHeight();
 
