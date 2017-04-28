@@ -53,12 +53,17 @@
     PIXI.loader.add('atlas.json').load(function() {
       var game = Subleerunker();
       var stage = game.disp();
+      game.captureKeys(window, document);
+      $(window).on('resize', function() {
+        var zoom = Math.floor(this.innerHeight / game.height);
+        game.disp().scale.set(zoom, zoom);
+        renderer.resize(game.width * zoom, game.height * zoom);
+      }).trigger('resize');
       function update() {
         requestAnimationFrame(update);
         game.update();
         renderer.render(stage);
       }
-      game.captureKeys(window, document);
       update();
     });
   </script>

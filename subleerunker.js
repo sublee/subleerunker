@@ -336,11 +336,6 @@ var Subleerunker = Stage.$extend({
 
     this.updateScore();
     this.reset();
-    this.adjustZoom();
-  },
-
-  adjustZoom: function() {
-    // this.elem().css('zoom', Math.floor(window.innerHeight / this.height));
   },
 
   // elem: function() {
@@ -504,10 +499,6 @@ var Subleerunker = Stage.$extend({
       }
       self.keyEvents.left.call(self, pressLeft);
       self.keyEvents.right.call(self, pressRight);
-    });
-
-    $(window).on('resize', function(e) {
-      self.adjustZoom();
     });
   },
 
