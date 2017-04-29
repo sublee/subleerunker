@@ -46,6 +46,11 @@
   <script src="subleerunker.js"></script>
   <script>
     GameObject.debug = (location.hash === '#debug');
+    if (GameObject.debug) {
+      $(document.head).append('<script src="stats-r17.min.js">');
+      var stats = new Stats();
+      $(document.body).append(stats.dom);
+    }
 
     // Disable anti-aliasing.
     PIXI.settings.SCALE_MODE = PIXI.SCALE_MODES.NEAREST;
@@ -64,7 +69,9 @@
 
       function update() {
         requestAnimationFrame(update);
+        stats && stats.begin();
         game.update();
+        stats && stats.end();
       }
       update();
     }
