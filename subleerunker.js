@@ -49,8 +49,8 @@ var GameObject = Class.$extend({
       this.jobs = [];
     }
 
-    if (this.currentAnimationName) {
-      this.scene(this.currentAnimationName);
+    if (this.animationName) {
+      this.setAnimation(this.animationName);
     }
 
     this.killed = false;
@@ -156,16 +156,14 @@ var GameObject = Class.$extend({
   /* Animation */
 
   fps: 60,
-  animationSpeed: 1,
   animations: null,
-  currentAnimationName: null,
+  animationName: null,
 
   currentAnimation: function() {
-    // console.log([this, this.animations, this.currentAnimationName]);
-    if (!this.animations || !this.currentAnimationName) {
+    if (!this.animations || !this.animationName) {
       return null;
     }
-    return this.animations[this.currentAnimationName] || null;
+    return this.animations[this.animationName] || null;
   },
 
   // cell: function(x, y) {
@@ -177,17 +175,38 @@ var GameObject = Class.$extend({
   //   this.elem().css('background-position', pos);
   // },
 
-  frame: null,
+  animationInitialFrame: 0,
+  animationStartedAt: 0,
 
-  scene: function(animationName, keepFrame, disp) {
-    this.currentAnimationName = animationName;
-    if (!keepFrame) {
-      this.frame = 0;
+  setAnimation: function(animationName, frame) {
+    if (this.animationName != animationName || frame !== undefined) {
+      this.animationInitialFrame = frame || 0;
+      this.animationStartedAt = this.time;
     }
+    this.animationName = animationName;
   },
 
-  isLastFrame: function() {
-    return this.frame >= (this.currentAnimation().textureNames || []).length;
+  animationFrame: function(anim) {
+    anim = anim || this.currentAnimation();
+    if (!anim) {
+      return 0;
+    }
+    var fps = anim.fps || this.fps;
+    var animationTime = this.time - this.animationStartedAt;
+    var relativeFrame = Math.floor(animationTime * fps * this.resist() / 1000);
+    return this.animationInitialFrame + relativeFrame;
+  },
+
+  animationEnds: function() {
+    var anim = this.currentAnimation();
+    if (!anim) {
+      // Never started.
+      return true;
+    } else if (!anim.once) {
+      // Never ends.
+      return false;
+    }
+    return this.animationFrame(anim) >= anim.textureNames.length;
   },
 
   /* Move */
@@ -246,13 +265,16 @@ var GameObject = Class.$extend({
 
   /* Schedule */
 
-  update: function() {
-    var self = this;
+  time: 0,
 
+  update: function(time) {
+    this.time = time;
+
+    var self = this;
     if (this.parent === undefined) {
       $.each(this.jobs, function(i, job) {
         if (job !== undefined) {
-          job();
+          job(time);
           if (self.killed) {
             return false;
           }
@@ -271,10 +293,14 @@ var GameObject = Class.$extend({
 
     var anim = this.currentAnimation();
     if (anim) {
-      var i = Math.floor(this.frame % anim.textureNames.length);
+      var frame = this.animationFrame(anim);
+      var i;
+      if (anim.once) {
+        i = Math.min(frame, anim.textureNames.length - 1);
+      } else {
+        i = Math.floor(frame % anim.textureNames.length);
+      }
       this.disp().texture = getTexture(anim.textureNames[i]);
-      var animationSpeed = anim.animationSpeed || this.animationSpeed;
-      this.frame += animationSpeed * this.resist();
     }
   }
 
@@ -323,8 +349,8 @@ var Game = GameObject.$extend({
     this.elem().css('zoom', scale);
   },
 
-  update: function() {
-    this.$super();
+  update: function(time) {
+    this.$super(time);
     this.renderer.render(this.disp());
   }
 
@@ -440,9 +466,9 @@ var Subleerunker = Game.$extend({
       width: 148, height: 66,
       anchor: [0.5, 0],
       offset: [this.width / 2, 156],
-      animationSpeed: 0.02,
+      fps: 1,
       animations: {'default': {textureNames: ['logo']}},
-      currentAnimationName: 'default',
+      animationName: 'default',
     });
     if (typeof window.orientation !== 'undefined') {
       // mobile
@@ -463,9 +489,9 @@ var Subleerunker = Game.$extend({
       height: control.height,
       anchor: [0.5, 1],
       offset: [this.width / 2, -31],
-      animationSpeed: 0.02,
+      fps: 1,
       animations: {'blink': {textureNames: control.animationTextureNames}},
-      currentAnimationName: 'blink'
+      animationName: 'blink'
     });
     this.logo = new Logo(this);
     this.control = new Control(this);
@@ -632,13 +658,13 @@ var Subleerunker = Game.$extend({
     $(window).trigger('score', [this.scores.current]);
   },
 
-  update: function() {
+  update: function(time) {
     if (!this.player) {
       if (this.shouldPlay) {
         this.play();
         this.shouldPlay = false;
       }
-      this.$super();
+      this.$super(time);
       return;
     }
 
@@ -682,7 +708,7 @@ var Subleerunker = Game.$extend({
     }
 
     ++this.count;
-    this.$super();
+    this.$super(time);
   }
 
   // start: function() {
@@ -704,11 +730,11 @@ $.extend(Subleerunker, {
       this.updatePosition();
     },
 
-    update: function() {
-      this.$super();
+    update: function(time) {
+      this.$super(time);
 
       if (this.dead) {
-        if (this.isLastFrame()) {
+        if (this.animationEnds()) {
           this.kill();
         }
       } else if (this.speed) {
@@ -716,7 +742,9 @@ $.extend(Subleerunker, {
       }
     },
 
-    animationSpeed: 0.2,
+    /* Animation */
+
+    fps: 12,
     animations: {
       idle: {textureNames: [
         'player-idle-0', 'player-idle-1', 'player-idle-2', 'player-idle-3',
@@ -729,8 +757,9 @@ $.extend(Subleerunker, {
       die: {textureNames: [
         'player-die-0', 'player-die-1', 'player-die-2', 'player-die-3',
         'player-die-4', 'player-die-5', 'player-die-6', 'player-die-7'
-      ]}
+      ], once: true}
     },
+    animationName: 'idle',
 
     /* DOM */
 
@@ -740,29 +769,18 @@ $.extend(Subleerunker, {
     anchor: [0, 1],
     offset: [0, -1],
 
-    /* Animation */
-
-    atlasMargin: 2,
-    animationSpeed: 0.2,
-    currentAnimationName: 'idle',
-
     /* Move */
 
     speed: 0,
     friction: 0.1,
     step: 5,
 
-    runScene: function(duration) {
-      switch (this.currentAnimationName) {
-        case 'idle':
-          this.frame = 0;
-          break;
-        case 'run':
-          // Inverse same pose.
-          if (duration != this.duration) {
-            this.frame += 4;
-          }
-          break;
+    setRunAnimation: function(duration) {
+      var frame;
+      if (this.animationName == 'idle') {
+        frame = 0;
+      } else if (this.animationName == 'run' && duration != this.duration) {
+        frame = this.animationFrame() + 4;
       }
       var disp = this.disp();
       switch (duration) {
@@ -775,22 +793,22 @@ $.extend(Subleerunker, {
           disp.anchor.x = 0;
           break;
       }
-      this.scene('run', /* keepFrame */ true);
+      this.setAnimation('run', frame);
     },
 
     left: function() {
       this.$super();
-      this.runScene(-1);
+      this.setRunAnimation(-1);
     },
 
     right: function() {
       this.$super();
-      this.runScene(+1);
+      this.setRunAnimation(+1);
     },
 
     rest: function() {
       this.$super();
-      this.scene('idle', /* keepFrame */true);
+      this.setAnimation('idle');
     },
 
     updatePosition: function() {
@@ -812,7 +830,7 @@ $.extend(Subleerunker, {
     die: function() {
       this.dead = true;
       this.speed = 0;
-      this.scene('die');
+      this.setAnimation('die');
       this.left = this.right = this.forward = this.rest = $.noop;
     }
 
@@ -831,12 +849,12 @@ $.extend(Subleerunker, {
       this.position = -this.outerHeight();
     },
 
-    update: function() {
-      this.$super();
+    update: function(time) {
+      this.$super(time);
       var player = this.parent.player;
 
       if (this.landed) {
-        if (this.isLastFrame()) {
+        if (this.animationEnds()) {
           this.destroy();
           if (!player.dead) {
             this.parent.upScore();
@@ -853,7 +871,7 @@ $.extend(Subleerunker, {
           this.position = max;
           this.speed = 0;
           this.updatePosition();
-          this.scene('land');
+          this.setAnimation('land');
           this.landed = true;
         } else if (this.position < min) {
           return;
@@ -877,21 +895,15 @@ $.extend(Subleerunker, {
     atlasPivot: [150, 370],
     atlasMargin: 2,
     animations: {
-      burn: {
-        animationSpeed: 0.2,
-        textureNames: [
-          'flame-burn-0', 'flame-burn-1', 'flame-burn-2', 'flame-burn-3',
-          'flame-burn-4', 'flame-burn-5', 'flame-burn-6'
-        ]
-      },
-      land: {
-        animationSpeed: 0.4,
-        textureNames: [
-          'flame-land-0', 'flame-land-1', 'flame-land-2'
-        ]
-      }
+      burn: {fps: 12, textureNames: [
+        'flame-burn-0', 'flame-burn-1', 'flame-burn-2', 'flame-burn-3',
+        'flame-burn-4', 'flame-burn-5', 'flame-burn-6'
+      ]},
+      land: {fps: 24, textureNames: [
+        'flame-land-0', 'flame-land-1', 'flame-land-2'
+      ], once: true}
     },
-    currentAnimationName: 'burn',
+    animationName: 'burn',
 
     /* Move */
 
