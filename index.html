@@ -48,25 +48,23 @@
     GameObject.debug = (location.hash === '#debug');
 
     // Disable anti-aliasing.
-    PIXI.SCALE_MODES.DEFAULT = PIXI.SCALE_MODES.NEAREST;
+    PIXI.settings.SCALE_MODE = PIXI.SCALE_MODES.NEAREST;
 
     function setupGame() {
       var game = Subleerunker();
       game.captureKeys(window, document);
+      $(document.body).append(game.elem());
 
-      var renderer = PIXI.autoDetectRenderer(game.width, game.height);
-      $(document.body)
-        .css({minWidth: game.width, minHeight: game.height})
-        .append(renderer.view);
       $(window).on('resize', function() {
-        var zoom = Math.floor(this.innerHeight / game.height);
-        $(document.body).css('zoom', zoom);
+        var scale = Math.floor(this.innerHeight / game.height);
+        game.zoom(scale);
+        $(document.body).css({minWidth: game.width * scale,
+                              minHeight: game.height * scale});
       }).trigger('resize');
 
       function update() {
         requestAnimationFrame(update);
         game.update();
-        renderer.render(game.disp());
       }
       update();
     }

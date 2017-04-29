@@ -290,15 +290,47 @@ var GameObject = Class.$extend({
 
 });
 
-var Stage = GameObject.$extend({
+var Game = GameObject.$extend({
+
+  __init__: function() {
+    this.$super.apply(this, arguments);
+    this.renderer = new PIXI.CanvasRenderer(this.width, this.height);
+  },
 
   __disp__: function() {
     return new PIXI.Container();
   },
 
+  __elem__: function() {
+    return $('<div>')
+      .addClass(this['class'])
+      .css('position', 'relative')
+      .append(this.renderer.view);
+  },
+
+  elem: function() {
+    /// Gets the cached element.
+    var elem = this.__elem__();
+    if (elem) {
+      this.elem = function() { return elem; }
+    }
+    return elem;
+  },
+
+  zoom: function(scale) {
+    // this.disp().scale.set(scale, scale);
+    // this.renderer.resize(this.width * scale, this.height * scale);
+    this.elem().css('zoom', scale);
+  },
+
+  update: function() {
+    this.$super();
+    this.renderer.render(this.disp());
+  }
+
 });
 
-var Subleerunker = Stage.$extend({
+var Subleerunker = Game.$extend({
 
   'class': 'subleerunker',
 
@@ -327,15 +359,39 @@ var Subleerunker = Stage.$extend({
       backgroundColor: '#000'
     };
 
-    var m = /my_best_score=(\d+)/.exec(document.cookie);
-    this.score = {
+    var m = /best-score=(\d+)/.exec(document.cookie);
+    if (!m) {
+      // "my_best_score" is deprecated but for backward compatibility.
+      m = /my_best_score=(\d+)/.exec(document.cookie);
+    }
+    this.scores = {
       current: 0,
       localBest: m ? m[1] : 0,
       worldBest: 0
     };
+    this.scoreElems = {};
 
     this.updateScore();
     this.reset();
+  },
+
+  __elem__: function() {
+    var elem = this.$super();
+    var scores = $('<div>').addClass('scores').css({
+      position: 'absolute',
+      right: 5,
+      top: 3,
+      textAlign: 'right',
+      fontSize: 12,
+      fontFamily: '"Share Tech Mono", monospace'
+    }).html([
+      '<div class="local-best"></div>',
+      '<div class="current"></div>'
+    ].join(''));
+    scores.find('>.local-best').css('color', '#a6b2b1');
+    scores.find('>.current').css('color', '#fff').text(this.scores.current);
+    elem.append(scores);
+    return elem;
   },
 
   // elem: function() {
@@ -354,7 +410,7 @@ var Subleerunker = Stage.$extend({
   //     '<div class="current"></div>'
   //   ].join(''));
   //   el.append(score);
-  //   el.currentScore = score.find('>.current').text(this.score.current);
+  //   el.currentScore = score.find('>.current').text(this.scores.current);
   //   el.localBestScore = score.find('>.local-best').css('color', '#a6b2b1');
   //   el.highScore = score.find('>.world-best').css('color', '#809190');
 
@@ -521,98 +577,59 @@ var Subleerunker = Stage.$extend({
       this.releaseLockedShift();
     }
     this.disp().addChild(this.player.disp());
-    this.score.current = 0;
+    this.scores.current = 0;
     this.updateScore();
     this.hideSplash();
   },
 
   upScore: function() {
-    this.score.current++;
+    this.scores.current++;
     this.updateScore();
   },
 
   updateScore: function(score) {
     if (score !== undefined) {
-      this.score.current = score;
+      this.scores.current = score;
     }
+    this.renderCurrentScore();
     this.renderLocalBestScore();
-    this.renderWorldBestScore();
-    // this.elem().currentScore.text(this.score.current);
   },
 
-  renderLocalBestScore: function(score) {
-    if (score !== undefined) {
-      this.score.localBest = score;
+  renderCurrentScore: function() {
+    if (this.scoreElems.current === undefined) {
+      this.scoreElems.current = this.elem().find('>.scores>.current');
     }
-    if (this.score.localBest <= this.score.current) {
-      // this.elem().localBestScore.text('');
+    this.scoreElems.current.text(this.scores.current);
+  },
+
+  renderLocalBestScore: function() {
+    if (this.scoreElems.localBest === undefined) {
+      this.scoreElems.localBest = this.elem().find('>.scores>.local-best');
+    }
+    if (this.scores.localBest <= this.scores.current) {
+      this.scoreElems.localBest.text('');
     } else {
-      // this.elem().localBestScore.text(this.score.localBest);
+      this.scoreElems.localBest.text(this.scores.localBest);
     }
-  },
-
-  renderWorldBestScore: function(score) {
-    if (score !== undefined) {
-      this.score.high = score;
-    }
-
-    var greaterThanCurrentScore = this.score.high > this.score.current;
-    var greaterThanLocalBestScore = this.score.high > this.score.localBest;
-
-    if (!greaterThanCurrentScore || !greaterThanLocalBestScore) {
-      // this.elem().highScore.text('');
-    } else {
-      // this.elem().highScore.text(this.score.high);
-    }
-  },
-
-  fetchWorldBest: function() {
-    // Not Implemented.
-    /*
-    $.getJSON('/high-score', $.proxy(function(highScore) {
-      this.renderWorldBestScore(highScore);
-      if (!this.killed) {
-        setTimeout($.proxy(this.fetchWorldBest, this), 10 * 1000);
-      }
-    }, this));
-    */
-  },
-
-  challengeWorldBest: function() {
-    this.renderWorldBestScore(this.score.current);
-    if (GameObject.debug) {
-      return;
-    }
-    // Not Implemented.
-    /*
-    $.post('/high-score', {
-      my_score: this.score.current
-    });
-    */
   },
 
   gameOver: function() {
     this.player.die();
 
     var cookie;
-    if (this.score.localBest < this.score.current) {
-      // Save local best score in Cookie.
+    if (this.scores.localBest < this.scores.current) {
+      this.scores.localBest = this.scores.current;
+      // Save local best score in Cookie for a month.
       var expires = new Date();
       expires.setMonth(expires.getMonth() + 1);
-
-      cookie = 'my_best_score=' + this.score.current + '; '
+      cookie = 'best-score=' + this.scores.localBest + '; '
       cookie += 'expires=' + expires.toUTCString() + '; ';
       cookie += 'path=/';
       document.cookie = cookie;
-
-      this.renderLocalBestScore(this.score.current);
-    }
-    if (this.score.worldBest < this.score.current) {
-      this.challengeWorldBest();
     }
 
     // Trigger custom event to track the score by outside.
-    $(window).trigger('score', [this.score.current]);
+    $(window).trigger('score', [this.scores.current]);
   },
 
   update: function() {
