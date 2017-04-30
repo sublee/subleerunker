@@ -33,6 +33,11 @@ var GameObject = Class.$extend({
 
   __init__: function(parent) {
     this.parent = parent;
+    this.children = {};
+    this.childIdSeq = 0;
+    if (parent) {
+      this.childId = parent.addChild(this);
+    }
 
     var p = this.padding;
     if (!p) {
@@ -45,19 +50,22 @@ var GameObject = Class.$extend({
       this.padding = [p[0], p[1], p[2], p[1]];
     }
 
-    if (parent) {
-      this.jobs = parent.jobs;
-      this.jobIndex = parent.jobs.length;
-      parent.jobs.push($.proxy(this.update, this));
-    } else {
-      this.jobs = [];
-    }
-
     if (this.animationName) {
       this.setAnimation(this.animationName);
     }
 
     this.killed = false;
+  },
+
+  addChild: function(child) {
+    var childId = this.childIdSeq;
+    this.childIdSeq += 1;
+    this.children[childId] = child;
+    return childId;
+  },
+
+  removeChild: function(child) {
+    delete this.children[child.childId];
   },
 
   /* Destruct */
@@ -71,7 +79,9 @@ var GameObject = Class.$extend({
     if (disp) {
       disp.destroy();
     }
-    delete this.parent.jobs[this.jobIndex];
+    if (this.parent) {
+      this.parent.removeChild(this);
+    }
   },
 
   /* DOM */
@@ -264,24 +274,16 @@ var GameObject = Class.$extend({
 
   __update__: function(frame, prevFrame, deltaTime) {
     var time = this.time();
-    var self = this;
-    if (this.parent === undefined) {
-      $.each(this.jobs, function(i, job) {
-        if (job !== undefined) {
-          job(time);
-          if (self.killed) {
-            return false;
-          }
-        }
-      });
+
+    $.each(this.children, $.proxy(function(childId, child) {
+      child.update(time);
       if (this.killed) {
-        this.stop();
+        return false;
       }
-    } else if (this.killed) {
-      this.destroy();
-    }
+    }, this));
 
     if (this.killed) {
+      this.destroy();
       return;
     }
 
@@ -638,16 +640,12 @@ var Subleerunker = Game.$extend({
       }
     } else {
       var done = true;
-      $.each(this.jobs, function(i, job) {
-        if (job) {
-          done = false;
-          return false;
-        }
+      $.each(this.children, function() {
+        done = false;
+        return false;
       });
       if (done) {
         delete this.player;
-        delete this.jobs;
-        this.jobs = [];
         this.reset();
       }
     }
@@ -671,7 +669,6 @@ $.extend(Subleerunker, {
 
     __update__: function(frame, prevFrame, deltaTime) {
       this.$super.apply(this, arguments);
-
       if (this.dead) {
         if (this.animationEnds()) {
           this.kill();
