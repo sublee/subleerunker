@@ -49,6 +49,7 @@
     if (GameObject.debug) {
       $(document.head).append('<script src="stats-r17.min.js">');
       var stats = new Stats();
+      var difficultyPanel = stats.addPanel(new Stats.Panel('%', '#ff8', '#221'));
       $(document.body).append(stats.dom);
     }
 
@@ -68,10 +69,11 @@
       }).trigger('resize');
 
       function update(time) {
-        requestAnimationFrame(update);
         stats && stats.begin();
         game.update(time);
+        difficultyPanel.update(game.difficulty * 100, 100);
         stats && stats.end();
+        requestAnimationFrame(update);
       }
       requestAnimationFrame(update);
     }
