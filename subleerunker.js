@@ -381,14 +381,6 @@ var Subleerunker = Game.$extend({
       localBest: m ? m[1] : 0,
       worldBest: 0
     };
-    this.scoreElems = {};
-
-    this.updateScore();
-    this.reset();
-  },
-
-  __elem__: function() {
-    var elem = this.$super.apply(this, arguments);
     var scores = $('<div>').addClass('scores').css({
       position: 'absolute',
       right: 5,
@@ -399,11 +391,16 @@ var Subleerunker = Game.$extend({
     }).html([
       '<div class="local-best"></div>',
       '<div class="current"></div>'
-    ].join(''));
-    scores.find('>.local-best').css('color', '#a6b2b1');
-    scores.find('>.current').css('color', '#fff').text(this.scores.current);
-    elem.append(scores);
-    return elem;
+    ].join('')).appendTo(this.elem());
+    this.scoreElems = {
+			localBest: scores.find('>.local-best'),
+			current: scores.find('>.current')
+		};
+		this.scoreElems.localBest.css('color', '#a6b2b1');
+    this.scoreElems.current.css('color', '#fff').text(this.scores.current);
+
+    this.updateScore();
+    this.reset();
   },
 
   showSplash: function() {
