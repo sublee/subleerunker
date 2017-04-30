@@ -13,6 +13,10 @@ var getTexture = function(name) {
   return PIXI.loader.resources['atlas.json'].textures[name];
 };
 
+var calcFrame = function(fps, time) {
+  return Math.floor(time * fps / 1000);
+};
+
 var GameObject = Class.$extend({
 
   __classvars__: {
@@ -166,22 +170,9 @@ var GameObject = Class.$extend({
     return this.animations[this.animationName] || null;
   },
 
-  // cell: function(x, y) {
-  //   x *= -(this.outerWidth() + this.atlasMargin);
-  //   y *= -(this.outerHeight() + this.atlasMargin);
-  //   x -= this.atlasPivot[X];
-  //   y -= this.atlasPivot[Y];
-  //   var pos = x + 'px ' + y + 'px';
-  //   this.elem().css('background-position', pos);
-  // },
-
-  animationInitialFrame: 0,
-  animationStartedAt: 0,
-
   setAnimation: function(animationName, frame) {
     if (this.animationName != animationName || frame !== undefined) {
-      this.animationInitialFrame = frame || 0;
-      this.animationStartedAt = this.time;
+      this.rebaseFrame(frame);
     }
     this.animationName = animationName;
   },
@@ -192,9 +183,7 @@ var GameObject = Class.$extend({
       return 0;
     }
     var fps = anim.fps || this.fps;
-    var animationTime = this.time - this.animationStartedAt;
-    var relativeFrame = Math.floor(animationTime * fps * this.resist() / 1000);
-    return this.animationInitialFrame + relativeFrame;
+    return this.frame(fps);
   },
 
   animationEnds: function() {
@@ -265,11 +254,51 @@ var GameObject = Class.$extend({
 
   /* Schedule */
 
-  time: 0,
+  _time: 0,
+
+  time: function() {
+    if (this.parent) {
+      return this.parent.time();
+    } else {
+      return this._time;
+    }
+  },
+
+  baseFrame: 0,
+  baseTime: 0,
+
+  rebaseFrame: function(frame, time) {
+    this.baseFrame = frame || 0;
+    this.baseTime = (time === undefined ? this.time() : time);
+  },
+
+  frame: function(fps, time) {
+    /// Gets the frame number at now .  The base frame can be set by
+    /// `rebaseFrame`.
+    if (fps === undefined) {
+      fps = this.fps;
+    }
+    fps *= this.resist();
+    time = (time === undefined ? this.time() : time);
+    return this.baseFrame + calcFrame(fps, time - this.baseTime);
+  },
 
   update: function(time) {
-    this.time = time;
+    if (this.baseTime == 0) {
+      this.rebaseFrame(0, time);
+    }
+    var frame = this.frame(this.fps, time);
+    var prevTime = this.time();
+    var prevFrame = this.frame(this.fps, prevTime);
+    var deltaTime = time - prevTime;
+    if (!this.parent) {
+      this._time = time;
+    }
+    this.__update__(frame, prevFrame, deltaTime);
+  },
 
+  __update__: function(frame, prevFrame, deltaTime) {
+    var time = this.time();
     var self = this;
     if (this.parent === undefined) {
       $.each(this.jobs, function(i, job) {
@@ -293,26 +322,17 @@ var GameObject = Class.$extend({
 
     var anim = this.currentAnimation();
     if (anim) {
-      var frame = this.animationFrame(anim);
+      var animFrame = this.animationFrame(anim);
+      var animLength = anim.textureNames.length;
       var i;
       if (anim.once) {
-        i = Math.min(frame, anim.textureNames.length - 1);
+        i = Math.min(animFrame, animLength - 1);
       } else {
-        i = Math.floor(frame % anim.textureNames.length);
+        i = Math.floor(animFrame % animLength);
       }
       this.disp().texture = getTexture(anim.textureNames[i]);
     }
   }
-
-  // start: function() {
-  //   var delay = 1000 / this.fps;
-  //   this.process = setInterval($.proxy(this.update, this), delay);
-  // },
-
-  // stop: function() {
-  //   clearInterval(this.process);
-  //   delete this.process;
-  // }
 
 });
 
@@ -349,8 +369,8 @@ var Game = GameObject.$extend({
     this.elem().css('zoom', scale);
   },
 
-  update: function(time) {
-    this.$super(time);
+  __update__: function(frame, prevFrame, deltaTime) {
+    this.$super.apply(this, arguments);
     this.renderer.render(this.disp());
   }
 
@@ -371,7 +391,8 @@ var Subleerunker = Game.$extend({
   shiftLocked: false,
   shouldPlay: false,
 
-  atlas: null,  // Don't use atlas.
+  fps: 30,
+  difficulty: 0.25,
 
   __init__: function() {
     this.$super.apply(this, arguments);
@@ -402,7 +423,7 @@ var Subleerunker = Game.$extend({
   },
 
   __elem__: function() {
-    var elem = this.$super();
+    var elem = this.$super.apply(this, arguments);
     var scores = $('<div>').addClass('scores').css({
       position: 'absolute',
       right: 5,
@@ -592,10 +613,10 @@ var Subleerunker = Game.$extend({
     this.shouldPlay = false;
     this.releaseLockedShift();
     this.showSplash();
+    delete this.difficulty;
   },
 
   play: function() {
-    this.count = 0;
     this.player = new Subleerunker.Player(this);
     if (this.shiftPressed) {
       // Hommarju for SUBERUNKER's shift-enter easter egg.
@@ -658,13 +679,14 @@ var Subleerunker = Game.$extend({
     $(window).trigger('score', [this.scores.current]);
   },
 
-  update: function(time) {
+  __update__: function(frame, prevFrame, deltaTime) {
     if (!this.player) {
       if (this.shouldPlay) {
         this.play();
         this.shouldPlay = false;
+        this.rebaseFrame(0);
       }
-      this.$super(time);
+      this.$super.apply(this, arguments);
       return;
     }
 
@@ -684,12 +706,13 @@ var Subleerunker = Game.$extend({
     }
 
     if (!this.player.dead) {
-      if ((this.count * this.resist()) % 2 == 0) {
-        var difficulty = 0.25 * (1 + (this.count / 1000));
-        if (Math.random() < difficulty) {
+      var deltaFrame = frame - prevFrame;
+      for (var i = 0; i < deltaFrame; ++i) {
+        if (Math.random() < this.difficulty) {
           var flame = new Subleerunker.Flame(this);
           this.disp().addChild(flame.disp());
         }
+        this.difficulty *= 1.001;
       }
     } else {
       var done = true;
@@ -707,14 +730,8 @@ var Subleerunker = Game.$extend({
       }
     }
 
-    ++this.count;
-    this.$super(time);
+    this.$super.apply(this, arguments);
   }
-
-  // start: function() {
-  //   this.$super();
-  //   this.fetchWorldBest();
-  // }
 });
 
 $.extend(Subleerunker, {
@@ -730,8 +747,8 @@ $.extend(Subleerunker, {
       this.updatePosition();
     },
 
-    update: function(time) {
-      this.$super(time);
+    __update__: function(frame, prevFrame, deltaTime) {
+      this.$super.apply(this, arguments);
 
       if (this.dead) {
         if (this.animationEnds()) {
@@ -797,22 +814,22 @@ $.extend(Subleerunker, {
     },
 
     left: function() {
-      this.$super();
+      this.$super.apply(this, arguments);
       this.setRunAnimation(-1);
     },
 
     right: function() {
-      this.$super();
+      this.$super.apply(this, arguments);
       this.setRunAnimation(+1);
     },
 
     rest: function() {
-      this.$super();
+      this.$super.apply(this, arguments);
       this.setAnimation('idle');
     },
 
     updatePosition: function() {
-      this.$super();
+      this.$super.apply(this, arguments);
 
       var position = this.position;
       var max = this.parent.outerWidth() - this.outerWidth();
@@ -849,8 +866,8 @@ $.extend(Subleerunker, {
       this.position = -this.outerHeight();
     },
 
-    update: function(time) {
-      this.$super(time);
+    __update__: function(frame, prevFrame, deltaTime) {
+      this.$super.apply(this, arguments);
       var player = this.parent.player;
 
       if (this.landed) {
@@ -892,8 +909,6 @@ $.extend(Subleerunker, {
 
     /* Animation */
 
-    atlasPivot: [150, 370],
-    atlasMargin: 2,
     animations: {
       burn: {fps: 12, textureNames: [
         'flame-burn-0', 'flame-burn-1', 'flame-burn-2', 'flame-burn-3',
@@ -912,7 +927,7 @@ $.extend(Subleerunker, {
     step: 10,
 
     updatePosition: function() {
-      this.$super();
+      this.$super.apply(this, arguments);
 
       var disp = this.disp();
       if (disp) {
