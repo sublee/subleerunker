@@ -71,7 +71,6 @@ var GameObject = Class.$extend({
     if (disp) {
       disp.destroy();
     }
-    // this.elem().remove();
     delete this.parent.jobs[this.jobIndex];
   },
 
@@ -114,40 +113,6 @@ var GameObject = Class.$extend({
     var texture = getTexture(anim.textureNames[0]);
     return new PIXI.Sprite(texture);
   },
-
-  // elem: function() {
-  //   var css = $.extend({
-  //     position: 'absolute',
-  //     overflow: 'hidden',
-  //     width: this.width,
-  //     height: this.height,
-  //     padding: this.padding.join('px ') + 'px',
-  //     backgroundImage: (this.atlas ? 'url(' + this.atlas + ')' : 'none'),
-  //     backgroundRepeat: 'no-repeat',
-  //     backgroundPosition: (
-  //       -this.atlasPivot[X] + 'px ' + -this.atlasPivot[Y] + 'px'
-  //     )
-  //   }, this.css);
-
-  //   if (GameObject.debug) {
-  //     css.outline = '1px dashed rgba(255, 255, 255, 0.25)';
-  //   }
-
-  //   var el = $('<div class="' + this['class'] + '"></div>').css(css);
-
-  //   if (GameObject.debug) {
-  //     el.append($('<div></div>').css({
-  //       height: '100%',
-  //       outline: '1px solid #fff'
-  //     }));
-  //   }
-
-  //   // Cache the element.
-  //   this.elem = function() {
-  //     return el;
-  //   };
-  //   return el;
-  // },
 
   outerWidth: function() {
     return this.width + this.padding[RIGHT] + this.padding[LEFT];
@@ -440,46 +405,6 @@ var Subleerunker = Game.$extend({
     elem.append(scores);
     return elem;
   },
-
-  // elem: function() {
-  //   var el = this.$super();
-  //   var score = $('<div class="score"></div>').css({
-  //     position: 'absolute',
-  //     right: 5,
-  //     top: 3,
-  //     textAlign: 'right',
-  //     color: '#fff',
-  //     fontSize: 12,
-  //     fontFamily: '"Share Tech Mono", monospace'
-  //   }).html([
-  //     '<div class="world-best"></div>',
-  //     '<div class="local-best"></div>',
-  //     '<div class="current"></div>'
-  //   ].join(''));
-  //   el.append(score);
-  //   el.currentScore = score.find('>.current').text(this.scores.current);
-  //   el.localBestScore = score.find('>.local-best').css('color', '#a6b2b1');
-  //   el.highScore = score.find('>.world-best').css('color', '#809190');
-
-  //   // Preload
-  //   var preload = $('<div class="preload"></div>').css({
-  //     position: 'absolute',
-  //     top: -9999,
-  //     left: -9999
-  //   });
-  //   el.append(preload);
-  //   var atlases = [];
-  //   $.each([Subleerunker.Player, Subleerunker.Flame], function(i, cls) {
-  //     if (atlases.indexOf(cls.prototype.atlas) === -1) {
-  //       atlases.push(cls.prototype.atlas);
-  //     }
-  //   });
-  //   $.each(atlases, function(i, atlas) {
-  //     $('<img />').attr('src', atlas).appendTo(preload);
-  //   });
-
-  //   return el;
-  // },
 
   showSplash: function() {
     var Logo = GameObject.$extend({
