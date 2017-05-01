@@ -1,20 +1,36 @@
-var limit = function(n, min, max) {
-  return Math.max(min, Math.min(max, n));
-};
-
 var X = 0;
 var Y = 1;
 var TOP = 0;
 var RIGHT = 1;
 var BOTTOM = 2;
 var LEFT = 3;
+var IS_MOBILE = (typeof window.orientation !== 'undefined');
 
-var getTexture = function(name) {
-  return PIXI.loader.resources['atlas.json'].textures[name];
+var limit = function(n, min, max) {
+  return Math.max(min, Math.min(max, n));
+};
+
+var normalizePadding = function(padding) {
+  switch (padding ? padding.length : 0) {
+    case 0:
+      return [0, 0, 0, 0];
+    case 1:
+      return [padding[0], padding[0], padding[0], padding[0]];
+    case 2:
+      return [padding[0], padding[1], padding[0], padding[1]];
+    case 3:
+      return [padding[0], padding[1], padding[2], padding[1]];
+    default:
+      return padding;
+  }
 };
 
 var calcFrame = function(fps, time) {
   return Math.floor(time * fps / 1000);
+};
+
+var getTexture = function(name) {
+  return PIXI.loader.resources['atlas.json'].textures[name];
 };
 
 var GameObject = Class.$extend({
@@ -38,23 +54,11 @@ var GameObject = Class.$extend({
     if (parent) {
       this.childId = parent.addChild(this);
     }
-
-    var p = this.padding;
-    if (!p) {
-      this.padding = [0, 0, 0, 0];
-    } else if (p.length === 1) {
-      this.padding = [p[0], p[0], p[0], p[0]];
-    } else if (p.length === 2) {
-      this.padding = [p[0], p[1], p[0], p[1]];
-    } else if (p.length === 3) {
-      this.padding = [p[0], p[1], p[2], p[1]];
-    }
-
+    this.padding = normalizePadding(this.padding);
+    this.killed = false;
     if (this.animationName) {
       this.setAnimation(this.animationName);
     }
-
-    this.killed = false;
   },
 
   addChild: function(child) {
@@ -84,7 +88,7 @@ var GameObject = Class.$extend({
     }
   },
 
-  /* DOM */
+  /* View */
 
   width: null,
   height: null,
@@ -164,11 +168,9 @@ var GameObject = Class.$extend({
   animationEnds: function() {
     var anim = this.currentAnimation();
     if (!anim) {
-      // Never started.
-      return true;
+      return true;  // never started
     } else if (!anim.once) {
-      // Never ends.
-      return false;
+      return false;  // never ends
     }
     return this.animationFrame(anim) >= anim.textureNames.length;
   },
@@ -229,13 +231,13 @@ var GameObject = Class.$extend({
 
   /* Schedule */
 
-  _time: 0,
-
   time: function() {
+    /// Gets the last updated time.  Only the root game object remembers the
+    /// time.
     if (this.parent) {
       return this.parent.time();
     } else {
-      return this._time;
+      return (this._time || 0);
     }
   },
 
@@ -259,7 +261,8 @@ var GameObject = Class.$extend({
   },
 
   update: function(time) {
-    if (this.baseTime == 0) {
+    /// Call this method at each animation frames.
+    if (!this.baseTime) {
       this.rebaseFrame(0, time);
     }
     var frame = this.frame(this.fps, time);
@@ -305,9 +308,11 @@ var GameObject = Class.$extend({
 
 var Game = GameObject.$extend({
 
+  renderer_class: PIXI.CanvasRenderer,
+
   __init__: function() {
     this.$super.apply(this, arguments);
-    this.renderer = new PIXI.CanvasRenderer(this.width, this.height);
+    this.renderer = new this.renderer_class(this.width, this.height);
   },
 
   __disp__: function() {
@@ -364,15 +369,6 @@ var Subleerunker = Game.$extend({
   __init__: function() {
     this.$super.apply(this, arguments);
 
-    this.css = {
-      left: '50%',
-      top: '50%',
-      marginLeft: this.outerWidth() / -2,
-      marginTop: this.outerHeight() / -2,
-      outline: '1px solid #222',
-      backgroundColor: '#000'
-    };
-
     var m = /best-score=(\d+)/.exec(document.cookie);
     if (!m) {
       // "my_best_score" is deprecated but for backward compatibility.
@@ -395,10 +391,10 @@ var Subleerunker = Game.$extend({
       '<div class="current"></div>'
     ].join('')).appendTo(this.elem());
     this.scoreElems = {
-			localBest: scores.find('>.local-best'),
-			current: scores.find('>.current')
-		};
-		this.scoreElems.localBest.css('color', '#a6b2b1');
+      localBest: scores.find('>.local-best'),
+      current: scores.find('>.current')
+    };
+    this.scoreElems.localBest.css('color', '#a6b2b1');
     this.scoreElems.current.css('color', '#fff').text(this.scores.current);
 
     this.updateScore();
@@ -411,22 +407,19 @@ var Subleerunker = Game.$extend({
       width: 148, height: 66,
       anchor: [0.5, 0],
       offset: [this.width / 2, 156],
-      fps: 1,
+      fps: 0,
       animations: {'default': {textureNames: ['logo']}},
       animationName: 'default',
     });
-    if (typeof window.orientation !== 'undefined') {
-      // mobile
-      var control = {
-        width: 33, height: 35,
-        animationTextureNames: ['touch-0', 'touch-1']
-      };
+    var control = {};
+    if (IS_MOBILE) {
+      $.extend(control, {
+        width: 33, height: 35, animationTextureNames: ['touch-0', 'touch-1']
+      });
     } else {
-      // desktop
-      var control = {
-        width: 65, height: 14,
-        animationTextureNames: ['key-0', 'key-1']
-      };
+      $.extend(control, {
+        width: 65, height: 14, animationTextureNames: ['key-0', 'key-1']
+      });
     }
     var Control = GameObject.$extend({
       'class': 'control',
@@ -562,18 +555,16 @@ var Subleerunker = Game.$extend({
     if (score !== undefined) {
       this.scores.current = score;
     }
-    this.renderCurrentScore();
-    this.renderLocalBestScore();
+    this.renderScores();
   },
 
-  renderCurrentScore: function() {
+  renderScores: function() {
+    // current
     if (this.scoreElems.current === undefined) {
       this.scoreElems.current = this.elem().find('>.scores>.current');
     }
     this.scoreElems.current.text(this.scores.current);
-  },
-
-  renderLocalBestScore: function() {
+    // local-best
     if (this.scoreElems.localBest === undefined) {
       this.scoreElems.localBest = this.elem().find('>.scores>.local-best');
     }
@@ -631,7 +622,8 @@ var Subleerunker = Game.$extend({
 
     if (!this.player.dead) {
       var deltaFrame = frame - prevFrame;
-      for (var i = 0; i < deltaFrame; ++i) {
+      if (deltaFrame) {
+      // for (var i = 0; i < deltaFrame; ++i) {
         if (Math.random() < this.difficulty) {
           var flame = new Subleerunker.Flame(this);
           this.disp().addChild(flame.disp());
@@ -662,7 +654,6 @@ $.extend(Subleerunker, {
 
     __init__: function(parent) {
       this.$super.apply(this, arguments);
-
       this.position = parent.outerWidth() / 2 - this.outerWidth() / 2;
       this.updatePosition();
     },
@@ -697,7 +688,7 @@ $.extend(Subleerunker, {
     },
     animationName: 'idle',
 
-    /* DOM */
+    /* View */
 
     width: 12,
     height: 12,
@@ -778,7 +769,6 @@ $.extend(Subleerunker, {
 
     __init__: function(parent) {
       this.$super.apply(this, arguments);
-
       var W = parent.outerWidth();
       var w = this.outerWidth();
       this.xPosition = (W - w * 2) * Math.random() + w / 2;
@@ -820,7 +810,7 @@ $.extend(Subleerunker, {
       }
     },
 
-    /* DOM */
+    /* View */
 
     width: 6,
     height: 6,
@@ -847,7 +837,6 @@ $.extend(Subleerunker, {
 
     updatePosition: function() {
       this.$super.apply(this, arguments);
-
       var disp = this.disp();
       if (disp) {
         disp.x = this.xPosition;
