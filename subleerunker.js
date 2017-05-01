@@ -36,10 +36,6 @@ var calcFrame = function(fps, time) {
   return Math.floor(time * fps / 1000);
 };
 
-var getTexture = function(name) {
-  return PIXI.loader.resources['atlas.json'].textures[name];
-};
-
 var GameObject = Class.$extend({
 
   __init__: function(/* parent or ctx */arg) {
@@ -123,7 +119,7 @@ var GameObject = Class.$extend({
     if (!anim || !anim.textureNames) {
       return null;
     }
-    var texture = getTexture(anim.textureNames[0]);
+    var texture = this.getTexture(anim.textureNames[0]);
     return new PIXI.Sprite(texture);
   },
 
@@ -279,8 +275,45 @@ var GameObject = Class.$extend({
       } else {
         i = Math.floor(animFrame % animLength);
       }
-      this.disp().texture = getTexture(anim.textureNames[i]);
+      this.disp().texture = this.getTexture(anim.textureNames[i]);
     }
+  },
+
+  getTexture: function(name) {
+    if (!this.ctx.debug) {
+      return PIXI.loader.resources['atlas.json'].textures[name];
+    }
+    if (!this._debugTextures) {
+      this._debugTextures = {};
+    }
+    if (!this._debugTextures[name]) {
+      // Draw bounding box.
+      var texture = PIXI.loader.resources['atlas.json'].textures[name];
+      var renderer = new PIXI.CanvasRenderer(texture.width, texture.height, {
+        transparent: true
+      });
+      renderer.render(new PIXI.Sprite(texture));
+      var canvas = renderer.rootContext;
+      canvas.drawImage(renderer.view, 0, 0);
+      function drawRect(style, x, y, w, h) {
+        canvas.fillStyle = style;
+        canvas.fillRect(x, y, w - 1, 1);
+        canvas.fillRect(x + w - 1, y, 1, h - 1);
+        canvas.fillRect(x + 1, y + h - 1, w - 1, 1);
+        canvas.fillRect(x, y + 1, 1, h - 1);
+      }
+      drawRect(
+        'rgba(255, 255, 255, 0.2)',
+        0, 0, texture.width, texture.height
+      );
+      drawRect(
+        '#fff',
+        this.padding[LEFT], this.padding[TOP], this.width, this.height
+      );
+      this._debugTextures[name] = PIXI.Texture.fromCanvas(renderer.view);
+      delete renderer, canvas;
+    }
+    return this._debugTextures[name];
   }
 
 });
