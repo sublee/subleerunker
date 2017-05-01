@@ -221,22 +221,12 @@ var GameObject = Class.$extend({
 
   /* Schedule */
 
-  time: function() {
-    /// Gets the last updated time.  Only the root game object remembers the
-    /// time.
-    if (this.parent) {
-      return this.parent.time();
-    } else {
-      return (this._time || 0);
-    }
-  },
-
   baseFrame: 0,
   baseTime: 0,
 
   rebaseFrame: function(frame, time) {
     this.baseFrame = frame || 0;
-    this.baseTime = (time === undefined ? this.time() : time);
+    this.baseTime = (time === undefined ? this.time : time);
   },
 
   frame: function(fps, time) {
@@ -246,7 +236,7 @@ var GameObject = Class.$extend({
       fps = this.fps;
     }
     fps *= this.resist();
-    time = (time === undefined ? this.time() : time);
+    time = (time === undefined ? this.time : time);
     return this.baseFrame + calcFrame(fps, time - this.baseTime);
   },
 
@@ -256,17 +246,15 @@ var GameObject = Class.$extend({
       this.rebaseFrame(0, time);
     }
     var frame = this.frame(this.fps, time);
-    var prevTime = this.time();
+    var prevTime = this.time;
     var prevFrame = this.frame(this.fps, prevTime);
     var deltaTime = time - prevTime;
-    if (!this.parent) {
-      this._time = time;
-    }
+    this.time = time;
     this.__update__(frame, prevFrame, deltaTime);
   },
 
   __update__: function(frame, prevFrame, deltaTime) {
-    var time = this.time();
+    var time = this.time;
 
     $.each(this.children, $.proxy(function(childId, child) {
       child.update(time);
