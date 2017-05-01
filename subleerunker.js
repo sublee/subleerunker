@@ -474,7 +474,7 @@ var Subleerunker = Game.$extend({
     }
   },
 
-  captureKeys: function(window, document) {
+  captureInputs: function(window, document) {
     $(window).on('keydown', $.proxy(function(e) {
       var handler = this.keyEvents[KEYS[e.which]];
       if ($.isFunction(handler)) {

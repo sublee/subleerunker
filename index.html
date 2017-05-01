@@ -69,7 +69,7 @@
     function setupGame() {
       var game = Subleerunker();
       game.ctx.debug = DEBUG;
-      game.captureKeys(window, document);
+      game.captureInputs(window, document);
       $('.bezel').append(game.elem());
 
       $(window).on('resize', function() {
