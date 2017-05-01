@@ -332,7 +332,7 @@ var Subleerunker = Game.$extend({
   'class': 'subleerunker',
 
   width: 320,
-  height: 480 - 2,
+  height: 480,
   padding: [0, 0, 2, 0],
 
   fps: 30,
