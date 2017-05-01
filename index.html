@@ -13,6 +13,7 @@
       height: 100%;
     }
     body {
+      position: relative;
       margin: 0;
       padding: 0;
       width: 100%;
@@ -27,39 +28,48 @@
       -khtml-user-select: none;
       -moz-user-select: none;
       -ms-user-select: none;
-
-      /* Place the game at the center */
-      display: flex;
-      justify-content: center;
-      align-items: center;
     }
-    .subleerunker {
+    .bezel {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
       outline: 1px solid #222;
-      image-rendering: pixelated;
     }
   </style>
-</head>
-<body>
   <script src="jquery-3.2.1.min.js"></script>
   <script src="pixi-4.4.3.min.js"></script>
   <script src="classy.js"></script>
   <script src="subleerunker.js"></script>
+</head>
+<body>
+  <div class="bezel"></div>
   <script>
     GameObject.debug = (location.hash === '#debug');
     if (GameObject.debug) {
       $(document.head).append('<script src="stats-r17.min.js">');
       var stats = new Stats();
-      var difficultyPanel = stats.addPanel(new Stats.Panel('%', '#ff8', '#221'));
+      stats.flames = new Stats.Panel('flames', '#ff8', '#221');
+      stats.addPanel(stats.flames);
+      stats.showPanel(0);
       $(document.body).append(stats.dom);
     }
 
     // Disable anti-aliasing.
     PIXI.settings.SCALE_MODE = PIXI.SCALE_MODES.NEAREST;
 
+    function countFlames(game) {
+      var numFlames = 0;
+      $.each(game.children, function(i, child) {
+        if (child instanceof Subleerunker.Flame) numFlames++;
+      });
+      return numFlames;
+    }
+
     function setupGame() {
       var game = Subleerunker();
       game.captureKeys(window, document);
-      $(document.body).append(game.elem());
+      $('.bezel').append(game.elem());
 
       $(window).on('resize', function() {
         var scale = Math.floor(this.innerHeight / game.height);
@@ -71,9 +81,9 @@
       function update(time) {
         stats && stats.begin();
         game.update(time);
-        stats && difficultyPanel.update(game.difficulty * 100, 100);
-        stats && stats.end();
         requestAnimationFrame(update);
+        stats && stats.end();
+        stats && stats.flames.update(countFlames(game), 100);
       }
       requestAnimationFrame(update);
     }

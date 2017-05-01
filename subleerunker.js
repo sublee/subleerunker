@@ -322,6 +322,7 @@ var Game = GameObject.$extend({
   __elem__: function() {
     return $('<div>')
       .addClass(this['class'])
+      .css('position', 'relative')
       .css('image-rendering', 'pixelated')
       .append(this.renderer.view);
   },
