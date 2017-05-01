@@ -322,7 +322,7 @@ var Game = GameObject.$extend({
   __elem__: function() {
     return $('<div>')
       .addClass(this['class'])
-      .css('position', 'relative')
+      .css('image-rendering', 'pixelated')
       .append(this.renderer.view);
   },
 
@@ -336,9 +336,8 @@ var Game = GameObject.$extend({
   },
 
   zoom: function(scale) {
-    // this.disp().scale.set(scale, scale);
-    // this.renderer.resize(this.width * scale, this.height * scale);
-    this.elem().css('zoom', scale);
+    this.disp().scale.set(scale, scale);
+    this.renderer.resize(this.width * scale, this.height * scale);
   },
 
   __update__: function(frame, prevFrame, deltaTime) {
@@ -379,7 +378,7 @@ var Subleerunker = Game.$extend({
       localBest: m ? m[1] : 0,
       worldBest: 0
     };
-    var scores = $('<div>').addClass('scores').css({
+    var scores = $('<div class="scores">').css({
       position: 'absolute',
       right: 5,
       top: 3,
@@ -389,7 +388,7 @@ var Subleerunker = Game.$extend({
     }).html([
       '<div class="local-best"></div>',
       '<div class="current"></div>'
-    ].join('')).appendTo(this.elem());
+    ].join('')).appendTo(this.hudElem());
     this.scoreElems = {
       localBest: scores.find('>.local-best'),
       current: scores.find('>.current')
@@ -399,6 +398,27 @@ var Subleerunker = Game.$extend({
 
     this.updateScore();
     this.reset();
+  },
+
+  hudElem: function() {
+    var elem = this.elem();
+    var hudElem = elem.find('>.ui:eq(0)');
+    if (!hudElem.length) {
+      hudElem = $('<div class="hud">').css({
+        position: 'absolute', top: 0, left: 0,
+        margin: 0, padding: 0,
+        // "100%" makes a layout bug on IE11.
+        width: this.width, height: this.height
+      });
+      elem.append(hudElem);
+    }
+    this.hudElem = function() { return hudElem; }
+    return hudElem;
+  },
+
+  zoom: function(scale) {
+    this.$super.apply(this, arguments);
+    this.hudElem().css('zoom', scale);
   },
 
   showSplash: function() {
