@@ -1,55 +1,73 @@
-var limit = function(n, min, max) {
-  return Math.max(min, Math.min(max, n));
-};
-
 var X = 0;
 var Y = 1;
 var TOP = 0;
 var RIGHT = 1;
 var BOTTOM = 2;
 var LEFT = 3;
+var IS_MOBILE = (typeof window.orientation !== 'undefined');
+
+var KEYS = {
+  8: 'backspace', 9: 'tab', 13: 'enter', 16: 'shift', 17: 'ctrl', 18: 'alt',
+  19: 'pause', 20: 'capsLock', 27: 'esc', 33: 'pageUp', 34: 'pageDown',
+  35: 'end', 36: 'home', 37: 'left', 38: 'up', 39: 'right', 40: 'down',
+  45: 'insert', 46: 'delete'
+};
+
+var limit = function(n, min, max) {
+  return Math.max(min, Math.min(max, n));
+};
+
+var normalizePadding = function(padding) {
+  switch (padding ? padding.length : 0) {
+    case 0:
+      return [0, 0, 0, 0];
+    case 1:
+      return [padding[0], padding[0], padding[0], padding[0]];
+    case 2:
+      return [padding[0], padding[1], padding[0], padding[1]];
+    case 3:
+      return [padding[0], padding[1], padding[2], padding[1]];
+    default:
+      return padding;
+  }
+};
+
+var calcFrame = function(fps, time) {
+  return Math.floor(time * fps / 1000);
+};
+
+var getTexture = function(name) {
+  return PIXI.loader.resources['atlas.json'].textures[name];
+};
 
 var GameObject = Class.$extend({
 
-  __classvars__: {
-    debug: false,
-    keys: {
-      8: 'backspace', 9: 'tab', 13: 'enter', 16: 'shift', 17: 'ctrl',
-      18: 'alt', 19: 'pause', 20: 'capsLock', 27: 'esc', 33: 'pageUp',
-      34: 'pageDown', 35: 'end', 36: 'home', 37: 'left', 38: 'up',
-      39: 'right', 40: 'down', 45: 'insert', 46: 'delete'
+  __init__: function(parent) {
+    this.parent = parent;
+    this.children = {};
+    this.childIdSeq = 0;
+    if (parent) {
+      this.childId = parent.addChild(this);
+      this.ctx = parent.ctx;
+    } else {
+      this.ctx = {};
+    }
+    this.padding = normalizePadding(this.padding);
+    this.killed = false;
+    if (this.animationName) {
+      this.setAnimation(this.animationName);
     }
   },
 
-  'class': null,
+  addChild: function(child) {
+    var childId = this.childIdSeq;
+    this.childIdSeq += 1;
+    this.children[childId] = child;
+    return childId;
+  },
 
-  __init__: function(parent) {
-    this.parent = parent;
-
-    var p = this.padding;
-    if (!p) {
-      this.padding = [0, 0, 0, 0];
-    } else if (p.length === 1) {
-      this.padding = [p[0], p[0], p[0], p[0]];
-    } else if (p.length === 2) {
-      this.padding = [p[0], p[1], p[0], p[1]];
-    } else if (p.length === 3) {
-      this.padding = [p[0], p[1], p[2], p[1]];
-    }
-
-    if (parent) {
-      this.jobs = parent.jobs;
-      this.jobIndex = parent.jobs.length;
-      parent.jobs.push($.proxy(this.loop, this));
-    } else {
-      this.jobs = [];
-    }
-
-    if (this.sceneName) {
-      this.scene(this.sceneName);
-    }
-
-    this.killed = false;
+  removeChild: function(child) {
+    delete this.children[child.childId];
   },
 
   /* Destruct */
@@ -59,49 +77,53 @@ var GameObject = Class.$extend({
   },
 
   destroy: function() {
-    this.elem().remove();
-    delete this.parent.jobs[this.jobIndex];
+    var disp = this.disp();
+    if (disp) {
+      disp.destroy();
+    }
+    if (this.parent) {
+      this.parent.removeChild(this);
+    }
   },
 
-  /* DOM */
+  /* View */
 
   width: null,
   height: null,
   padding: null,
-  css: null,
 
-  elem: function() {
-    var css = $.extend({
-      position: 'absolute',
-      overflow: 'hidden',
-      width: this.width,
-      height: this.height,
-      padding: this.padding.join('px ') + 'px',
-      backgroundImage: (this.atlas ? 'url(' + this.atlas + ')' : 'none'),
-      backgroundRepeat: 'no-repeat',
-      backgroundPosition: (
-        -this.atlasPivot[X] + 'px ' + -this.atlasPivot[Y] + 'px'
-      )
-    }, this.css);
+  anchor: [0, 0],
+  offset: [0, 0],
 
-    if (GameObject.debug) {
-      css.outline = '1px dashed rgba(255, 255, 255, 0.25)';
+  disp: function() {
+    // Returns cached a PIXI.DisplayObject.
+    var disp = this.__disp__();
+    if (disp) {
+      if (disp.anchor) {
+        disp.anchor.set(this.anchor[X], this.anchor[Y]);
+      }
+      if (this.offset[X] < 0) {
+        disp.position.x = this.parent.width + this.offset[X] + 1;
+      } else {
+        disp.position.x = this.offset[X];
+      }
+      if (this.offset[Y] < 0) {
+        disp.position.y = this.parent.height + this.offset[Y] + 1;
+      } else {
+        disp.position.y = this.offset[Y];
+      }
+      this.disp = function() { return disp; };
     }
+    return disp;
+  },
 
-    var el = $('<div class="' + this['class'] + '"></div>').css(css);
-
-    if (GameObject.debug) {
-      el.append($('<div></div>').css({
-        height: '100%',
-        outline: '1px solid #fff'
-      }));
+  __disp__: function() {
+    var anim = this.currentAnimation();
+    if (!anim || !anim.textureNames) {
+      return null;
     }
-
-    // Cache the element.
-    this.elem = function() {
-      return el;
-    };
-    return el;
+    var texture = getTexture(anim.textureNames[0]);
+    return new PIXI.Sprite(texture);
   },
 
   outerWidth: function() {
@@ -114,35 +136,41 @@ var GameObject = Class.$extend({
 
   /* Animation */
 
-  atlas: 'atlas.gif',
-  atlasPivot: [0, 0],
-  atlasMargin: 2,
   fps: 60,
-  frameRate: 1,
   animations: null,
-  sceneName: null,
+  animationName: null,
 
-  cell: function(x, y) {
-    x *= -(this.outerWidth() + this.atlasMargin);
-    y *= -(this.outerHeight() + this.atlasMargin);
-    x -= this.atlasPivot[X];
-    y -= this.atlasPivot[Y];
-    var pos = x + 'px ' + y + 'px';
-    this.elem().css('background-position', pos);
-  },
-
-  frame: null,
-
-  scene: function(sceneName, keepFrame) {
-    this.sceneName = sceneName;
-    this._animation = this.animations[sceneName];
-    if (!keepFrame) {
-      this.frame = 0;
+  currentAnimation: function() {
+    if (!this.animations || !this.animationName) {
+      return null;
     }
+    return this.animations[this.animationName] || null;
   },
 
-  isLastFrame: function() {
-    return this.frame >= this._animation.offsets.length;
+  setAnimation: function(animationName, frame) {
+    if (this.animationName != animationName || frame !== undefined) {
+      this.rebaseFrame(frame);
+    }
+    this.animationName = animationName;
+  },
+
+  animationFrame: function(anim) {
+    anim = anim || this.currentAnimation();
+    if (!anim) {
+      return 0;
+    }
+    var fps = anim.fps || this.fps;
+    return this.frame(fps);
+  },
+
+  animationEnds: function() {
+    var anim = this.currentAnimation();
+    if (!anim) {
+      return true;  // never started
+    } else if (!anim.once) {
+      return false;  // never ends
+    }
+    return this.animationFrame(anim) >= anim.textureNames.length;
   },
 
   /* Move */
@@ -187,185 +215,218 @@ var GameObject = Class.$extend({
     this.position += this.speed * this.step * this.resist();
   },
 
-  slow: function() {
-    return false;
-  },
-
   resist: function() {
-    var root = this;
-    while (root.parent) {
-      root = root.parent;
-    }
-    return root.slow() ? 0.25 : 1;
+    return this.ctx.slow ? 0.25 : 1;
   },
 
   /* Schedule */
 
-  loop: function() {
-    var self = this;
+  baseFrame: 0,
+  baseTime: 0,
 
-    if (this.parent === undefined) {
-      $.each(this.jobs, function(i, job) {
-        if (job !== undefined) {
-          job();
-          if (self.killed) {
-            return false;
-          }
-        }
-      });
-      if (this.killed) {
-        this.stop();
-      }
-    } else if (this.killed) {
-      this.destroy();
+  rebaseFrame: function(frame, time) {
+    this.baseFrame = frame || 0;
+    this.baseTime = (time === undefined ? this.time : time);
+  },
+
+  frame: function(fps, time) {
+    /// Gets the frame number at now .  The base frame can be set by
+    /// `rebaseFrame`.
+    if (fps === undefined) {
+      fps = this.fps;
     }
+    fps *= this.resist();
+    time = (time === undefined ? this.time : time);
+    return this.baseFrame + calcFrame(fps, time - this.baseTime);
+  },
+
+  update: function(time) {
+    /// Call this method at each animation frames.
+    if (!this.baseTime) {
+      this.rebaseFrame(0, time);
+    }
+    var frame = this.frame(this.fps, time);
+    var prevTime = this.time;
+    var prevFrame = this.frame(this.fps, prevTime);
+    var deltaTime = time - prevTime;
+    this.time = time;
+    this.__update__(frame, prevFrame, deltaTime);
+  },
+
+  __update__: function(frame, prevFrame, deltaTime) {
+    var time = this.time;
+
+    $.each(this.children, $.proxy(function(childId, child) {
+      child.update(time);
+      if (this.killed) {
+        return false;
+      }
+    }, this));
 
     if (this.killed) {
+      this.destroy();
       return;
     }
 
-    var anim = this._animation;
+    var anim = this.currentAnimation();
     if (anim) {
-      var i = Math.floor(this.frame % anim.offsets.length);
-      var offset = anim.offsets[i];
-      var frameRate = anim.frameRate || this.frameRate;
-      this.frame += frameRate * this.resist();
-      this.cell.apply(this, offset);
+      var animFrame = this.animationFrame(anim);
+      var animLength = anim.textureNames.length;
+      var i;
+      if (anim.once) {
+        i = Math.min(animFrame, animLength - 1);
+      } else {
+        i = Math.floor(animFrame % animLength);
+      }
+      this.disp().texture = getTexture(anim.textureNames[i]);
     }
-  },
-
-  start: function() {
-    var delay = 1000 / this.fps;
-    this.process = setInterval($.proxy(this.loop, this), delay);
-  },
-
-  stop: function() {
-    clearInterval(this.process);
-    delete this.process;
   }
 
 });
 
-var Subleerunker = GameObject.$extend({
+var Game = GameObject.$extend({
+
+  renderer_class: PIXI.CanvasRenderer,
+  'class': '',
+
+  __init__: function() {
+    this.$super.apply(this, arguments);
+    this.renderer = new this.renderer_class(this.width, this.height);
+  },
+
+  __disp__: function() {
+    return new PIXI.Container();
+  },
+
+  __elem__: function() {
+    var elem = $('<div>').addClass(this['class']);
+    var view = $(this.renderer.view).css('display', 'block');
+    elem.css({position: 'relative', imageRendering: 'pixelated'});
+    elem.append(view);
+    return elem;
+  },
+
+  elem: function() {
+    /// Gets the cached element.
+    var elem = this.__elem__();
+    if (elem) {
+      this.elem = function() { return elem; }
+    }
+    return elem;
+  },
+
+  zoom: function(scale) {
+    this.disp().scale.set(scale, scale);
+    this.renderer.resize(this.width * scale, this.height * scale);
+  },
+
+  __update__: function(frame, prevFrame, deltaTime) {
+    this.$super.apply(this, arguments);
+    this.renderer.render(this.disp());
+  }
+
+});
+
+var Subleerunker = Game.$extend({
 
   'class': 'subleerunker',
 
   width: 320,
-  height: 480 - 2,
+  height: 480,
   padding: [0, 0, 2, 0],
 
-  leftPrior: true,
-  leftPressed: false,
-  rightPressed: false,
-  shiftPressed: false,
-  shiftLocked: false,
-  shouldPlay: false,
-
-  atlas: null,  // Don't use atlas.
+  fps: 30,
+  difficulty: 0.25,
 
   __init__: function() {
     this.$super.apply(this, arguments);
 
-    this.css = {
-      left: '50%',
-      top: '50%',
-      marginLeft: this.outerWidth() / -2,
-      marginTop: this.outerHeight() / -2,
-      outline: '1px solid #222',
-      backgroundColor: '#000'
-    };
-
-    var m = /my_best_score=(\d+)/.exec(document.cookie);
-    this.score = {
+    var m = /best-score=(\d+)/.exec(document.cookie);
+    if (!m) {
+      // "my_best_score" is deprecated but for backward compatibility.
+      m = /my_best_score=(\d+)/.exec(document.cookie);
+    }
+    this.scores = {
       current: 0,
       localBest: m ? m[1] : 0,
       worldBest: 0
     };
-
-    this.updateScore();
-    this.reset();
-    this.adjustZoom();
-  },
-
-  adjustZoom: function() {
-    this.elem().css('zoom', Math.floor(window.innerHeight / this.height));
-  },
-
-  elem: function() {
-    var el = this.$super();
-    var score = $('<div class="score"></div>').css({
+    var scores = $('<div class="scores">').css({
       position: 'absolute',
       right: 5,
       top: 3,
       textAlign: 'right',
-      color: '#fff',
       fontSize: 12,
       fontFamily: '"Share Tech Mono", monospace'
     }).html([
-      '<div class="world-best"></div>',
       '<div class="local-best"></div>',
       '<div class="current"></div>'
-    ].join(''));
-    el.append(score);
-    el.currentScore = score.find('>.current').text(this.score.current);
-    el.localBestScore = score.find('>.local-best').css('color', '#a6b2b1');
-    el.highScore = score.find('>.world-best').css('color', '#809190');
+    ].join('')).appendTo(this.hudElem());
+    this.scoreElems = {
+      localBest: scores.find('>.local-best'),
+      current: scores.find('>.current')
+    };
+    this.scoreElems.localBest.css('color', '#a6b2b1');
+    this.scoreElems.current.css('color', '#fff').text(this.scores.current);
 
-    // Preload
-    var preload = $('<div class="preload"></div>').css({
-      position: 'absolute',
-      top: -9999,
-      left: -9999
-    });
-    el.append(preload);
-    var atlases = [];
-    $.each([Subleerunker.Player, Subleerunker.Flame], function(i, cls) {
-      if (atlases.indexOf(cls.prototype.atlas) === -1) {
-        atlases.push(cls.prototype.atlas);
-      }
-    });
-    $.each(atlases, function(i, atlas) {
-      $('<img />').attr('src', atlas).appendTo(preload);
-    });
+    this.updateScore();
+    this.reset();
+  },
 
-    return el;
+  hudElem: function() {
+    var elem = this.elem();
+    var hudElem = elem.find('>.ui:eq(0)');
+    if (!hudElem.length) {
+      hudElem = $('<div class="hud">').css({
+        position: 'absolute', top: 0, left: 0,
+        margin: 0, padding: 0,
+        // "100%" makes a layout bug on IE11.
+        width: this.width, height: this.height
+      });
+      elem.append(hudElem);
+    }
+    this.hudElem = function() { return hudElem; }
+    return hudElem;
+  },
+
+  zoom: function(scale) {
+    this.$super.apply(this, arguments);
+    this.hudElem().css('zoom', scale);
   },
 
   showSplash: function() {
     var Logo = GameObject.$extend({
-      'class': 'logo',
       width: 148, height: 66,
-      atlasPivot: [0, 370],
-      css: {top: 156, left: '50%', marginLeft: -74}
+      anchor: [0.5, 0],
+      offset: [this.width / 2, 156],
+      fps: 0,
+      animations: {'default': {textureNames: ['logo']}},
+      animationName: 'default',
     });
-    if (typeof window.orientation !== 'undefined') {
-      // mobile
-      var control = {
-        width: 33, height: 35,
-        atlasPivot: [222, 388],
-        animationOffsets: [[0,0], [1,0]]
-      };
+    var control = {};
+    if (IS_MOBILE) {
+      $.extend(control, {
+        width: 33, height: 35, animationTextureNames: ['touch-0', 'touch-1']
+      });
     } else {
-      // desktop
-      var control = {
-        width: 65, height: 14,
-        atlasPivot: [150, 406],
-        animationOffsets: [[0,0], [0,1]]
-      };
+      $.extend(control, {
+        width: 65, height: 14, animationTextureNames: ['key-0', 'key-1']
+      });
     }
     var Control = GameObject.$extend({
-      'class': 'control',
       width: control.width,
       height: control.height,
-      css: {bottom: 30, left: '50%', marginLeft: -(control.width / 2)},
-      frameRate: 0.02,
-      atlasPivot: control.atlasPivot,
-      animations: {'blink': {offsets: control.animationOffsets}},
-      sceneName: 'blink'
+      anchor: [0.5, 1],
+      offset: [this.width / 2, -31],
+      fps: 1,
+      animations: {'blink': {textureNames: control.animationTextureNames}},
+      animationName: 'blink'
     });
     this.logo = new Logo(this);
     this.control = new Control(this);
-    this.elem().append(this.logo.elem()).append(this.control.elem());
+    var disp = this.disp();
+    disp.addChild(this.logo.disp());
+    disp.addChild(this.control.disp());
   },
 
   hideSplash: function() {
@@ -378,63 +439,61 @@ var Subleerunker = GameObject.$extend({
 
   keyEvents: {
     left: function(press) {
-      this.leftPressed = press;
-      this.leftPrior = true;  // evaluate left first
+      this.ctx.leftPressed = press;
+      this.ctx.rightPrior = false;  // evaluate left first
       if (press) {
-        this.shouldPlay = true;
+        this.ctx.shouldPlay = true;
       }
     },
     right: function(press) {
-      this.rightPressed = press;
-      this.leftPrior = false;  // evaluate right first
+      this.ctx.rightPressed = press;
+      this.ctx.rightPrior = true;  // evaluate right first
       if (press) {
-        this.shouldPlay = true;
+        this.ctx.shouldPlay = true;
       }
     },
     shift: function(press, lock) {
-      this.shiftPressed = press;
-      this.shiftLocked = !!lock;
+      this.ctx.shiftPressed = press;
+      this.ctx.shiftLocked = !!lock;
       if (press && lock) {
-        this.shouldPlay = true;
+        this.ctx.shouldPlay = true;
       }
     },
     released: function() {
-      this.leftPressed = false;
-      this.rightPressed = false;
-      this.shiftPressed = false;
-      this.shiftLocked = false;
+      this.ctx.leftPressed = false;
+      this.ctx.rightPressed = false;
+      this.ctx.shiftPressed = false;
+      this.ctx.shiftLocked = false;
     }
   },
 
   releaseLockedShift: function() {
-    if (this.shiftLocked) {
-      this.shiftPressed = false;
-      this.shiftLocked = false;
+    if (this.ctx.shiftLocked) {
+      this.ctx.shiftPressed = false;
+      this.ctx.shiftLocked = false;
     }
   },
 
   captureKeys: function(window, document) {
-    var self = this;
-
-    $(window).on('keydown', function(e) {
-      var handler = self.keyEvents[GameObject.keys[e.which]];
+    $(window).on('keydown', $.proxy(function(e) {
+      var handler = this.keyEvents[KEYS[e.which]];
       if ($.isFunction(handler)) {
-        handler.call(self, true);
+        handler.call(this, true);
       }
-    }).on('keyup', function(e) {
-      var handler = self.keyEvents[GameObject.keys[e.which]];
+    }, this)).on('keyup', $.proxy(function(e) {
+      var handler = this.keyEvents[KEYS[e.which]];
       if ($.isFunction(handler)) {
-        handler.call(self, false);
+        handler.call(this, false);
       }
-    }).on('blur', function(e) {
-      self.keyEvents.released.call(self);
-    });
+    }, this)).on('blur', $.proxy(function(e) {
+      this.keyEvents.released.call(this);
+    }, this));
 
-    $(document).on('touchstart touchmove touchend', function(e) {
+    $(document).on('touchstart touchmove touchend', $.proxy(function(e) {
       e.preventDefault();
       if (e.type == 'touchstart' && e.touches.length == 3) {
         // Toggle shift by 3 fingers.
-        self.keyEvents.shift.call(self, !self.shiftPressed, true);
+        this.keyEvents.shift.call(this, !this.ctx.shiftPressed, true);
         return;
       }
       var pressLeft = false;
@@ -447,184 +506,130 @@ var Subleerunker = GameObject.$extend({
           pressRight = true;
         }
       }
-      self.keyEvents.left.call(self, pressLeft);
-      self.keyEvents.right.call(self, pressRight);
-    });
-
-    $(window).on('resize', function(e) {
-      self.adjustZoom();
-    });
-  },
-
-  slow: function() {
-    return GameObject.debug && this.shiftPressed;
+      this.keyEvents.left.call(this, pressLeft);
+      this.keyEvents.right.call(this, pressRight);
+    }, this));
   },
 
   reset: function() {
-    this.shouldPlay = false;
+    this.ctx.shouldPlay = false;
     this.releaseLockedShift();
     this.showSplash();
+    delete this.difficulty;
   },
 
   play: function() {
-    this.count = 0;
     this.player = new Subleerunker.Player(this);
-    if (this.shiftPressed) {
+    if (this.ctx.shiftPressed) {
       // Hommarju for SUBERUNKER's shift-enter easter egg.
       this.player.friction *= 0.25;
       this.releaseLockedShift();
     }
-    this.player.elem().appendTo(this.elem());
-    this.score.current = 0;
+    this.disp().addChild(this.player.disp());
+    this.scores.current = 0;
     this.updateScore();
     this.hideSplash();
   },
 
   upScore: function() {
-    this.score.current++;
+    this.scores.current++;
     this.updateScore();
   },
 
   updateScore: function(score) {
     if (score !== undefined) {
-      this.score.current = score;
+      this.scores.current = score;
     }
-    this.renderLocalBestScore();
-    this.renderWorldBestScore();
-    this.elem().currentScore.text(this.score.current);
+    this.renderScores();
   },
 
-  renderLocalBestScore: function(score) {
-    if (score !== undefined) {
-      this.score.localBest = score;
+  renderScores: function() {
+    // current
+    if (this.scoreElems.current === undefined) {
+      this.scoreElems.current = this.elem().find('>.scores>.current');
     }
-    if (this.score.localBest <= this.score.current) {
-      this.elem().localBestScore.text('');
+    this.scoreElems.current.text(this.scores.current);
+    // local-best
+    if (this.scoreElems.localBest === undefined) {
+      this.scoreElems.localBest = this.elem().find('>.scores>.local-best');
+    }
+    if (this.scores.localBest <= this.scores.current) {
+      this.scoreElems.localBest.text('');
     } else {
-      this.elem().localBestScore.text(this.score.localBest);
+      this.scoreElems.localBest.text(this.scores.localBest);
     }
-  },
-
-  renderWorldBestScore: function(score) {
-    if (score !== undefined) {
-      this.score.high = score;
-    }
-
-    var greaterThanCurrentScore = this.score.high > this.score.current;
-    var greaterThanLocalBestScore = this.score.high > this.score.localBest;
-
-    if (!greaterThanCurrentScore || !greaterThanLocalBestScore) {
-      this.elem().highScore.text('');
-    } else {
-      this.elem().highScore.text(this.score.high);
-    }
-  },
-
-  fetchWorldBest: function() {
-    // Not Implemented.
-    /*
-    $.getJSON('/high-score', $.proxy(function(highScore) {
-      this.renderWorldBestScore(highScore);
-      if (!this.killed) {
-        setTimeout($.proxy(this.fetchWorldBest, this), 10 * 1000);
-      }
-    }, this));
-    */
-  },
-
-  challengeWorldBest: function() {
-    this.renderWorldBestScore(this.score.current);
-    if (GameObject.debug) {
-      return;
-    }
-    // Not Implemented.
-    /*
-    $.post('/high-score', {
-      my_score: this.score.current
-    });
-    */
   },
 
   gameOver: function() {
     this.player.die();
 
     var cookie;
-    if (this.score.localBest < this.score.current) {
-      // Save local best score in Cookie.
+    if (this.scores.localBest < this.scores.current) {
+      this.scores.localBest = this.scores.current;
+      // Save local best score in Cookie for a month.
       var expires = new Date();
       expires.setMonth(expires.getMonth() + 1);
-
-      cookie = 'my_best_score=' + this.score.current + '; '
+      cookie = 'best-score=' + this.scores.localBest + '; '
       cookie += 'expires=' + expires.toUTCString() + '; ';
       cookie += 'path=/';
       document.cookie = cookie;
-
-      this.renderLocalBestScore(this.score.current);
-    }
-    if (this.score.worldBest < this.score.current) {
-      this.challengeWorldBest();
     }
 
     // Trigger custom event to track the score by outside.
-    $(window).trigger('score', [this.score.current]);
+    $(window).trigger('score', [this.scores.current]);
   },
 
-  loop: function() {
+  __update__: function(frame, prevFrame, deltaTime) {
+    this.ctx.slow = (this.ctx.debug && this.ctx.shiftPressed);
+
     if (!this.player) {
-      if (this.shouldPlay) {
+      if (this.ctx.shouldPlay) {
         this.play();
-        this.shouldPlay = false;
+        this.ctx.shouldPlay = false;
+        this.rebaseFrame(0);
       }
-      this.$super();
+      this.$super.apply(this, arguments);
       return;
     }
 
-    var movements = [[this.leftPressed, this.player.left],
-                     [this.rightPressed, this.player.right]];
+    var movements = [[this.ctx.leftPressed, this.player.left],
+                     [this.ctx.rightPressed, this.player.right]];
     for (var i = 0; i < 2; ++i) {
-      var mov = movements[this.leftPrior ? i : 1 - i];
+      var mov = movements[this.ctx.rightPrior ? 1 - i : i];
       if (mov[0]) {
         mov[1].call(this.player);
         break;
       }
     }
-    if (this.leftPressed || this.rightPressed) {
+    if (this.ctx.leftPressed || this.ctx.rightPressed) {
       this.player.forward();
     } else {
       this.player.rest();
     }
 
     if (!this.player.dead) {
-      if ((this.count * this.resist()) % 2 == 0) {
-        var difficulty = 0.25 * (1 + (this.count / 1000));
-        if (Math.random() < difficulty) {
+      var deltaFrame = frame - prevFrame;
+      if (deltaFrame) {
+      // for (var i = 0; i < deltaFrame; ++i) {
+        if (Math.random() < this.difficulty) {
           var flame = new Subleerunker.Flame(this);
-          flame.elem().appendTo(this.elem());
+          this.disp().addChild(flame.disp());
         }
+        this.difficulty *= 1.001;
       }
     } else {
       var done = true;
-      $.each(this.jobs, function(i, job) {
-        if (job) {
-          done = false;
-          return false;
-        }
+      $.each(this.children, function() {
+        done = false;
+        return false;
       });
       if (done) {
         delete this.player;
-        delete this.jobs;
-        this.jobs = [];
         this.reset();
       }
     }
 
-    ++this.count;
-    this.$super();
-  },
-
-  start: function() {
-    this.$super();
-    this.fetchWorldBest();
+    this.$super.apply(this, arguments);
   }
 });
 
@@ -632,20 +637,16 @@ $.extend(Subleerunker, {
 
   Player: GameObject.$extend({
 
-    'class': 'player',
-
     __init__: function(parent) {
       this.$super.apply(this, arguments);
-
       this.position = parent.outerWidth() / 2 - this.outerWidth() / 2;
       this.updatePosition();
     },
 
-    loop: function() {
-      this.$super();
-
+    __update__: function(frame, prevFrame, deltaTime) {
+      this.$super.apply(this, arguments);
       if (this.dead) {
-        if (this.isLastFrame()) {
+        if (this.animationEnds()) {
           this.kill();
         }
       } else if (this.speed) {
@@ -653,35 +654,32 @@ $.extend(Subleerunker, {
       }
     },
 
-    /* DOM */
+    /* Animation */
+
+    fps: 12,
+    animations: {
+      idle: {textureNames: [
+        'player-idle-0', 'player-idle-1', 'player-idle-2', 'player-idle-3',
+        'player-idle-4', 'player-idle-5', 'player-idle-6'
+      ]},
+      run: {textureNames: [
+        'player-run-0', 'player-run-1', 'player-run-2', 'player-run-3',
+        'player-run-4', 'player-run-5', 'player-run-6', 'player-run-7'
+      ]},
+      die: {textureNames: [
+        'player-die-0', 'player-die-1', 'player-die-2', 'player-die-3',
+        'player-die-4', 'player-die-5', 'player-die-6', 'player-die-7'
+      ], once: true}
+    },
+    animationName: 'idle',
+
+    /* View */
 
     width: 12,
     height: 12,
     padding: [10, 18, 50],
-    css: {bottom: 0},
-
-    /* Animation */
-
-    atlasMargin: 2,
-    frameRate: 0.2,
-    animations: {
-      rightIdle: {
-        offsets: [[0,0], [1,0], [2,0], [3,0], [4,0], [5,0], [6,0]]
-      },
-      leftIdle: {
-        offsets: [[0,1], [1,1], [2,1], [3,1], [4,1], [5,1], [6,1]]
-      },
-      rightRun: {
-        offsets: [[0,2], [1,2], [2,2], [3,2], [4,2], [5,2], [6,2], [7,2]]
-      },
-      leftRun: {
-        offsets: [[0,3], [1,3], [2,3], [3,3], [4,3], [5,3], [6,3], [7,3]]
-      },
-      die: {
-        offsets: [[0,4], [1,4], [2,4], [3,4], [4,4], [5,4], [6,4], [7,4]]
-      }
-    },
-    sceneName: 'rightIdle',
+    anchor: [0, 1],
+    offset: [0, -1],
 
     /* Move */
 
@@ -689,38 +687,44 @@ $.extend(Subleerunker, {
     friction: 0.1,
     step: 5,
 
-    runScene: function(direction) {
-      var sceneName = direction + 'Run';
-      if (this.sceneName == sceneName) {
-        return;
+    setRunAnimation: function(duration) {
+      var frame;
+      if (this.animationName == 'idle') {
+        frame = 0;
+      } else if (this.animationName == 'run' && duration != this.duration) {
+        frame = this.animationFrame() + 4;
       }
-      if (/Idle$/.exec(this.sceneName)) {
-        this.frame = 0;
-      } else if (/Run$/.exec(this.sceneName)) {
-        // Inverse same pose.
-        this.frame += 4;
+      var disp = this.disp();
+      switch (duration) {
+        case -1:
+          disp.scale.x = -1;
+          disp.anchor.x = 1;
+          break;
+        case +1:
+          disp.scale.x = +1;
+          disp.anchor.x = 0;
+          break;
       }
-      this.scene(sceneName, /* keepFrame */ true);
+      this.setAnimation('run', frame);
     },
 
     left: function() {
-      this.$super();
-      this.runScene('left');
+      this.$super.apply(this, arguments);
+      this.setRunAnimation(-1);
     },
 
     right: function() {
-      this.$super();
-      this.runScene('right');
+      this.$super.apply(this, arguments);
+      this.setRunAnimation(+1);
     },
 
     rest: function() {
-      this.$super();
-      var prefix = {'-1': 'left', '1': 'right'}[this.duration];
-      this.scene(prefix + 'Idle', true);
+      this.$super.apply(this, arguments);
+      this.setAnimation('idle');
     },
 
     updatePosition: function() {
-      this.$super();
+      this.$super.apply(this, arguments);
 
       var position = this.position;
       var max = this.parent.outerWidth() - this.outerWidth();
@@ -730,7 +734,7 @@ $.extend(Subleerunker, {
         this.speed = 0;
       }
 
-      this.elem().css('left', this.position);
+      this.disp().x = this.position;
     },
 
     /* Own */
@@ -738,7 +742,7 @@ $.extend(Subleerunker, {
     die: function() {
       this.dead = true;
       this.speed = 0;
-      this.scene('die');
+      this.setAnimation('die');
       this.left = this.right = this.forward = this.rest = $.noop;
     }
 
@@ -746,23 +750,20 @@ $.extend(Subleerunker, {
 
   Flame: GameObject.$extend({
 
-    'class': 'flame',
-
     __init__: function(parent) {
       this.$super.apply(this, arguments);
-
       var W = parent.outerWidth();
       var w = this.outerWidth();
       this.xPosition = (W - w * 2) * Math.random() + w / 2;
       this.position = -this.outerHeight();
     },
 
-    loop: function() {
-      this.$super();
+    __update__: function(frame, prevFrame, deltaTime) {
+      this.$super.apply(this, arguments);
       var player = this.parent.player;
 
       if (this.landed) {
-        if (this.isLastFrame()) {
+        if (this.animationEnds()) {
           this.destroy();
           if (!player.dead) {
             this.parent.upScore();
@@ -772,47 +773,45 @@ $.extend(Subleerunker, {
         this.forward();
         this.updatePosition();
 
-        var max = this.parent.height - this.outerHeight();
+        var max = this.parent.height - this.outerHeight() - this.landingMargin;
         var min = this.parent.height - player.outerHeight();
 
         if (this.position > max) {
           this.position = max;
           this.speed = 0;
           this.updatePosition();
-          this.scene('land');
+          this.setAnimation('land');
           this.landed = true;
         } else if (this.position < min) {
           return;
         }
 
-        if (!player.dead && this.hitted(player)) {
+        if (!player.dead && this.hits(player)) {
           this.destroy();
           this.parent.gameOver();
         }
       }
     },
 
-    /* DOM */
+    /* View */
 
     width: 6,
     height: 6,
     padding: [8, 8, 2],
+    landingMargin: 2,
 
     /* Animation */
 
-    atlasPivot: [150, 370],
-    atlasMargin: 2,
     animations: {
-      burn: {
-        frameRate: 0.2,
-        offsets: [[0,0], [1,0], [2,0], [3,0], [4,0], [5,0], [6,0]]
-      },
-      land: {
-        frameRate: 0.4,
-        offsets: [[0,1], [1,1], [2,1]]
-      }
+      burn: {fps: 12, textureNames: [
+        'flame-burn-0', 'flame-burn-1', 'flame-burn-2', 'flame-burn-3',
+        'flame-burn-4', 'flame-burn-5', 'flame-burn-6'
+      ]},
+      land: {fps: 24, textureNames: [
+        'flame-land-0', 'flame-land-1', 'flame-land-2'
+      ], once: true}
     },
-    sceneName: 'burn',
+    animationName: 'burn',
 
     /* Move */
 
@@ -821,17 +820,17 @@ $.extend(Subleerunker, {
     step: 10,
 
     updatePosition: function() {
-      this.$super();
-
-      this.elem().css({
-        left: this.xPosition,
-        top: this.position
-      });
+      this.$super.apply(this, arguments);
+      var disp = this.disp();
+      if (disp) {
+        disp.x = this.xPosition;
+        disp.y = this.position;
+      }
     },
 
     /* Own */
 
-    hitted: function(player) {
+    hits: function(player) {
       var prevPosition = this.position - this.speed * this.step;
       var H = this.parent.outerHeight();
 
