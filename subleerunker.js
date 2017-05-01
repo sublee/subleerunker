@@ -773,7 +773,7 @@ $.extend(Subleerunker, {
         this.forward();
         this.updatePosition();
 
-        var max = this.parent.height - this.outerHeight();
+        var max = this.parent.height - this.outerHeight() - this.landingMargin;
         var min = this.parent.height - player.outerHeight();
 
         if (this.position > max) {
@@ -798,6 +798,7 @@ $.extend(Subleerunker, {
     width: 6,
     height: 6,
     padding: [8, 8, 2],
+    landingMargin: 2,
 
     /* Animation */
 
