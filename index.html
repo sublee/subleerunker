@@ -45,8 +45,8 @@
 <body>
   <div class="bezel"></div>
   <script>
-    GameObject.debug = (location.hash === '#debug');
-    if (GameObject.debug) {
+    var DEBUG = (location.hash === '#debug');
+    if (DEBUG) {
       $(document.head).append('<script src="stats-r17.min.js">');
       var stats = new Stats();
       stats.flames = new Stats.Panel('flames', '#ff8', '#221');
@@ -68,6 +68,7 @@
 
     function setupGame() {
       var game = Subleerunker();
+      game.ctx.debug = DEBUG;
       game.captureKeys(window, document);
       $('.bezel').append(game.elem());
 

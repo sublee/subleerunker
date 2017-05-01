@@ -6,6 +6,13 @@ var BOTTOM = 2;
 var LEFT = 3;
 var IS_MOBILE = (typeof window.orientation !== 'undefined');
 
+var KEYS = {
+  8: 'backspace', 9: 'tab', 13: 'enter', 16: 'shift', 17: 'ctrl', 18: 'alt',
+  19: 'pause', 20: 'capsLock', 27: 'esc', 33: 'pageUp', 34: 'pageDown',
+  35: 'end', 36: 'home', 37: 'left', 38: 'up', 39: 'right', 40: 'down',
+  45: 'insert', 46: 'delete'
+};
+
 var limit = function(n, min, max) {
   return Math.max(min, Math.min(max, n));
 };
@@ -35,22 +42,15 @@ var getTexture = function(name) {
 
 var GameObject = Class.$extend({
 
-  __classvars__: {
-    debug: false,
-    keys: {
-      8: 'backspace', 9: 'tab', 13: 'enter', 16: 'shift', 17: 'ctrl',
-      18: 'alt', 19: 'pause', 20: 'capsLock', 27: 'esc', 33: 'pageUp',
-      34: 'pageDown', 35: 'end', 36: 'home', 37: 'left', 38: 'up',
-      39: 'right', 40: 'down', 45: 'insert', 46: 'delete'
-    }
-  },
-
   __init__: function(parent) {
     this.parent = parent;
     this.children = {};
     this.childIdSeq = 0;
     if (parent) {
       this.childId = parent.addChild(this);
+      this.ctx = parent.ctx;
+    } else {
+      this.ctx = {};
     }
     this.padding = normalizePadding(this.padding);
     this.killed = false;
@@ -215,16 +215,8 @@ var GameObject = Class.$extend({
     this.position += this.speed * this.step * this.resist();
   },
 
-  slow: function() {
-    return false;
-  },
-
   resist: function() {
-    var root = this;
-    while (root.parent) {
-      root = root.parent;
-    }
-    return root.slow() ? 0.25 : 1;
+    return this.ctx.slow ? 0.25 : 1;
   },
 
   /* Schedule */
@@ -355,13 +347,6 @@ var Subleerunker = Game.$extend({
   height: 480 - 2,
   padding: [0, 0, 2, 0],
 
-  leftPrior: true,
-  leftPressed: false,
-  rightPressed: false,
-  shiftPressed: false,
-  shiftLocked: false,
-  shouldPlay: false,
-
   fps: 30,
   difficulty: 0.25,
 
@@ -466,63 +451,61 @@ var Subleerunker = Game.$extend({
 
   keyEvents: {
     left: function(press) {
-      this.leftPressed = press;
-      this.leftPrior = true;  // evaluate left first
+      this.ctx.leftPressed = press;
+      this.ctx.rightPrior = false;  // evaluate left first
       if (press) {
-        this.shouldPlay = true;
+        this.ctx.shouldPlay = true;
       }
     },
     right: function(press) {
-      this.rightPressed = press;
-      this.leftPrior = false;  // evaluate right first
+      this.ctx.rightPressed = press;
+      this.ctx.rightPrior = true;  // evaluate right first
       if (press) {
-        this.shouldPlay = true;
+        this.ctx.shouldPlay = true;
       }
     },
     shift: function(press, lock) {
-      this.shiftPressed = press;
-      this.shiftLocked = !!lock;
+      this.ctx.shiftPressed = press;
+      this.ctx.shiftLocked = !!lock;
       if (press && lock) {
-        this.shouldPlay = true;
+        this.ctx.shouldPlay = true;
       }
     },
     released: function() {
-      this.leftPressed = false;
-      this.rightPressed = false;
-      this.shiftPressed = false;
-      this.shiftLocked = false;
+      this.ctx.leftPressed = false;
+      this.ctx.rightPressed = false;
+      this.ctx.shiftPressed = false;
+      this.ctx.shiftLocked = false;
     }
   },
 
   releaseLockedShift: function() {
-    if (this.shiftLocked) {
-      this.shiftPressed = false;
-      this.shiftLocked = false;
+    if (this.ctx.shiftLocked) {
+      this.ctx.shiftPressed = false;
+      this.ctx.shiftLocked = false;
     }
   },
 
   captureKeys: function(window, document) {
-    var self = this;
-
-    $(window).on('keydown', function(e) {
-      var handler = self.keyEvents[GameObject.keys[e.which]];
+    $(window).on('keydown', $.proxy(function(e) {
+      var handler = this.keyEvents[KEYS[e.which]];
       if ($.isFunction(handler)) {
-        handler.call(self, true);
+        handler.call(this, true);
       }
-    }).on('keyup', function(e) {
-      var handler = self.keyEvents[GameObject.keys[e.which]];
+    }, this)).on('keyup', $.proxy(function(e) {
+      var handler = this.keyEvents[KEYS[e.which]];
       if ($.isFunction(handler)) {
-        handler.call(self, false);
+        handler.call(this, false);
       }
-    }).on('blur', function(e) {
-      self.keyEvents.released.call(self);
-    });
+    }, this)).on('blur', $.proxy(function(e) {
+      this.keyEvents.released.call(this);
+    }, this));
 
-    $(document).on('touchstart touchmove touchend', function(e) {
+    $(document).on('touchstart touchmove touchend', $.proxy(function(e) {
       e.preventDefault();
       if (e.type == 'touchstart' && e.touches.length == 3) {
         // Toggle shift by 3 fingers.
-        self.keyEvents.shift.call(self, !self.shiftPressed, true);
+        this.keyEvents.shift.call(this, !this.ctx.shiftPressed, true);
         return;
       }
       var pressLeft = false;
@@ -535,17 +518,13 @@ var Subleerunker = Game.$extend({
           pressRight = true;
         }
       }
-      self.keyEvents.left.call(self, pressLeft);
-      self.keyEvents.right.call(self, pressRight);
-    });
-  },
-
-  slow: function() {
-    return GameObject.debug && this.shiftPressed;
+      this.keyEvents.left.call(this, pressLeft);
+      this.keyEvents.right.call(this, pressRight);
+    }, this));
   },
 
   reset: function() {
-    this.shouldPlay = false;
+    this.ctx.shouldPlay = false;
     this.releaseLockedShift();
     this.showSplash();
     delete this.difficulty;
@@ -553,7 +532,7 @@ var Subleerunker = Game.$extend({
 
   play: function() {
     this.player = new Subleerunker.Player(this);
-    if (this.shiftPressed) {
+    if (this.ctx.shiftPressed) {
       // Hommarju for SUBERUNKER's shift-enter easter egg.
       this.player.friction *= 0.25;
       this.releaseLockedShift();
@@ -613,26 +592,28 @@ var Subleerunker = Game.$extend({
   },
 
   __update__: function(frame, prevFrame, deltaTime) {
+    this.ctx.slow = (this.ctx.debug && this.ctx.shiftPressed);
+
     if (!this.player) {
-      if (this.shouldPlay) {
+      if (this.ctx.shouldPlay) {
         this.play();
-        this.shouldPlay = false;
+        this.ctx.shouldPlay = false;
         this.rebaseFrame(0);
       }
       this.$super.apply(this, arguments);
       return;
     }
 
-    var movements = [[this.leftPressed, this.player.left],
-                     [this.rightPressed, this.player.right]];
+    var movements = [[this.ctx.leftPressed, this.player.left],
+                     [this.ctx.rightPressed, this.player.right]];
     for (var i = 0; i < 2; ++i) {
-      var mov = movements[this.leftPrior ? i : 1 - i];
+      var mov = movements[this.ctx.rightPrior ? 1 - i : i];
       if (mov[0]) {
         mov[1].call(this.player);
         break;
       }
     }
-    if (this.leftPressed || this.rightPressed) {
+    if (this.ctx.leftPressed || this.ctx.rightPressed) {
       this.player.forward();
     } else {
       this.player.rest();
