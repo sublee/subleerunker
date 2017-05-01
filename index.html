@@ -45,7 +45,10 @@
 <body>
   <div class="bezel"></div>
   <script>
-    var ctx = {debug: (location.hash === '#debug')};
+    var ctx = {};
+    $(window).on('hashchange', function() {
+      ctx.debug = location.hash === '#debug';
+    }).trigger('hashchange');
     if (ctx.debug) {
       $(document.head).append('<script src="stats-r17.min.js">');
       var stats = new Stats();
