@@ -38,6 +38,8 @@ var calcFrame = function(fps, time) {
 
 var GameObject = Class.$extend({
 
+  __name__: 'GameObject',
+
   __init__: function(/* parent or ctx */arg) {
     this.children = {};
     this.childIdSeq = 0;
@@ -283,12 +285,13 @@ var GameObject = Class.$extend({
     if (!this.ctx.debug) {
       return PIXI.loader.resources['atlas.json'].textures[name];
     }
-    if (!this._debugTextures) {
-      this._debugTextures = {};
-    }
-    if (!this._debugTextures[name]) {
+    var frameId = this.__name__ + '/' + name;
+    var texture;
+    try {
+      texture = PIXI.Texture.fromFrame(frameId);
+    } catch (e) {
       // Draw bounding box.
-      var texture = PIXI.loader.resources['atlas.json'].textures[name];
+      texture = PIXI.loader.resources['atlas.json'].textures[name];
       var renderer = new PIXI.CanvasRenderer(texture.width, texture.height, {
         transparent: true
       });
@@ -310,10 +313,11 @@ var GameObject = Class.$extend({
         '#fff',
         this.padding[LEFT], this.padding[TOP], this.width, this.height
       );
-      this._debugTextures[name] = PIXI.Texture.fromCanvas(renderer.view);
+      texture = PIXI.Texture.fromCanvas(renderer.view);
+      PIXI.Texture.addToCache(texture, frameId);
       delete renderer, canvas;
     }
-    return this._debugTextures[name];
+    return texture;
   }
 
 });
@@ -362,6 +366,8 @@ var Game = GameObject.$extend({
 });
 
 var Subleerunker = Game.$extend({
+
+  __name__: 'Subleerunker',
 
   'class': 'subleerunker',
 
@@ -671,6 +677,8 @@ $.extend(Subleerunker, {
 
   Player: GameObject.$extend({
 
+    __name__: 'Player',
+
     __init__: function(parent) {
       this.$super.apply(this, arguments);
       this.position = parent.outerWidth() / 2 - this.outerWidth() / 2;
@@ -783,6 +791,8 @@ $.extend(Subleerunker, {
   }),
 
   Flame: GameObject.$extend({
+
+    __name__: 'Flame',
 
     __init__: function(parent) {
       this.$super.apply(this, arguments);
