@@ -42,15 +42,16 @@ var getTexture = function(name) {
 
 var GameObject = Class.$extend({
 
-  __init__: function(parent) {
-    this.parent = parent;
+  __init__: function(/* parent or ctx */arg) {
     this.children = {};
     this.childIdSeq = 0;
-    if (parent) {
+    if (arg instanceof GameObject) {
+      var parent = arg;
+      this.parent = parent;
       this.childId = parent.addChild(this);
       this.ctx = parent.ctx;
     } else {
-      this.ctx = {};
+      this.ctx = arg ? arg : {};
     }
     this.padding = normalizePadding(this.padding);
     this.killed = false;
