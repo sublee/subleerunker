@@ -299,11 +299,11 @@ var Game = GameObject.$extend({
   },
 
   __elem__: function() {
-    return $('<div>')
-      .addClass(this['class'])
-      .css('position', 'relative')
-      .css('image-rendering', 'pixelated')
-      .append(this.renderer.view);
+    var elem = $('<div>').addClass(this['class']);
+    var view = $(this.renderer.view).css('display', 'block');
+    elem.css({position: 'relative', imageRendering: 'pixelated'});
+    elem.append(view);
+    return elem;
   },
 
   elem: function() {
