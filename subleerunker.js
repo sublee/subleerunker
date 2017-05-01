@@ -45,8 +45,6 @@ var GameObject = Class.$extend({
     }
   },
 
-  'class': null,
-
   __init__: function(parent) {
     this.parent = parent;
     this.children = {};
@@ -309,6 +307,7 @@ var GameObject = Class.$extend({
 var Game = GameObject.$extend({
 
   renderer_class: PIXI.CanvasRenderer,
+  'class': '',
 
   __init__: function() {
     this.$super.apply(this, arguments);
@@ -424,7 +423,6 @@ var Subleerunker = Game.$extend({
 
   showSplash: function() {
     var Logo = GameObject.$extend({
-      'class': 'logo',
       width: 148, height: 66,
       anchor: [0.5, 0],
       offset: [this.width / 2, 156],
@@ -443,7 +441,6 @@ var Subleerunker = Game.$extend({
       });
     }
     var Control = GameObject.$extend({
-      'class': 'control',
       width: control.width,
       height: control.height,
       anchor: [0.5, 1],
@@ -671,8 +668,6 @@ $.extend(Subleerunker, {
 
   Player: GameObject.$extend({
 
-    'class': 'player',
-
     __init__: function(parent) {
       this.$super.apply(this, arguments);
       this.position = parent.outerWidth() / 2 - this.outerWidth() / 2;
@@ -785,8 +780,6 @@ $.extend(Subleerunker, {
   }),
 
   Flame: GameObject.$extend({
-
-    'class': 'flame',
 
     __init__: function(parent) {
       this.$super.apply(this, arguments);
