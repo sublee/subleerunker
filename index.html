@@ -40,15 +40,31 @@
   <script src="jquery-3.2.1.min.js"></script>
   <script src="pixi-4.5.1.min.js"></script>
   <script src="classy-1.4.min.js"></script>
+  <script src="seedrandom-2.4.3.min.js"></script>
   <script src="subleerunker.js"></script>
 </head>
 <body>
   <div class="bezel"></div>
   <script>
-    var ctx = {};
-    $(window).on('hashchange', function() {
-      ctx.debug = location.hash === '#debug';
-    }).trigger('hashchange');
+    // Parse querystring.
+    function parseQuerystring(querystring) {
+      var query = {};
+      var parts = querystring.replace(/^\?/, '').split('&');
+      $.each(parts, function(i, part) {
+        var words = part.split('=');
+        var key = decodeURIComponent(words[0]);
+        var value = decodeURIComponent(words[1] || '');
+        query[key] = value;
+      });
+      return query;
+    }
+    var QUERY = parseQuerystring(location.search);
+
+    // Determine a random seed.
+    Math.seedrandom(QUERY.seed);
+
+    // Setup context and init debug mode.
+    var ctx = {debug: (QUERY.debug !== undefined)};
     if (ctx.debug) {
       $(document.head).append('<script src="stats-r17.min.js">');
       var stats = new Stats();
