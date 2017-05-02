@@ -63,6 +63,13 @@
     // Determine a random seed.
     Math.seedrandom(QUERY.seed);
 
+    // Modify FPS of animation frames.
+    if (QUERY.fps) {
+      requestAnimationFrame = function(f) {
+        setTimeout(function() { f(Number(new Date())); }, 1000 / QUERY.fps);
+      };
+    }
+
     // Setup context and init debug mode.
     var ctx = {debug: (QUERY.debug !== undefined)};
     if (ctx.debug) {
