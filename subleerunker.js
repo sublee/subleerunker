@@ -256,7 +256,7 @@ var GameObject = Class.$extend({
       prevFrame = this.frame(this.fps, prevTime);
       deltaTime = time - prevTime;
       // Cut off too slow delta time.
-      deltaTime = Math.min(deltaTime, 1000 / 60);
+      deltaTime = limit(deltaTime, 0, 1000 / 60);
     }
     this.time = time;
     this.__update__(frame, prevFrame, deltaTime);
