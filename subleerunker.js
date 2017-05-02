@@ -177,41 +177,44 @@ var GameObject = Class.$extend({
   position: 0,
   speed: 0,
   duration: 1,
-  friction: 1,
-  step: 1,
+  acceleration: 1,  // per second
+  step: 1,  // per second
 
-  left: function() {
+  left: function(deltaTime) {
     this.duration = -1;
-    this.forward();
+    this.forward(deltaTime);
   },
 
-  right: function() {
+  right: function(deltaTime) {
     this.duration = 1;
-    this.forward();
+    this.forward(deltaTime);
   },
 
-  up: function() {
+  up: function(deltaTime) {
     this.duration = -1;
-    this.forward();
+    this.forward(deltaTime);
   },
 
-  down: function() {
+  down: function(deltaTime) {
     this.duration = 1;
-    this.forward();
+    this.forward(deltaTime);
   },
 
-  forward: function() {
-    this.speed += this.duration * this.friction;
+  forward: function(deltaTime) {
+    this.speed += this.duration * this.acceleration * deltaTime / 1000;
     this.speed = limit(this.speed, -1, 1);
   },
 
-  rest: function() {
-    this.speed = Math.abs(this.speed) - this.friction;
+  rest: function(deltaTime) {
+    this.speed = Math.abs(this.speed) - this.acceleration * deltaTime / 1000;
     this.speed = Math.max(0, this.speed) * this.duration;
   },
 
-  updatePosition: function() {
-    this.position += this.speed * this.step * this.resist();
+  updatePosition: function(deltaTime) {
+    if (!deltaTime) {
+      return;
+    }
+    this.position += this.speed * this.step * this.resist() * deltaTime / 1000;
   },
 
   resist: function() {
@@ -220,6 +223,7 @@ var GameObject = Class.$extend({
 
   /* Schedule */
 
+  time: null,
   baseFrame: 0,
   baseTime: 0,
 
@@ -246,8 +250,14 @@ var GameObject = Class.$extend({
     }
     var frame = this.frame(this.fps, time);
     var prevTime = this.time;
-    var prevFrame = this.frame(this.fps, prevTime);
-    var deltaTime = time - prevTime;
+    var prevFrame = 0;
+    var deltaTime = 0;
+    if (prevTime !== null) {
+      prevFrame = this.frame(this.fps, prevTime);
+      deltaTime = time - prevTime;
+      // Cut off too slow delta time.
+      deltaTime = Math.min(deltaTime, 1000 / 30);
+    }
     this.time = time;
     this.__update__(frame, prevFrame, deltaTime);
   },
@@ -554,7 +564,7 @@ var Subleerunker = Game.$extend({
     this.player = new Subleerunker.Player(this);
     if (this.ctx.shiftPressed) {
       // Hommarju for SUBERUNKER's shift-enter easter egg.
-      this.player.friction *= 0.25;
+      this.player.acceleration *= 0.25;
       this.releaseLockedShift();
     }
     this.disp().addChild(this.player.disp());
@@ -629,14 +639,14 @@ var Subleerunker = Game.$extend({
     for (var i = 0; i < 2; ++i) {
       var mov = movements[this.ctx.rightPrior ? 1 - i : i];
       if (mov[0]) {
-        mov[1].call(this.player);
+        mov[1].call(this.player, deltaTime);
         break;
       }
     }
     if (this.ctx.leftPressed || this.ctx.rightPressed) {
-      this.player.forward();
+      this.player.forward(deltaTime);
     } else {
-      this.player.rest();
+      this.player.rest(deltaTime);
     }
 
     if (!this.player.dead) {
@@ -684,7 +694,7 @@ $.extend(Subleerunker, {
           this.kill();
         }
       } else if (this.speed) {
-        this.updatePosition();
+        this.updatePosition(deltaTime);
       }
     },
 
@@ -718,8 +728,8 @@ $.extend(Subleerunker, {
     /* Move */
 
     speed: 0,
-    friction: 0.1,
-    step: 5,
+    acceleration: 6,
+    step: 300,
 
     setRunAnimation: function(duration) {
       var frame;
@@ -742,22 +752,22 @@ $.extend(Subleerunker, {
       this.setAnimation('run', frame);
     },
 
-    left: function() {
+    left: function(deltaTime) {
       this.$super.apply(this, arguments);
       this.setRunAnimation(-1);
     },
 
-    right: function() {
+    right: function(deltaTime) {
       this.$super.apply(this, arguments);
       this.setRunAnimation(+1);
     },
 
-    rest: function() {
+    rest: function(deltaTime) {
       this.$super.apply(this, arguments);
       this.setAnimation('idle');
     },
 
-    updatePosition: function() {
+    updatePosition: function(deltaTime) {
       this.$super.apply(this, arguments);
 
       var position = this.position;
@@ -806,8 +816,9 @@ $.extend(Subleerunker, {
           }
         }
       } else {
-        this.forward();
-        this.updatePosition();
+        var prevPosition = this.position;
+        this.forward(deltaTime);
+        this.updatePosition(deltaTime);
 
         var max = this.parent.height - this.outerHeight() - this.landingMargin;
         var min = this.parent.height - player.outerHeight();
@@ -815,14 +826,14 @@ $.extend(Subleerunker, {
         if (this.position > max) {
           this.position = max;
           this.speed = 0;
-          this.updatePosition();
+          this.updatePosition(deltaTime);
           this.setAnimation('land');
           this.landed = true;
         } else if (this.position < min) {
           return;
         }
 
-        if (!player.dead && this.hits(player)) {
+        if (!player.dead && this.hits(player, prevPosition)) {
           this.destroy();
           this.parent.gameOver();
         }
@@ -852,10 +863,10 @@ $.extend(Subleerunker, {
     /* Move */
 
     speed: 0,
-    friction: 0.01,
-    step: 10,
+    acceleration: 0.6,
+    step: 600,
 
-    updatePosition: function() {
+    updatePosition: function(deltaTime) {
       this.$super.apply(this, arguments);
       var disp = this.disp();
       if (disp) {
@@ -866,8 +877,7 @@ $.extend(Subleerunker, {
 
     /* Own */
 
-    hits: function(player) {
-      var prevPosition = this.position - this.speed * this.step;
+    hits: function(player, prevPosition) {
       var H = this.parent.outerHeight();
 
       var top = prevPosition + this.padding[TOP];
