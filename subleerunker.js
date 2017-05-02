@@ -291,6 +291,12 @@ var GameObject = Class.$extend({
     }
   },
 
+  /* Misc */
+
+  random: function() {
+    return (this.ctx.random || Math.random)();
+  },
+
   getTexture: function(name) {
     if (!this.ctx.debug) {
       return PIXI.loader.resources['atlas.json'].textures[name];
@@ -571,6 +577,7 @@ var Subleerunker = Game.$extend({
     this.scores.current = 0;
     this.updateScore();
     this.hideSplash();
+    this.ctx.random = new Math.seedrandom(this.ctx.randomSeed);
   },
 
   upScore: function() {
@@ -653,7 +660,7 @@ var Subleerunker = Game.$extend({
       var deltaFrame = frame - prevFrame;
       if (deltaFrame) {
       // for (var i = 0; i < deltaFrame; ++i) {
-        if (Math.random() < this.difficulty) {
+        if (this.random() < this.difficulty) {
           var flame = new Subleerunker.Flame(this);
           this.disp().addChild(flame.disp());
         }
@@ -800,7 +807,7 @@ $.extend(Subleerunker, {
       this.$super.apply(this, arguments);
       var W = parent.outerWidth();
       var w = this.outerWidth();
-      this.xPosition = (W - w * 2) * Math.random() + w / 2;
+      this.xPosition = (W - w * 2) * this.random() + w / 2;
       this.position = -this.outerHeight();
     },
 

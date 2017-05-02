@@ -60,9 +60,6 @@
     }
     var QUERY = parseQuerystring(location.search);
 
-    // Determine a random seed.
-    Math.seedrandom(QUERY.seed);
-
     // Modify FPS of animation frames.
     if (QUERY.fps) {
       requestAnimationFrame = function(f) {
@@ -71,7 +68,10 @@
     }
 
     // Setup context and init debug mode.
-    var ctx = {debug: (QUERY.debug !== undefined)};
+    var ctx = {
+      debug: (QUERY.debug !== undefined),
+      randomSeed: QUERY.seed
+    };
     if (ctx.debug) {
       $(document.head).append('<script src="stats-r17.min.js">');
       var stats = new Stats();
