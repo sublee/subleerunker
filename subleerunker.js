@@ -291,31 +291,23 @@ var GameObject = Class.$extend({
       texture = PIXI.Texture.fromFrame(frameId);
     } catch (e) {
       // Draw bounding box.
-      texture = PIXI.loader.resources['atlas.json'].textures[name];
-      var renderer = new PIXI.CanvasRenderer(texture.width, texture.height, {
-        transparent: true
-      });
-      renderer.render(new PIXI.Sprite(texture));
-      var canvas = renderer.rootContext;
-      canvas.drawImage(renderer.view, 0, 0);
+      var t = PIXI.loader.resources['atlas.json'].textures[name];
+      var r = new PIXI.CanvasRenderer(t.width, t.height, {transparent: true});
+      r.render(new PIXI.Sprite(t));
       function drawRect(style, x, y, w, h) {
-        canvas.fillStyle = style;
-        canvas.fillRect(x, y, w - 1, 1);
-        canvas.fillRect(x + w - 1, y, 1, h - 1);
-        canvas.fillRect(x + 1, y + h - 1, w - 1, 1);
-        canvas.fillRect(x, y + 1, 1, h - 1);
+        r.rootContext.fillStyle = style;
+        r.rootContext.fillRect(x, y, w - 1, 1);
+        r.rootContext.fillRect(x + w - 1, y, 1, h - 1);
+        r.rootContext.fillRect(x + 1, y + h - 1, w - 1, 1);
+        r.rootContext.fillRect(x, y + 1, 1, h - 1);
       }
-      drawRect(
-        'rgba(255, 255, 255, 0.2)',
-        0, 0, texture.width, texture.height
-      );
-      drawRect(
-        '#fff',
-        this.padding[LEFT], this.padding[TOP], this.width, this.height
-      );
-      texture = PIXI.Texture.fromCanvas(renderer.view);
+      drawRect('rgba(255, 255, 255, 0.25)', 0, 0, t.width, t.height);
+      if (t.width != this.width || t.height != this.height) {
+        drawRect('#fff', this.padding[LEFT], this.padding[TOP],
+                 this.width, this.height);
+      }
+      texture = PIXI.Texture.fromCanvas(r.view);
       PIXI.Texture.addToCache(texture, frameId);
-      delete renderer, canvas;
     }
     return texture;
   }
