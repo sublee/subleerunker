@@ -102,13 +102,11 @@
         });
         return numFlames;
       }
-      function before() {
-        stats.begin();
-      }
-      function after() {
+      var before = function(time) { stats.begin(); };
+      var after = function(time) {
         stats.end();
         stats.flames.update(countFlames(this), 100);
-      }
+      };
     }
     game.run(before, after);
   </script>

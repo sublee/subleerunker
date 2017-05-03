@@ -414,7 +414,9 @@ var Game = GameObject.$extend({
         }
       }
       if (this.handlers.touch) {
-        e.preventDefault();
+        if (e.type !== 'touchend') {
+          e.preventDefault();
+        }
         this.handlers.touch.call(this, e.touches, e.type);
       }
     }, this));
@@ -440,16 +442,17 @@ var Game = GameObject.$extend({
   },
 
   run: function(before, after) {
-    PIXI.loader.add(ATLAS).load(function() {
-      requestAnimationFrame(function(time) {
+    PIXI.loader.add(ATLAS).load($.proxy(function() {
+      var update = $.proxy(function(time) {
         before && before.call(this, time);
         game.update(time);
         if (!this.killed) {
-          requestAnimationFrame(arguments.callee);
+          requestAnimationFrame(update);
         }
         after && after.call(this, time);
-      });
-    });
+      }, this);
+      requestAnimationFrame(update);
+    }, this));
   }
 
 });
