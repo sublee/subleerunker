@@ -432,11 +432,15 @@ var Game = GameObject.$extend({
     /// Will be called before the first update.
   },
 
-  __update__: function(frame, prevFrame, deltaTime) {
+  update: function(time) {
     if (this._first) {
       this.setup();
       this._first = false;
     }
+    this.$super.apply(this, arguments);
+  },
+
+  __update__: function(frame, prevFrame, deltaTime) {
     this.$super.apply(this, arguments);
     this.renderer.render(this.disp());
   },
