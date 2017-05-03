@@ -4,6 +4,7 @@ var TOP = 0;
 var RIGHT = 1;
 var BOTTOM = 2;
 var LEFT = 3;
+var ATLAS = 'atlas.json';
 var IS_MOBILE = (typeof window.orientation !== 'undefined');
 
 var KEYS = {
@@ -299,7 +300,7 @@ var GameObject = Class.$extend({
 
   getTexture: function(name) {
     if (!this.ctx.debug) {
-      return PIXI.loader.resources['atlas.json'].textures[name];
+      return PIXI.loader.resources[ATLAS].textures[name];
     }
     var frameId = this.__name__ + '/' + name;
     var texture;
@@ -307,7 +308,7 @@ var GameObject = Class.$extend({
       texture = PIXI.Texture.fromFrame(frameId);
     } catch (e) {
       // Draw bounding box.
-      var t = PIXI.loader.resources['atlas.json'].textures[name];
+      var t = PIXI.loader.resources[ATLAS].textures[name];
       var r = new PIXI.CanvasRenderer(t.width, t.height, {transparent: true});
       r.render(new PIXI.Sprite(t));
       function drawRect(style, x, y, w, h) {
@@ -332,12 +333,25 @@ var GameObject = Class.$extend({
 
 var Game = GameObject.$extend({
 
-  renderer_class: PIXI.CanvasRenderer,
   'class': '',
+
+  renderer_class: PIXI.CanvasRenderer,
+
+  /// Event handlers.
+  ///
+  /// Available events:
+  /// - key{KEY}(Boolean pressed)  (e.g., keyLeft, keyRight, ...)
+  /// - touch(Touch[] touches, String eventType)
+  /// - blur()
+  /// - resize()
+  ///
+  handlers: null,
 
   __init__: function() {
     this.$super.apply(this, arguments);
     this.renderer = new this.renderer_class(this.width, this.height);
+    this.handlers = this.handlers || {};
+    this._first = true;
   },
 
   __disp__: function() {
@@ -366,9 +380,76 @@ var Game = GameObject.$extend({
     this.renderer.resize(this.width * scale, this.height * scale);
   },
 
+  watch: function(window, document, handlers) {
+    handlers = handlers || {};
+    // Keyboard events.
+    function makeKeyHandler(pressed) {
+      var eventType = pressed ? 'keydown' : 'keyup';
+      return $.proxy(function(e) {
+        var key = KEYS[e.which];
+        if (!key) {
+          return;
+        }
+        var handlerName = 'key' + key.charAt(0).toUpperCase() + key.slice(1);
+        var handler = this.handlers[handlerName];
+        handler && handler.call(this, pressed);
+        handlers[eventType] && handlers[eventType].call(this, key);
+      }, this);
+    }
+    $(window).on({
+      keydown: makeKeyHandler.call(this, true),
+      keyup: makeKeyHandler.call(this, false),
+      blur: $.proxy(function(e) {
+        this.handlers.blur && this.handlers.blur.call(this);
+        handlers.blur && handlers.blur.call(this);
+      }, this)
+    });
+    // Touch events.
+    $(document).on('touchstart touchmove touchend', $.proxy(function(e) {
+      if (e.target !== document.body) {
+        var elem = this.elem();
+        if (!elem || !$.contains(elem.get(0), e.target)) {
+          // Filter touch target.  Some overlapped layers should be touchable.
+          return;
+        }
+      }
+      if (this.handlers.touch) {
+        e.preventDefault();
+        this.handlers.touch.call(this, e.touches, e.type);
+      }
+    }, this));
+    // Window events.
+    $(window).on('resize', $.proxy(function() {
+      var scale = Math.max(1, Math.floor(window.innerHeight / this.height));
+      this.zoom(scale);
+      handlers.resize && handlers.resize.call(this, scale);
+    }, this)).trigger('resize');
+  },
+
+  setup: function() {
+    /// Will be called before the first update.
+  },
+
   __update__: function(frame, prevFrame, deltaTime) {
+    if (this._first) {
+      this.setup();
+      this._first = false;
+    }
     this.$super.apply(this, arguments);
     this.renderer.render(this.disp());
+  },
+
+  run: function(before, after) {
+    PIXI.loader.add(ATLAS).load(function() {
+      requestAnimationFrame(function(time) {
+        before && before.call(this, time);
+        game.update(time);
+        if (!this.killed) {
+          requestAnimationFrame(arguments.callee);
+        }
+        after && after.call(this, time);
+      });
+    });
   }
 
 });
@@ -386,9 +467,7 @@ var Subleerunker = Game.$extend({
   fps: 30,
   difficulty: 0.25,
 
-  __init__: function() {
-    this.$super.apply(this, arguments);
-
+  setup: function() {
     var m = /best-score=(\d+)/.exec(document.cookie);
     if (!m) {
       // "my_best_score" is deprecated but for backward compatibility.
@@ -485,33 +564,52 @@ var Subleerunker = Game.$extend({
     delete this.logo, this.control;
   },
 
-  keyEvents: {
-    left: function(press) {
+  handlers: {
+    keyLeft: function(press) {
       this.ctx.leftPressed = press;
       this.ctx.rightPrior = false;  // evaluate left first
       if (press) {
         this.ctx.shouldPlay = true;
       }
     },
-    right: function(press) {
+    keyRight: function(press) {
       this.ctx.rightPressed = press;
       this.ctx.rightPrior = true;  // evaluate right first
       if (press) {
         this.ctx.shouldPlay = true;
       }
     },
-    shift: function(press, lock) {
+    keyShift: function(press, lock) {
       this.ctx.shiftPressed = press;
       this.ctx.shiftLocked = !!lock;
       if (press && lock) {
         this.ctx.shouldPlay = true;
       }
     },
-    released: function() {
+    blur: function() {
       this.ctx.leftPressed = false;
       this.ctx.rightPressed = false;
       this.ctx.shiftPressed = false;
       this.ctx.shiftLocked = false;
+    },
+    touch: function(touches, eventType) {
+      if (eventType === 'start' && touches.length === 3) {
+        // Toggle shift by 3 fingers.
+        this.handlers.keyShift.call(this, !this.ctx.shiftPressed, true);
+        return;
+      }
+      var pressLeft = false;
+      var pressRight = false;
+      if (touches.length) {
+        var lastTouch = touches[touches.length - 1];
+        if (lastTouch.pageX / window.innerWidth < 0.5) {
+          pressLeft = true;
+        } else {
+          pressRight = true;
+        }
+      }
+      this.handlers.keyLeft.call(this, pressLeft);
+      this.handlers.keyRight.call(this, pressRight);
     }
   },
 
@@ -520,50 +618,6 @@ var Subleerunker = Game.$extend({
       this.ctx.shiftPressed = false;
       this.ctx.shiftLocked = false;
     }
-  },
-
-  captureInputs: function(window, document) {
-    $(window).on('keydown', $.proxy(function(e) {
-      var handler = this.keyEvents[KEYS[e.which]];
-      if ($.isFunction(handler)) {
-        handler.call(this, true);
-      }
-    }, this)).on('keyup', $.proxy(function(e) {
-      var handler = this.keyEvents[KEYS[e.which]];
-      if ($.isFunction(handler)) {
-        handler.call(this, false);
-      }
-    }, this)).on('blur', $.proxy(function(e) {
-      this.keyEvents.released.call(this);
-    }, this));
-
-    $(document).on('touchstart touchmove touchend', $.proxy(function(e) {
-      // Filter touch target.  Some overlapped layers should be touchable.
-      if (e.target !== document.body) {
-        var elem = this.elem();
-        if (!elem || !$.contains(elem.get(0), e.target)) {
-          return;
-        }
-      }
-      e.preventDefault();
-      if (e.type == 'touchstart' && e.touches.length == 3) {
-        // Toggle shift by 3 fingers.
-        this.keyEvents.shift.call(this, !this.ctx.shiftPressed, true);
-        return;
-      }
-      var pressLeft = false;
-      var pressRight = false;
-      if (e.touches.length) {
-        var lastTouch = e.touches[e.touches.length - 1];
-        if (lastTouch.pageX / window.innerWidth < 0.5) {
-          pressLeft = true;
-        } else {
-          pressRight = true;
-        }
-      }
-      this.keyEvents.left.call(this, pressLeft);
-      this.keyEvents.right.call(this, pressRight);
-    }, this));
   },
 
   reset: function() {
@@ -747,9 +801,9 @@ $.extend(Subleerunker, {
 
     setRunAnimation: function(duration) {
       var frame;
-      if (this.animationName == 'idle') {
+      if (this.animationName === 'idle') {
         frame = 0;
-      } else if (this.animationName == 'run' && duration != this.duration) {
+      } else if (this.animationName === 'run' && duration != this.duration) {
         frame = this.animationFrame() + 4;
       }
       var disp = this.disp();

@@ -18,7 +18,7 @@
       padding: 0;
       width: 100%;
       height: 100%;
-      overflow: hidden;
+      overflow: auto;
       background: #000;
 
       /* Diable selection */
@@ -75,8 +75,7 @@
     if (ctx.debug) {
       $(document.head).append('<script src="stats-r17.min.js">');
       var stats = new Stats();
-      stats.flames = new Stats.Panel('flames', '#ff8', '#221');
-      stats.addPanel(stats.flames);
+      stats.flames = stats.addPanel(new Stats.Panel('flames', '#ff8', '#221'));
       stats.showPanel(0);
       $(document.body).append(stats.dom);
     }
@@ -84,37 +83,34 @@
     // Disable anti-aliasing.
     PIXI.settings.SCALE_MODE = PIXI.SCALE_MODES.NEAREST;
 
-    function countFlames(game) {
-      var numFlames = 0;
-      $.each(game.children, function(i, child) {
-        if (child instanceof Subleerunker.Flame) numFlames++;
-      });
-      return numFlames;
-    }
-
-    function setupGame() {
-      var game = Subleerunker(ctx);
-      game.captureInputs(window, document);
-      $('.bezel').append(game.elem());
-
-      $(window).on('resize', function() {
-        var scale = Math.max(1, Math.floor(this.innerHeight / game.height));
-        game.zoom(scale);
-        $(document.body).css({minWidth: game.width * scale,
-                              minHeight: game.height * scale});
-      }).trigger('resize');
-
-      function update(time) {
-        stats && stats.begin();
-        game.update(time);
-        requestAnimationFrame(update);
-        stats && stats.end();
-        stats && stats.flames.update(countFlames(game), 100);
+    // Init and run the game.
+    var game = Subleerunker(ctx);
+    game.elem().appendTo('.bezel');
+    game.watch(window, document, {
+      resize: function(scale) {
+        $(document.body).css({
+          minWidth: this.width * scale,
+          minHeight: this.height * scale
+        });
       }
-      requestAnimationFrame(update);
+    });
+    if (ctx.debug) {
+      function countFlames(game) {
+        var numFlames = 0;
+        $.each(game.children, function(i, child) {
+          if (child instanceof Subleerunker.Flame) numFlames++;
+        });
+        return numFlames;
+      }
+      function before() {
+        stats.begin();
+      }
+      function after() {
+        stats.end();
+        stats.flames.update(countFlames(this), 100);
+      }
     }
-
-    PIXI.loader.add('atlas.json').load(setupGame);
+    game.run(before, after);
   </script>
   <script src="ga.js"></script>
 </body>
