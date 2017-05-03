@@ -76,6 +76,11 @@
     // Disable anti-aliasing.
     PIXI.settings.SCALE_MODE = PIXI.SCALE_MODES.NEAREST;
 
+    // Use WebGL if queried.
+    if (QUERY.webgl !== undefined) {
+      Subleerunker.prototype.rendererClass = PIXI.WebGLRenderer;
+    }
+
     // Init and run the game.
     var game = Subleerunker(ctx);
     game.elem().appendTo('.bezel');
