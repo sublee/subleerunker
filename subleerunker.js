@@ -538,6 +538,13 @@ var Subleerunker = Game.$extend({
     }, this));
 
     $(document).on('touchstart touchmove touchend', $.proxy(function(e) {
+      // Filter touch target.  Some overlapped layers should be touchable.
+      if (e.target !== document.body) {
+        var elem = this.elem();
+        if (!elem || !$.contains(elem.get(0), e.target)) {
+          return;
+        }
+      }
       e.preventDefault();
       if (e.type == 'touchstart' && e.touches.length == 3) {
         // Toggle shift by 3 fingers.
