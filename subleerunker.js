@@ -264,13 +264,13 @@ var GameObject = Class.$extend({
     var prevFrame = 0;
     var deltaTime = 0;
     if (prevTime !== null) {
-      prevFrame = this.frame(this.fps, prevTime);
       deltaTime = time - prevTime;
-      // Cut off too slow delta time.
-      if (fps === undefined) {
-        fps = 60;
-      }
+      prevFrame = this.frame(this.fps, prevTime);
+      // Cut off too slow delta time and frame.
       deltaTime = limit(deltaTime, 0, 1000 / fps);
+      fps = (fps === undefined ? 60 : fps);
+      var maxDeltaFrame = (frame % 2 ? Math.floor : Math.ceil)(this.fps / fps);
+      prevFrame = Math.max(frame - maxDeltaFrame, prevFrame);
     }
 
     // Update this.
@@ -741,8 +741,7 @@ var Subleerunker = Game.$extend({
 
     if (!this.player.dead) {
       var deltaFrame = frame - prevFrame;
-      if (deltaFrame) {
-      // for (var i = 0; i < deltaFrame; ++i) {
+      for (var i = 0; i < deltaFrame; ++i) {
         if (this.random() < this.difficulty) {
           var flame = new Subleerunker.Flame(this);
           this.disp().addChild(flame.disp());
