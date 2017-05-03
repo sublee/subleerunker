@@ -98,7 +98,7 @@
       $('.bezel').append(game.elem());
 
       $(window).on('resize', function() {
-        var scale = Math.floor(this.innerHeight / game.height);
+        var scale = Math.max(1, Math.floor(this.innerHeight / game.height));
         game.zoom(scale);
         $(document.body).css({minWidth: game.width * scale,
                               minHeight: game.height * scale});
