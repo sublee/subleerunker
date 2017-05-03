@@ -625,7 +625,7 @@ var Subleerunker = Game.$extend({
     }
 
     // Trigger custom event to track the score by outside.
-    $(window).trigger('score', [this.scores.current]);
+    $(window).trigger('score', [this.scores.current, !!this.ctx.debug]);
   },
 
   __update__: function(frame, prevFrame, deltaTime) {
