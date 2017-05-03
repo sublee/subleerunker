@@ -8,7 +8,7 @@ $(window).on('score', function(e, score, debug) {
   var section = Math.floor(score / 10) * 10;
   var label = section + '~' + (section + 9);
   if (debug) {
-    label += '(debug)';
+    label += ' (debug)';
   }
   ga('send', {
     hitType: 'event',
