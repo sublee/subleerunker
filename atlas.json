@@ -196,6 +196,21 @@
 {
   "frame": {"x":150,"y":274,"w":65,"h":14},
   "sourceSize": {"w":65,"h":14}
+},
+"palette-background":
+{
+  "frame": {"x":293,"y":241,"w":7,"h":7},
+  "sourceSize": {"w":7,"h":7}
+},
+"palette-current-score":
+{
+  "frame": {"x":293,"y":252,"w":7,"h":7},
+  "sourceSize": {"w":7,"h":7}
+},
+"palette-local-best-score":
+{
+  "frame": {"x":293,"y":263,"w":7,"h":7},
+  "sourceSize": {"w":7,"h":7}
 }
 
 }

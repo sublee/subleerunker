@@ -37,6 +37,34 @@ var calcFrame = function(fps, time) {
   return Math.floor(time * fps / 1000);
 };
 
+var getTexture = function(name) {
+  return PIXI.loader.resources[ATLAS].textures[name];
+};
+
+var textureToCanvas = function(texture) {
+  var t = texture;
+  var r = new PIXI.CanvasRenderer(t.width, t.height, {transparent: true});
+  r.render(new PIXI.Sprite(t));
+  return r.view;
+};
+
+var palette = {};
+var pickColor = function(name) {
+  if (palette[name] !== undefined) {
+    return palette[name];
+  }
+  var t = getTexture('palette-' + name);
+  var canvas = textureToCanvas(t);
+  var pixel = canvas.getContext('2d').getImageData(0, 0, 1, 1).data;
+  var color = (pixel[0] << 16) | (pixel[1] << 8) | pixel[2];
+  palette[name] = color;  // cache
+  return color;
+};
+
+var rgb = function(color) {
+  return '#' + ('000000' + color.toString(16)).slice(-6);
+};
+
 var GameObject = Class.$extend({
 
   __name__: 'GameObject',
@@ -307,7 +335,7 @@ var GameObject = Class.$extend({
 
   getTexture: function(name) {
     if (!this.ctx.debug) {
-      return PIXI.loader.resources[ATLAS].textures[name];
+      return getTexture(name);
     }
     var frameId = this.__name__ + '/' + name;
     var texture;
@@ -315,22 +343,22 @@ var GameObject = Class.$extend({
       texture = PIXI.Texture.fromFrame(frameId);
     } catch (e) {
       // Draw bounding box.
-      var t = PIXI.loader.resources[ATLAS].textures[name];
-      var r = new PIXI.CanvasRenderer(t.width, t.height, {transparent: true});
-      r.render(new PIXI.Sprite(t));
+      var t = getTexture(name);
+      var canvas = textureToCanvas(t);
       function drawRect(style, x, y, w, h) {
-        r.rootContext.fillStyle = style;
-        r.rootContext.fillRect(x, y, w - 1, 1);
-        r.rootContext.fillRect(x + w - 1, y, 1, h - 1);
-        r.rootContext.fillRect(x + 1, y + h - 1, w - 1, 1);
-        r.rootContext.fillRect(x, y + 1, 1, h - 1);
+        var c = canvas.getContext('2d');
+        c.fillStyle = style;
+        c.fillRect(x, y, w - 1, 1);
+        c.fillRect(x + w - 1, y, 1, h - 1);
+        c.fillRect(x + 1, y + h - 1, w - 1, 1);
+        c.fillRect(x, y + 1, 1, h - 1);
       }
       drawRect('rgba(255, 255, 255, 0.25)', 0, 0, t.width, t.height);
       if (t.width != this.width || t.height != this.height) {
         drawRect('#fff', this.padding[LEFT], this.padding[TOP],
                  this.width, this.height);
       }
-      texture = PIXI.Texture.fromCanvas(r.view);
+      texture = PIXI.Texture.fromCanvas(canvas);
       PIXI.Texture.addToCache(texture, frameId);
     }
     return texture;
@@ -488,6 +516,10 @@ var Subleerunker = Game.$extend({
   difficulty: 0.25,
 
   setup: function() {
+    // Set background color.
+    this.renderer.backgroundColor = pickColor('background');
+
+    // Init scores.
     var m = /best-score=(\d+)/.exec(document.cookie);
     if (!m) {
       // "my_best_score" is deprecated but for backward compatibility.
@@ -513,10 +545,14 @@ var Subleerunker = Game.$extend({
       localBest: scores.find('>.local-best'),
       current: scores.find('>.current')
     };
-    this.scoreElems.localBest.css('color', '#a6b2b1');
-    this.scoreElems.current.css('color', '#fff').text(this.scores.current);
-
+    this.scoreElems.localBest
+      .css('color', rgb(pickColor('local-best-score')));
+    this.scoreElems.current
+      .css('color', rgb(pickColor('current-score')))
+      .text(this.scores.current);
     this.updateScore();
+
+    // Reset game state.
     this.reset();
   },
 
