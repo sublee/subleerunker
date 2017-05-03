@@ -343,7 +343,7 @@ var Game = GameObject.$extend({
 
   'class': '',
 
-  renderer_class: PIXI.CanvasRenderer,
+  rendererClass: PIXI.CanvasRenderer,
 
   /// Event handlers.
   ///
@@ -357,7 +357,7 @@ var Game = GameObject.$extend({
 
   __init__: function() {
     this.$super.apply(this, arguments);
-    this.renderer = new this.renderer_class(this.width, this.height);
+    this.renderer = new this.rendererClass(this.width, this.height);
     this.handlers = this.handlers || {};
     this._first = true;
   },
