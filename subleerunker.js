@@ -244,8 +244,18 @@ var GameObject = Class.$extend({
     return this.baseFrame + calcFrame(fps, time - this.baseTime);
   },
 
-  update: function(time) {
+  update: function(time, fps) {
     /// Call this method at each animation frames.
+
+    // Update children first.
+    $.each(this.children, $.proxy(function(childId, child) {
+      child.update(time, fps);
+      if (this.killed) {
+        return false;
+      }
+    }, this));
+
+    // Arguments for __update__().
     if (!this.baseTime) {
       this.rebaseFrame(0, time);
     }
@@ -257,21 +267,19 @@ var GameObject = Class.$extend({
       prevFrame = this.frame(this.fps, prevTime);
       deltaTime = time - prevTime;
       // Cut off too slow delta time.
-      deltaTime = limit(deltaTime, 0, 1000 / 60);
+      if (fps === undefined) {
+        fps = 60;
+      }
+      deltaTime = limit(deltaTime, 0, 1000 / fps);
     }
+
+    // Update this.
     this.time = time;
     this.__update__(frame, prevFrame, deltaTime);
   },
 
   __update__: function(frame, prevFrame, deltaTime) {
     var time = this.time;
-
-    $.each(this.children, $.proxy(function(childId, child) {
-      child.update(time);
-      if (this.killed) {
-        return false;
-      }
-    }, this));
 
     if (this.killed) {
       this.destroy();
@@ -432,7 +440,7 @@ var Game = GameObject.$extend({
     /// Will be called before the first update.
   },
 
-  update: function(time) {
+  update: function(time, fps) {
     if (this._first) {
       this.setup();
       this._first = false;
@@ -445,17 +453,23 @@ var Game = GameObject.$extend({
     this.renderer.render(this.disp());
   },
 
-  run: function(before, after) {
+  run: function(fps, before, after) {
+    var _requestAnimationFrame = window.requestAnimationFrame;
+    if (fps !== undefined) {
+      _requestAnimationFrame = function(f) {
+        setTimeout(function() { f(Date.now()); }, 1000 / fps);
+      };
+    }
     PIXI.loader.add(ATLAS).load($.proxy(function() {
       var update = $.proxy(function(time) {
         before && before.call(this, time);
-        game.update(time);
+        game.update(time, fps);
         if (!this.killed) {
-          requestAnimationFrame(update);
+          _requestAnimationFrame(update);
         }
         after && after.call(this, time);
       }, this);
-      requestAnimationFrame(update);
+      _requestAnimationFrame(update);
     }, this));
   }
 
@@ -697,6 +711,8 @@ var Subleerunker = Game.$extend({
   },
 
   __update__: function(frame, prevFrame, deltaTime) {
+    this.$super.apply(this, arguments);
+
     this.ctx.slow = (this.ctx.debug && this.ctx.shiftPressed);
 
     if (!this.player) {
@@ -705,7 +721,6 @@ var Subleerunker = Game.$extend({
         this.ctx.shouldPlay = false;
         this.rebaseFrame(0);
       }
-      this.$super.apply(this, arguments);
       return;
     }
 
@@ -745,8 +760,6 @@ var Subleerunker = Game.$extend({
         this.reset();
       }
     }
-
-    this.$super.apply(this, arguments);
   }
 });
 

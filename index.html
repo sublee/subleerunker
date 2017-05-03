@@ -60,13 +60,6 @@
     }
     var QUERY = parseQuerystring(location.search);
 
-    // Modify FPS of animation frames.
-    if (QUERY.fps) {
-      requestAnimationFrame = function(f) {
-        setTimeout(function() { f(Number(new Date())); }, 1000 / QUERY.fps);
-      };
-    }
-
     // Setup context and init debug mode.
     var ctx = {
       debug: (QUERY.debug !== undefined),
@@ -108,7 +101,8 @@
         stats.flames.update(countFlames(this), 100);
       };
     }
-    game.run(before, after);
+    var fps = QUERY.fps && Number(QUERY.fps);
+    game.run(fps, before, after);
   </script>
   <script src="ga.js"></script>
 </body>
