@@ -182,6 +182,16 @@ var GameObject = Class.$extend({
     this.animationName = animationName;
   },
 
+  animationEnds: function() {
+    var anim = this.currentAnimation();
+    if (!anim) {
+      return true;  // never started
+    } else if (!anim.once) {
+      return false;  // never ends
+    }
+    return this.animationFrame(anim) >= anim.textureNames.length;
+  },
+
   animationFrame: function(anim) {
     anim = anim || this.currentAnimation();
     if (!anim) {
@@ -191,14 +201,18 @@ var GameObject = Class.$extend({
     return this.frame(fps);
   },
 
-  animationEnds: function() {
-    var anim = this.currentAnimation();
-    if (!anim) {
-      return true;  // never started
-    } else if (!anim.once) {
-      return false;  // never ends
+  animationIndex: function(anim, frame) {
+    var length = anim.textureNames.length;
+    if (anim.once) {
+      return Math.min(frame, length - 1);
+    } else {
+      return Math.floor(frame % length);
     }
-    return this.animationFrame(anim) >= anim.textureNames.length;
+  },
+
+  updateAnimation: function(anim, index) {
+    var texture = this.getTexture(anim.textureNames[index]);
+    this.disp().texture = texture;
   },
 
   /* Move */
@@ -315,15 +329,9 @@ var GameObject = Class.$extend({
 
     var anim = this.currentAnimation();
     if (anim) {
-      var animFrame = this.animationFrame(anim);
-      var animLength = anim.textureNames.length;
-      var i;
-      if (anim.once) {
-        i = Math.min(animFrame, animLength - 1);
-      } else {
-        i = Math.floor(animFrame % animLength);
-      }
-      this.disp().texture = this.getTexture(anim.textureNames[i]);
+      var f = this.animationFrame(anim);
+      var i = this.animationIndex(anim, f);
+      this.updateAnimation(anim, i);
     }
   },
 
@@ -811,6 +819,9 @@ $.extend(Subleerunker, {
 
     __update__: function(frame, prevFrame, deltaTime) {
       this.$super.apply(this, arguments);
+      if (this.blink.frame !== frame) {
+        this.blink = {frame: frame, active: this.random() < 0.02};
+      }
       if (this.dead) {
         if (this.animationEnds()) {
           this.kill();
@@ -838,6 +849,36 @@ $.extend(Subleerunker, {
       ], once: true}
     },
     animationName: 'idle',
+
+    blink: {frame: 0, active: false},
+
+    updateAnimation: function(anim, index) {
+      this.$super.apply(this, arguments);
+      this.overlapEyelids(anim, index);
+    },
+
+    overlapEyelids: function(anim, index) {
+      if (this._eyelids) {
+        this._eyelids.visible = false;
+      }
+      if (this.animationName === 'die') {
+        // There's no eyelids for "die" animation.
+        return;
+      }
+      if (this.blink.active) {
+        var disp = this.disp();
+        var eyelidsTexture = getTexture(anim.textureNames[index] + '-eyelids');
+        if (this._eyelids) {
+          this._eyelids.texture = eyelidsTexture;
+          this._eyelids.visible = true;
+        } else {
+          this._eyelids = new PIXI.Sprite(eyelidsTexture);
+          disp.addChild(this._eyelids);
+        }
+        this._eyelids.x = disp.width * -disp.anchor.x;
+        this._eyelids.y = disp.height * -disp.anchor.y;
+      }
+    },
 
     /* View */
 
