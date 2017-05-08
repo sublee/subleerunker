@@ -539,7 +539,7 @@ var Subleerunker = Game.$extend({
     }
     this.scores = {
       current: 0,
-      localBest: m ? m[1] : 0,
+      localBest: m ? Number(m[1]) : 0,
       worldBest: 0
     };
     var scores = $('<div class="scores">').css({
@@ -747,14 +747,16 @@ var Subleerunker = Game.$extend({
     }
   },
 
+  _worldBestScoreReceived: function(score) {
+    this.scores.worldBest = Number(score);
+    this.renderScores();
+  },
+
   loadWorldBestScore: function() {
     if (!ctx.worldBestScoreURL) {
       return;
     }
-    $.get(ctx.worldBestScoreURL, $.proxy(function(score) {
-      this.scores.worldBest = Number(score);
-      this.renderScores();
-    }, this));
+    $.get(ctx.worldBestScoreURL, $.proxy(this._worldBestScoreReceived, this));
   },
 
   challengeWorldBestScore: function() {
@@ -769,7 +771,8 @@ var Subleerunker = Game.$extend({
     }
     $.ajax(ctx.worldBestScoreURL, {
       method: 'PUT',
-      data: {score: this.scores.current}
+      data: {score: this.scores.current},
+      success: $.proxy(this._worldBestScoreReceived, this)
     });
   },
 
