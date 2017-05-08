@@ -248,12 +248,14 @@ var GameObject = Class.$extend({
   },
 
   forward: function(deltaTime) {
-    this.speed += this.duration * this.acceleration * deltaTime / 1000;
+    this.speed += this.duration * this.acceleration *
+                  this.resist() * deltaTime / 1000;
     this.speed = limit(this.speed, -1, 1);
   },
 
   rest: function(deltaTime) {
-    this.speed = Math.abs(this.speed) - this.acceleration * deltaTime / 1000;
+    this.speed = Math.abs(this.speed) - this.acceleration *
+                 this.resist() * deltaTime / 1000;
     this.speed = Math.max(0, this.speed) * this.duration;
   },
 
