@@ -223,25 +223,9 @@ var GameObject = Class.$extend({
 
   position: 0,
   speed: 0,
-  duration: 1,
+  duration: +1,  // it will be multiplied to the acceleration.
   acceleration: 1,  // per second
   step: -1,  // max velocity, negative number means unlimited.
-
-  left: function(deltaTime) {
-    this.duration = -1;
-  },
-
-  right: function(deltaTime) {
-    this.duration = 1;
-  },
-
-  up: function(deltaTime) {
-    this.duration = -1;
-  },
-
-  down: function(deltaTime) {
-    this.duration = 1;
-  },
 
   impact: function(deltaTime) {
     if (deltaTime === undefined) {
@@ -817,8 +801,10 @@ var Subleerunker = Game.$extend({
                      [this.ctx.rightPressed, this.player.right]];
     for (var i = 0; i < 2; ++i) {
       var mov = movements[this.ctx.rightPrior ? 1 - i : i];
-      if (mov[0]) {
-        mov[1].call(this.player, deltaTime);
+      var pressed = mov[0];
+      if (pressed) {
+        var handler = mov[1];
+        handler.call(this.player);
         break;
       }
     }
@@ -960,13 +946,13 @@ $.extend(Subleerunker, {
       this.setAnimation('run', frame);
     },
 
-    left: function(deltaTime) {
-      this.$super.apply(this, arguments);
+    left: function() {
+      this.duration = -1;
       this.setRunAnimation(-1);
     },
 
-    right: function(deltaTime) {
-      this.$super.apply(this, arguments);
+    right: function() {
+      this.duration = +1;
       this.setRunAnimation(+1);
     },
 
