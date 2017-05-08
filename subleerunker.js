@@ -180,7 +180,7 @@ var GameObject = Class.$extend({
   },
 
   setAnimation: function(animationName, frame) {
-    if (this.animationName != animationName || frame !== undefined) {
+    if (this.animationName !== animationName || frame !== undefined) {
       this.rebaseFrame(frame);
     }
     this.animationName = animationName;
@@ -366,7 +366,7 @@ var GameObject = Class.$extend({
         c.fillRect(x, y + 1, 1, h - 1);
       }
       drawRect('rgba(255, 255, 255, 0.25)', 0, 0, t.width, t.height);
-      if (t.width != this.innerWidth() || t.height != this.innerHeight()) {
+      if (t.width !== this.innerWidth() || t.height !== this.innerHeight()) {
         drawRect('#fff', this.innerPadding[LEFT], this.innerPadding[TOP],
                  this.innerWidth(), this.innerHeight());
       }
@@ -941,7 +941,7 @@ $.extend(Subleerunker, {
       var frame;
       if (this.animationName === 'idle') {
         frame = 0;
-      } else if (this.animationName === 'run' && duration != this.duration) {
+      } else if (this.animationName === 'run' && duration !== this.duration) {
         frame = this.animationFrame() + 4;
       }
       var disp = this.disp();
