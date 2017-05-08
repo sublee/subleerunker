@@ -84,7 +84,7 @@ var GameObject = Class.$extend({
     } else {
       this.ctx = arg ? arg : {};
     }
-    this.padding = normalizePadding(this.padding);
+    this.innerPadding = normalizePadding(this.innerPadding);
     this.killed = false;
     if (this.animationName) {
       this.setAnimation(this.animationName);
@@ -122,7 +122,7 @@ var GameObject = Class.$extend({
 
   width: null,
   height: null,
-  padding: null,
+  innerPadding: null,
 
   anchor: [0, 0],
   offset: [0, 0],
@@ -158,12 +158,12 @@ var GameObject = Class.$extend({
     return new PIXI.Sprite(texture);
   },
 
-  outerWidth: function() {
-    return this.width + this.padding[RIGHT] + this.padding[LEFT];
+  innerWidth: function() {
+    return this.width - this.innerPadding[RIGHT] - this.innerPadding[LEFT];
   },
 
-  outerHeight: function() {
-    return this.height + this.padding[TOP] + this.padding[BOTTOM];
+  innerHeight: function() {
+    return this.height - this.innerPadding[TOP] - this.innerPadding[BOTTOM];
   },
 
   /* Animation */
@@ -366,9 +366,9 @@ var GameObject = Class.$extend({
         c.fillRect(x, y + 1, 1, h - 1);
       }
       drawRect('rgba(255, 255, 255, 0.25)', 0, 0, t.width, t.height);
-      if (t.width != this.width || t.height != this.height) {
-        drawRect('#fff', this.padding[LEFT], this.padding[TOP],
-                 this.width, this.height);
+      if (t.width != this.innerWidth() || t.height != this.innerHeight()) {
+        drawRect('#fff', this.innerPadding[LEFT], this.innerPadding[TOP],
+                 this.innerWidth(), this.innerHeight());
       }
       texture = PIXI.Texture.fromCanvas(canvas);
       PIXI.Texture.addToCache(texture, frameId);
@@ -522,7 +522,6 @@ var Subleerunker = Game.$extend({
 
   width: 320,
   height: 480,
-  padding: [0, 0, 2, 0],
 
   fps: 30,
   difficulty: 0.25,
@@ -857,7 +856,7 @@ $.extend(Subleerunker, {
 
     __init__: function(parent) {
       this.$super.apply(this, arguments);
-      this.position = parent.outerWidth() / 2 - this.outerWidth() / 2;
+      this.position = parent.width / 2 - this.width / 2;
       this.updatePosition();
     },
 
@@ -926,9 +925,9 @@ $.extend(Subleerunker, {
 
     /* View */
 
-    width: 12,
-    height: 12,
-    padding: [10, 18, 50],
+    width: 48,
+    height: 72,
+    innerPadding: [10, 18, 50],
     anchor: [0, 1],
     offset: [0, -1],
 
@@ -978,7 +977,7 @@ $.extend(Subleerunker, {
       this.$super.apply(this, arguments);
 
       var position = this.position;
-      var max = this.parent.outerWidth() - this.outerWidth();
+      var max = this.parent.width - this.width;
       this.position = limit(this.position, 0, max);
 
       if (position !== this.position) {
@@ -1005,10 +1004,10 @@ $.extend(Subleerunker, {
 
     __init__: function(parent) {
       this.$super.apply(this, arguments);
-      var W = parent.outerWidth();
-      var w = this.outerWidth();
+      var W = parent.width;
+      var w = this.width;
       this.xPosition = (W - w * 2) * this.random() + w / 2;
-      this.position = -this.outerHeight();
+      this.position = -this.height;
     },
 
     __update__: function(frame, prevFrame, deltaTime) {
@@ -1027,8 +1026,8 @@ $.extend(Subleerunker, {
         this.forward(deltaTime);
         this.updatePosition(deltaTime);
 
-        var max = this.parent.height - this.outerHeight() - this.landingMargin;
-        var min = this.parent.height - player.outerHeight();
+        var max = this.parent.height - this.height - this.landingMargin;
+        var min = this.parent.height - player.height;
 
         if (this.position > max) {
           this.position = max;
@@ -1049,9 +1048,9 @@ $.extend(Subleerunker, {
 
     /* View */
 
-    width: 6,
-    height: 6,
-    padding: [8, 8, 2],
+    width: 24,
+    height: 16,
+    innerPadding: [8, 8, 2],
     landingMargin: 2,
 
     /* Animation */
@@ -1085,17 +1084,17 @@ $.extend(Subleerunker, {
     /* Own */
 
     hits: function(player, prevPosition) {
-      var H = this.parent.outerHeight();
+      var H = this.parent.height;
 
-      var top = prevPosition + this.padding[TOP];
-      var bottom = this.position + this.outerHeight() - this.padding[2];
-      var left = this.xPosition + this.padding[3];
-      var right = left + this.width;
+      var top = prevPosition + this.innerPadding[TOP];
+      var bottom = this.position + this.height - this.innerPadding[2];
+      var left = this.xPosition + this.innerPadding[3];
+      var right = left + this.innerWidth();
 
-      var pTop = player.outerHeight() - player.padding[0];
-      var pBottom = player.padding[2];
-      var pLeft = player.position + player.padding[3];
-      var pRight = pLeft + player.width;
+      var pTop = player.height - player.innerPadding[0];
+      var pBottom = player.innerPadding[2];
+      var pLeft = player.position + player.innerPadding[3];
+      var pRight = pLeft + player.innerWidth();
 
       pTop = H - pTop;
       pBottom = H - pBottom;
