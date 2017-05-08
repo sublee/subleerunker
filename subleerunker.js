@@ -225,26 +225,22 @@ var GameObject = Class.$extend({
   speed: 0,
   duration: 1,
   acceleration: 1,  // per second
-  step: 1,  // per second
+  step: -1,  // max velocity, negative number means unlimited.
 
   left: function(deltaTime) {
     this.duration = -1;
-    this.forward(deltaTime);
   },
 
   right: function(deltaTime) {
     this.duration = 1;
-    this.forward(deltaTime);
   },
 
   up: function(deltaTime) {
     this.duration = -1;
-    this.forward(deltaTime);
   },
 
   down: function(deltaTime) {
     this.duration = 1;
-    this.forward(deltaTime);
   },
 
   impact: function(deltaTime) {
@@ -257,7 +253,9 @@ var GameObject = Class.$extend({
 
   forward: function(deltaTime) {
     this.speed += this.duration * this.acceleration * this.impact(deltaTime);
-    this.speed = limit(this.speed, -1, 1);
+    if (this.step >= 0) {
+      this.speed = limit(this.speed, -this.step, +this.step);
+    }
   },
 
   rest: function(deltaTime) {
@@ -270,8 +268,7 @@ var GameObject = Class.$extend({
     if (!deltaTime) {
       return;
     }
-    var distance = this.speed * this.step * this.impact(deltaTime);
-    this.position += distance;
+    this.position += this.speed * this.impact(deltaTime);
   },
 
   /* Schedule */
@@ -939,8 +936,7 @@ $.extend(Subleerunker, {
 
     /* Move */
 
-    speed: 0,
-    acceleration: 6,
+    acceleration: 3600,
     step: 300,
 
     setRunAnimation: function(duration) {
@@ -1074,8 +1070,7 @@ $.extend(Subleerunker, {
 
     /* Move */
 
-    speed: 0,
-    acceleration: 0.6,
+    acceleration: 360,
     step: 600,
 
     updatePosition: function(deltaTime) {
