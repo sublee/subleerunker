@@ -745,7 +745,7 @@ var Subleerunker = Game.$extend({
     $.get(ctx.worldBestScoreURL, $.proxy(this._worldBestScoreReceived, this));
   },
 
-  challengeWorldBestScore: function() {
+  beatWorldBestScore: function() {
     if (GameObject.debug) {
       return;
     }
@@ -777,7 +777,7 @@ var Subleerunker = Game.$extend({
       document.cookie = cookie;
     }
 
-    this.challengeWorldBestScore();
+    this.beatWorldBestScore();
 
     // Trigger custom event to track the score by outside.
     $(window).trigger('score', [this.scores.current, !!this.ctx.debug]);
