@@ -247,15 +247,22 @@ var GameObject = Class.$extend({
     this.forward(deltaTime);
   },
 
+  impact: function(deltaTime) {
+    if (deltaTime === undefined) {
+      deltaTime = 1000;
+    }
+    var resist = this.ctx.slow ? 0.25 : 1;
+    return resist * deltaTime / 1000;
+  },
+
   forward: function(deltaTime) {
-    this.speed += this.duration * this.acceleration *
-                  this.resist() * deltaTime / 1000;
+    this.speed += this.duration * this.acceleration * this.impact(deltaTime);
     this.speed = limit(this.speed, -1, 1);
   },
 
   rest: function(deltaTime) {
-    this.speed = Math.abs(this.speed) - this.acceleration *
-                 this.resist() * deltaTime / 1000;
+    this.speed = Math.abs(this.speed);
+    this.speed -= this.acceleration * this.impact(deltaTime);
     this.speed = Math.max(0, this.speed) * this.duration;
   },
 
@@ -263,11 +270,8 @@ var GameObject = Class.$extend({
     if (!deltaTime) {
       return;
     }
-    this.position += this.speed * this.step * this.resist() * deltaTime / 1000;
-  },
-
-  resist: function() {
-    return this.ctx.slow ? 0.25 : 1;
+    var distance = this.speed * this.step * this.impact(deltaTime);
+    this.position += distance;
   },
 
   /* Schedule */
@@ -287,7 +291,7 @@ var GameObject = Class.$extend({
     if (fps === undefined) {
       fps = this.fps;
     }
-    fps *= this.resist();
+    fps *= this.impact();
     time = (time === undefined ? this.time : time);
     return this.baseFrame + calcFrame(fps, time - this.baseTime);
   },
