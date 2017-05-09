@@ -217,20 +217,17 @@ var Subleerunker = Game.$extend({
   },
 
   renderScores: function() {
+    var s = this.scores;
+    var e = this.scoreElems;
     // current
-    this.scoreElems.current.text(this.scores.current);
+    e.current.text(s.current);
     // local-best
-    if (this.scores.localBest <= this.scores.current) {
-      this.scoreElems.localBest.text('');
-    } else {
-      this.scoreElems.localBest.text(this.scores.localBest);
-    }
+    e.localBest.text(s.localBest <= s.current ? '' : s.localBest);
     // world-best
-    if (this.scores.worldBest <= this.scores.current ||
-        this.scores.worldBest <= this.scores.localBest) {
-      this.scoreElems.worldBest.text('');
+    if (s.worldBest <= s.current && s.current > s.localBest) {
+      e.worldBest.text('');
     } else {
-      this.scoreElems.worldBest.text(this.scores.worldBest);
+      e.worldBest.text(s.worldBest);
     }
   },
 
