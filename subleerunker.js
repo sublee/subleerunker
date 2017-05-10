@@ -219,17 +219,9 @@ var Subleerunker = Game.$extend({
   renderScores: function() {
     var s = this.scores;
     var e = this.scoreElems;
-    // current
     e.current.text(s.current);
-    // local-best
     e.localBest.text(s.localBest <= s.current ? '' : s.localBest);
-    // world-best
-    if (s.worldBest === 0 ||
-        s.worldBest <= s.current && s.current > s.localBest) {
-      e.worldBest.text('');
-    } else {
-      e.worldBest.text(s.worldBest);
-    }
+    e.worldBest.text(s.worldBest <= s.current ? '' : s.worldBest);
   },
 
   _worldBestScoreReceived: function(score) {
@@ -245,13 +237,14 @@ var Subleerunker = Game.$extend({
   },
 
   beatWorldBestScore: function() {
-    if (GameObject.debug) {
+    if (this.scores.current <= this.scores.worldBest) {
       return;
     }
+    this._worldBestScoreReceived(this.scores.current);
     if (!ctx.worldBestScoreURL) {
       return;
     }
-    if (this.scores.current <= this.scores.worldBest) {
+    if (GameObject.debug) {
       return;
     }
     $.ajax(ctx.worldBestScoreURL, {
