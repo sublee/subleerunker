@@ -224,7 +224,8 @@ var Subleerunker = Game.$extend({
     // local-best
     e.localBest.text(s.localBest <= s.current ? '' : s.localBest);
     // world-best
-    if (s.worldBest <= s.current && s.current > s.localBest) {
+    if (s.worldBest === 0 ||
+        s.worldBest <= s.current && s.current > s.localBest) {
       e.worldBest.text('');
     } else {
       e.worldBest.text(s.worldBest);
