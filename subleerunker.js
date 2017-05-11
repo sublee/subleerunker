@@ -38,7 +38,7 @@ var Subleerunker = Game.$extend({
   },
 
   setupHUD: function() {
-    var panel = $('<div class="panel">').css({
+    var $$ = $('<div class="scores">').css({
       position: 'absolute',
       right: 5,
       top: 3,
@@ -47,64 +47,76 @@ var Subleerunker = Game.$extend({
       fontFamily: FONT_FAMILY
     }).html([
       '<form class="owned-world-best" tabindex="1">',
-        '<input name="name" type="text" maxlength="3" />',
-        '<span class="name"></span>',
-        '<span class="score"></span>',
+        '<label>',
+          '<input class="name" name="name" maxlength="3" />',
+          '<span class="value"></span>',
+        '</label>',
       '</form>',
       '<div class="world-best">',
-        '<span class="name"></span>',
-        '<span class="score"></span>',
+        '<input class="name" readonly />',
+        '<span class="value"></span>',
       '</div>',
       '<div class="local-best"></div>',
-      '<div class="current-score"></div>'
+      '<div class="current"></div>'
     ].join('')).appendTo(this.hudElem());
     this.scoreElems = {
-      ownedWorldBest: panel.find('>.owned-world-best'),
-      worldBest: panel.find('>.world-best'),
-      localBest: panel.find('>.local-best'),
-      current: panel.find('>.current-score')
+      ownedWorldBest: $$.find('>.owned-world-best'),
+      worldBest: $$.find('>.world-best'),
+      localBest: $$.find('>.local-best'),
+      current: $$.find('>.current')
     };
-    var e = this.scoreElems;
 
-    panel
-      .find('>.owned-world-best')
-      .css('color', rgb(this.pickColor('owned-world-best')))
-    .end()
-      .find('>.world-best')
-      .css('color', rgb(this.pickColor('world-best')))
-    .end()
-      .find('>.local-best')
-      .css('color', rgb(this.pickColor('local-best')))
-    .end()
-      .find('>.current')
-      .css('color', rgb(this.pickColor('current')));
-
-    var nameCSS = {
+    var nameStyle = {
       display: 'inline',
       textAlign: 'right',
       fontSize: 12,
       fontFamily: FONT_FAMILY,
       backgroundColor: 'transparent',
+      width: '4ex',
       border: 'none',
+      outline: 'none',
       borderRadius: 0,
       padding: 0,
+      margin: 0,
       marginRight: '0.5ex',
       textTransform: 'uppercase'
     };
-    e.ownedWorldBest.find('input').css(nameCSS)
-     .css('color', rgb(this.pickColor('owned-world-best')))
-     .val('AAA').hide();
-    e.ownedWorldBest.on('focus', function() {
-      e.ownedWorldBest.find('.name').hide();
-      e.ownedWorldBest.find('input').show().focus().select();
-    });
-    e.ownedWorldBest.find('input').on('blur', function() {
-      e.ownedWorldBest.find('.name').show();
-      e.ownedWorldBest.find('input').hide();
-    });
-    e.ownedWorldBest.find('.name').css(nameCSS).text('BBB');
-    e.worldBest.find('.name').css(nameCSS).text('CCC');
-    e.ownedWorldBest.find('input').width(e.ownedWorldBest.find('span').width() / RESOLUTION);
+
+    $$ // Here's a jQuery chain to build HUD.
+
+    .find('>.owned-world-best')
+      .css('color', rgb(this.pickColor('owned-world-best')))
+      .find('.name')
+        .css(nameStyle)
+        .css('color', rgb(this.pickColor('owned-world-best')))
+        .val('AAA')
+        .on('focus', function() { $(this).select(); })
+      .end()
+    .end()
+
+    .find('>.world-best')
+      .css('color', rgb(this.pickColor('world-best')))
+      .find('.name')
+        .css(nameStyle)
+        .css('color', rgb(this.pickColor('world-best')))
+        .val('CCC')
+      .end()
+    .end()
+
+    .find('>.local-best')
+      .css('color', rgb(this.pickColor('local-best')))
+    .end()
+
+    .find('>.current')
+      .css('color', rgb(this.pickColor('current')))
+    .end()
+
+    ; // End of HUD building.
+
+    // // Fix <input> width.
+    // $$.find('>.owned-world-best>input').width(
+    //   $$.find('>.owned-world-best>.name').width() / RESOLUTION
+    // )
   },
 
   hudElem: function() {
@@ -271,8 +283,8 @@ var Subleerunker = Game.$extend({
     var e = this.scoreElems;
     e.current.text(s.current);
     e.localBest.text(s.localBest <= s.current ? '' : s.localBest);
-    e.worldBest.find('.score').text(s.worldBest <= s.current ? '' : s.worldBest);
-    e.ownedWorldBest.find('.score').text(s.worldBest <= s.current ? '' : s.worldBest);
+    e.worldBest.find('.value').text(s.worldBest <= s.current ? '' : s.worldBest);
+    e.ownedWorldBest.find('.value').text(s.worldBest <= s.current ? '' : s.worldBest);
   },
 
   _worldBestReceived: function(data) {
