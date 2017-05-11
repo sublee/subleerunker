@@ -1,4 +1,5 @@
 var IS_MOBILE = (typeof window.orientation !== 'undefined');
+var FONT_FAMILY = '"Share Tech Mono", monospace';
 
 var Subleerunker = Game.$extend({
 
@@ -17,44 +18,83 @@ var Subleerunker = Game.$extend({
     // Set background color.
     this.renderer.backgroundColor = this.pickColor('background');
 
-    // Init scores.
-    var m = /best-score=(\d+)/.exec(document.cookie);
-    if (!m) {
-      // "my_best_score" is deprecated but for backward compatibility.
-      m = /my_best_score=(\d+)/.exec(document.cookie);
-    }
+    // Reset game state.
+    this.reset();
+
+    // Init scores.  Fallback with deprecated cookie names.
+    var m = /best-score=(\d+)/.exec(document.cookie) ||
+            /my_best_score=(\d+)/.exec(document.cookie);
     this.scores = {
       current: 0,
       localBest: m ? Number(m[1]) : 0,
-      worldBest: 0
+      worldBest: 100
     };
+
+    // Render scores.
+    this.setupHUD();
+    this.renderScores();
+    this.loadWorldBest();
+  },
+
+  setupHUD: function() {
     var scores = $('<div class="scores">').css({
       position: 'absolute',
       right: 5,
       top: 3,
       textAlign: 'right',
       fontSize: 12,
-      fontFamily: '"Share Tech Mono", monospace'
+      fontFamily: FONT_FAMILY
     }).html([
-      '<div class="world-best"></div>',
+      '<form class="owned-world-best" tabindex="1">',
+        '<input name="name" type="text" maxlength="3" />',
+        '<span class="name"></span>',
+        '<span class="score"></span>',
+      '</form>',
+      '<div class="world-best">',
+        '<span class="name"></span>',
+        '<span class="score"></span>',
+      '</div>',
       '<div class="local-best"></div>',
-      '<div class="current"></div>'
+      '<div class="current-score"></div>'
     ].join('')).appendTo(this.hudElem());
     this.scoreElems = {
+      ownedWorldBest: scores.find('>.owned-world-best'),
       worldBest: scores.find('>.world-best'),
       localBest: scores.find('>.local-best'),
-      current: scores.find('>.current')
+      current: scores.find('>.current-score')
     };
     var e = this.scoreElems;
-    e.worldBest.css('color', rgb(this.pickColor('world-best-score')));
-    e.localBest.css('color', rgb(this.pickColor('local-best-score')));
-    e.current.css('color', rgb(this.pickColor('current-score')))
+    e.ownedWorldBest.css('color', rgb(this.pickColor('owned-world-best')));
+    e.worldBest.css('color', rgb(this.pickColor('world-best')));
+    e.localBest.css('color', rgb(this.pickColor('local-best')));
+    e.current.css('color', rgb(this.pickColor('current')))
     e.current.text(this.scores.current);
-    this.updateScore();
-    this.loadWorldBestScore();
-
-    // Reset game state.
-    this.reset();
+    var nameCSS = {
+      display: 'inline',
+      textAlign: 'right',
+      fontSize: 12,
+      fontFamily: FONT_FAMILY,
+      backgroundColor: 'transparent',
+      border: 'none',
+      borderRadius: 0,
+      padding: 0,
+      marginRight: '0.5ex',
+      textTransform: 'uppercase'
+    };
+    e.ownedWorldBest.find('input').css(nameCSS)
+     .css('color', rgb(this.pickColor('owned-world')))
+     .val('AAA').hide();
+    e.ownedWorldBest.on('focus', function() {
+      e.ownedWorldBest.find('.name').hide();
+      e.ownedWorldBest.find('input').show().focus().select();
+    });
+    e.ownedWorldBest.find('input').on('blur', function() {
+      e.ownedWorldBest.find('.name').show();
+      e.ownedWorldBest.find('input').hide();
+    });
+    e.ownedWorldBest.find('.name').css(nameCSS).text('BBB');
+    e.worldBest.find('.name').css(nameCSS).text('CCC');
+    e.ownedWorldBest.find('input').width(e.ownedWorldBest.find('span').width() / (window.devicePixelRatio || 1));
   },
 
   hudElem: function() {
@@ -221,36 +261,37 @@ var Subleerunker = Game.$extend({
     var e = this.scoreElems;
     e.current.text(s.current);
     e.localBest.text(s.localBest <= s.current ? '' : s.localBest);
-    e.worldBest.text(s.worldBest <= s.current ? '' : s.worldBest);
+    e.worldBest.find('.score').text(s.worldBest <= s.current ? '' : s.worldBest);
+    e.ownedWorldBest.find('.score').text(s.worldBest <= s.current ? '' : s.worldBest);
   },
 
-  _worldBestScoreReceived: function(score) {
-    this.scores.worldBest = Number(score);
+  _worldBestReceived: function(data) {
+    this.scores.worldBest = Number(data);
     this.renderScores();
   },
 
-  loadWorldBestScore: function() {
-    if (!ctx.worldBestScoreURL) {
+  loadWorldBest: function() {
+    if (!ctx.worldBestURL) {
       return;
     }
-    $.get(ctx.worldBestScoreURL, $.proxy(this._worldBestScoreReceived, this));
+    $.get(ctx.worldBestURL, $.proxy(this._worldBestReceived, this));
   },
 
-  beatWorldBestScore: function() {
+  beatWorldBest: function() {
     if (this.scores.current <= this.scores.worldBest) {
       return;
     }
-    this._worldBestScoreReceived(this.scores.current);
-    if (!ctx.worldBestScoreURL) {
+    this._worldBestReceived(this.scores.current);
+    if (!ctx.worldBestURL) {
       return;
     }
     if (GameObject.debug) {
       return;
     }
-    $.ajax(ctx.worldBestScoreURL, {
+    $.ajax(ctx.worldBestURL, {
       method: 'PUT',
       data: {score: this.scores.current},
-      success: $.proxy(this._worldBestScoreReceived, this)
+      success: $.proxy(this._worldBestReceived, this)
     });
   },
 
@@ -269,7 +310,7 @@ var Subleerunker = Game.$extend({
       document.cookie = cookie;
     }
 
-    this.beatWorldBestScore();
+    this.beatWorldBest();
 
     // Trigger custom event to track the score by outside.
     $(window).trigger('score', [this.scores.current, !!this.ctx.debug]);
