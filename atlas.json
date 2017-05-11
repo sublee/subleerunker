@@ -277,22 +277,22 @@
   "frame": {"x":293,"y":287,"w":7,"h":7},
   "sourceSize": {"w":7,"h":7}
 },
-"palette-current-score":
+"palette-current":
 {
   "frame": {"x":293,"y":296,"w":7,"h":7},
   "sourceSize": {"w":7,"h":7}
 },
-"palette-local-best-score":
+"palette-local-best":
 {
   "frame": {"x":293,"y":305,"w":7,"h":7},
   "sourceSize": {"w":7,"h":7}
 },
-"palette-world-best-score":
+"palette-world-best":
 {
   "frame": {"x":293,"y":314,"w":7,"h":7},
   "sourceSize": {"w":7,"h":7}
 },
-"palette-owned-world-best-score":
+"palette-owned-world-best":
 {
   "frame": {"x":293,"y":323,"w":7,"h":7},
   "sourceSize": {"w":7,"h":7}

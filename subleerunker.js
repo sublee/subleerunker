@@ -1,4 +1,5 @@
 var IS_MOBILE = (typeof window.orientation !== 'undefined');
+var RESOLUTION = (window.devicePixelRatio || 1);
 var FONT_FAMILY = '"Share Tech Mono", monospace';
 
 var Subleerunker = Game.$extend({
@@ -37,7 +38,7 @@ var Subleerunker = Game.$extend({
   },
 
   setupHUD: function() {
-    var scores = $('<div class="scores">').css({
+    var panel = $('<div class="panel">').css({
       position: 'absolute',
       right: 5,
       top: 3,
@@ -58,17 +59,26 @@ var Subleerunker = Game.$extend({
       '<div class="current-score"></div>'
     ].join('')).appendTo(this.hudElem());
     this.scoreElems = {
-      ownedWorldBest: scores.find('>.owned-world-best'),
-      worldBest: scores.find('>.world-best'),
-      localBest: scores.find('>.local-best'),
-      current: scores.find('>.current-score')
+      ownedWorldBest: panel.find('>.owned-world-best'),
+      worldBest: panel.find('>.world-best'),
+      localBest: panel.find('>.local-best'),
+      current: panel.find('>.current-score')
     };
     var e = this.scoreElems;
-    e.ownedWorldBest.css('color', rgb(this.pickColor('owned-world-best')));
-    e.worldBest.css('color', rgb(this.pickColor('world-best')));
-    e.localBest.css('color', rgb(this.pickColor('local-best')));
-    e.current.css('color', rgb(this.pickColor('current')))
-    e.current.text(this.scores.current);
+
+    panel
+      .find('>.owned-world-best')
+      .css('color', rgb(this.pickColor('owned-world-best')))
+    .end()
+      .find('>.world-best')
+      .css('color', rgb(this.pickColor('world-best')))
+    .end()
+      .find('>.local-best')
+      .css('color', rgb(this.pickColor('local-best')))
+    .end()
+      .find('>.current')
+      .css('color', rgb(this.pickColor('current')));
+
     var nameCSS = {
       display: 'inline',
       textAlign: 'right',
@@ -82,7 +92,7 @@ var Subleerunker = Game.$extend({
       textTransform: 'uppercase'
     };
     e.ownedWorldBest.find('input').css(nameCSS)
-     .css('color', rgb(this.pickColor('owned-world')))
+     .css('color', rgb(this.pickColor('owned-world-best')))
      .val('AAA').hide();
     e.ownedWorldBest.on('focus', function() {
       e.ownedWorldBest.find('.name').hide();
@@ -94,7 +104,7 @@ var Subleerunker = Game.$extend({
     });
     e.ownedWorldBest.find('.name').css(nameCSS).text('BBB');
     e.worldBest.find('.name').css(nameCSS).text('CCC');
-    e.ownedWorldBest.find('input').width(e.ownedWorldBest.find('span').width() / (window.devicePixelRatio || 1));
+    e.ownedWorldBest.find('input').width(e.ownedWorldBest.find('span').width() / RESOLUTION);
   },
 
   hudElem: function() {
