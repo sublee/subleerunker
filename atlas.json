@@ -282,17 +282,17 @@
   "frame": {"x":293,"y":296,"w":7,"h":7},
   "sourceSize": {"w":7,"h":7}
 },
-"palette-local-best":
+"palette-prime":
 {
   "frame": {"x":293,"y":305,"w":7,"h":7},
   "sourceSize": {"w":7,"h":7}
 },
-"palette-world-best":
+"palette-champion":
 {
   "frame": {"x":293,"y":314,"w":7,"h":7},
   "sourceSize": {"w":7,"h":7}
 },
-"palette-owned-world-best":
+"palette-authorized-champion":
 {
   "frame": {"x":293,"y":323,"w":7,"h":7},
   "sourceSize": {"w":7,"h":7}

@@ -22,49 +22,38 @@ var Subleerunker = Game.$extend({
     // Reset game state.
     this.reset();
 
-    // Init scores.  Fallback with deprecated cookie names.
-    var m = /best-score=(\d+)/.exec(document.cookie) ||
-            /my_best_score=(\d+)/.exec(document.cookie);
-    this.scores = {
+    // Init records.
+    this.records = {
       current: 0,
-      localBest: m ? Number(m[1]) : 0,
-      worldBest: 100
+      prime: Number(
+        // Fallback with deprecated cookie names.
+        Cookies('prime-score') ||
+        Cookies('best-score') ||
+        Cookies('my_best_score') ||
+      0),
+      champion: {
+        score: 0,
+        name: '',
+        token: null,
+        authorized: false
+      }
     };
 
-    // Render scores.
+    // Render records.
     this.setupHUD();
-    this.renderScores();
-    this.loadWorldBest();
+    this.renderRecords();
+    this.loadChampion();
   },
 
   setupHUD: function() {
-    var $$ = $('<div class="scores">').css({
+    var $$ = $('<div class="records">').css({
       position: 'absolute',
       right: 5,
       top: 3,
       textAlign: 'right',
       fontSize: 12,
       fontFamily: FONT_FAMILY
-    }).html([
-      '<form class="owned-world-best" tabindex="1">',
-        '<label>',
-          '<input class="name" name="name" maxlength="3" />',
-          '<span class="value"></span>',
-        '</label>',
-      '</form>',
-      '<div class="world-best">',
-        '<input class="name" readonly />',
-        '<span class="value"></span>',
-      '</div>',
-      '<div class="local-best"></div>',
-      '<div class="current"></div>'
-    ].join('')).appendTo(this.hudElem());
-    this.scoreElems = {
-      ownedWorldBest: $$.find('>.owned-world-best'),
-      worldBest: $$.find('>.world-best'),
-      localBest: $$.find('>.local-best'),
-      current: $$.find('>.current')
-    };
+    }).appendTo(this.hudElem());
 
     var nameStyle = {
       display: 'inline',
@@ -84,27 +73,41 @@ var Subleerunker = Game.$extend({
 
     $$ // Here's a jQuery chain to build HUD.
 
-    .find('>.owned-world-best')
-      .css('color', rgb(this.pickColor('owned-world-best')))
+    .html([
+      '<form class="authorized-champion">',
+        '<label>',
+          '<input class="name" name="name" maxlength="3" tabindex="0" />',
+          '<span class="score"></span>',
+        '</label>',
+      '</form>',
+      '<div class="champion">',
+        '<input class="name" readonly />',
+        '<span class="score"></span>',
+      '</div>',
+      '<div class="prime"></div>',
+      '<div class="current"></div>'
+    ].join(''))
+
+    .find('>.authorized-champion')
+      .css('color', rgb(this.pickColor('authorized-champion')))
       .find('.name')
         .css(nameStyle)
-        .css('color', rgb(this.pickColor('owned-world-best')))
-        .val('AAA')
+        .css('color', rgb(this.pickColor('authorized-champion')))
         .on('focus', function() { $(this).select(); })
       .end()
     .end()
 
-    .find('>.world-best')
-      .css('color', rgb(this.pickColor('world-best')))
+    .find('>.champion')
+      .css('color', rgb(this.pickColor('champion')))
       .find('.name')
         .css(nameStyle)
-        .css('color', rgb(this.pickColor('world-best')))
-        .val('CCC')
+        .css('color', rgb(this.pickColor('champion')))
+        .css('user-select', 'none')
       .end()
     .end()
 
-    .find('>.local-best')
-      .css('color', rgb(this.pickColor('local-best')))
+    .find('>.prime')
+      .css('color', rgb(this.pickColor('prime')))
     .end()
 
     .find('>.current')
@@ -113,10 +116,37 @@ var Subleerunker = Game.$extend({
 
     ; // End of HUD building.
 
-    // // Fix <input> width.
-    // $$.find('>.owned-world-best>input').width(
-    //   $$.find('>.owned-world-best>.name').width() / RESOLUTION
-    // )
+    // Cache elements for fast access.
+    var $$$ = {
+      authorizedChampion: {
+        container: $$.find('>.authorized-champion'),
+        name: $$.find('>.authorized-champion .name'),
+        score: $$.find('>.authorized-champion .score')
+      },
+      champion: {
+        container: $$.find('>.champion'),
+        name: $$.find('>.champion .name'),
+        score: $$.find('>.champion .score')
+      },
+      prime: $$.find('>.prime'),
+      current: $$.find('>.current')
+    };
+    this.recordElems = $$$;
+
+    // Champion renaming events.
+    var inSubmit = false;
+    $$$.authorizedChampion.container.on('submit', $.proxy(function(e) {
+      e.preventDefault();
+      this.renameChampion($$$.authorizedChampion.name.val());
+      inSubmit = true;
+      $$$.authorizedChampion.name.blur();
+      inSubmit = false;
+    }, this));
+    $$$.authorizedChampion.name.on('blur', $.proxy(function() {
+      if (!inSubmit) {
+        $$$.authorizedChampion.container.submit();
+      }
+    }));
   },
 
   hudElem: function() {
@@ -229,13 +259,7 @@ var Subleerunker = Game.$extend({
       }
       this.handlers.keyLeft.call(this, pressLeft);
       this.handlers.keyRight.call(this, pressRight);
-    },
-    // WASD style
-    keyA: function(press) { this.handlers.keyLeft.call(this, press); },
-    keyD: function(press) { this.handlers.keyRight.call(this, press); },
-    // Vim style
-    keyH: function(press) { this.handlers.keyLeft.call(this, press); },
-    keyL: function(press) { this.handlers.keyRight.call(this, press); }
+    }
   },
 
   releaseLockedShift: function() {
@@ -260,82 +284,152 @@ var Subleerunker = Game.$extend({
       this.releaseLockedShift();
     }
     this.disp().addChild(this.player.disp());
-    this.scores.current = 0;
+    this.records.current = 0;
     this.updateScore();
     this.hideSplash();
     this.ctx.random = new Math.seedrandom(this.ctx.randomSeed);
   },
 
   upScore: function() {
-    this.scores.current++;
+    this.records.current++;
     this.updateScore();
   },
 
   updateScore: function(score) {
     if (score !== undefined) {
-      this.scores.current = score;
+      this.records.current = score;
     }
-    this.renderScores();
+    this.renderRecords();
   },
 
-  renderScores: function() {
-    var s = this.scores;
-    var e = this.scoreElems;
-    e.current.text(s.current);
-    e.localBest.text(s.localBest <= s.current ? '' : s.localBest);
-    e.worldBest.find('.value').text(s.worldBest <= s.current ? '' : s.worldBest);
-    e.ownedWorldBest.find('.value').text(s.worldBest <= s.current ? '' : s.worldBest);
+  renderRecords: function() {
+    var $$$ = this.recordElems;
+    var r = this.records;
+    $$$.current.text(r.current);
+    if (r.prime <= r.current ||
+        r.prime <= r.champion.score && r.champion.authorized) {
+      $$$.prime.hide();
+    } else {
+      $$$.prime.show().text(r.prime);
+    }
+    var champions = [$$$.champion, $$$.authorizedChampion];
+    if (r.champion.score <= r.current) {
+      $.each(champions, function() { this.container.hide(); });
+    } else {
+      var i = Number(r.champion.authorized);
+      var j = Number(!r.champion.authorized);
+      champions[i].container.show();
+      champions[i].score.text(r.champion.score);
+      champions[j].container.hide();
+    }
   },
 
-  _worldBestReceived: function(data) {
-    this.scores.worldBest = Number(data);
-    this.renderScores();
+  renderChampionName: function() {
+    var $$$ = this.recordElems;
+    var r = this.records;
+    var elem = (
+      r.champion.authorized ?
+      $$$.authorizedChampion.name :
+      $$$.champion.name
+    );
+    elem.val(r.champion.name);
   },
 
-  loadWorldBest: function() {
-    if (!ctx.worldBestURL) {
+  _championReceived: function(data) {
+    this.records.champion.score = Number(data.score);
+    this.records.champion.name = String(data.name);
+    if (data.token) {
+      var token = String(data.token);
+      this.records.champion.token = token;
+      this.records.champion.authorized = true;
+      Cookies('champion-token', token, {
+        expires: new Date(data.expiresAt),
+        path: location.pathname
+      });
+    } else if (data.authorized) {
+      this.records.champion.authorized = true;
+    } else {
+      this.records.champion.authorized = false;
+    }
+    this.renderRecords();
+    this.renderChampionName();
+  },
+
+  _authChampion: function(headers) {
+    headers = $.extend({}, headers);
+    var championToken = Cookies('champion-token');
+    if (championToken) {
+      headers['Authorization'] = 'Basic ' + btoa(':' + championToken);
+    }
+    return headers;
+  },
+
+  loadChampion: function() {
+    if (!ctx.championURL) {
       return;
     }
-    $.get(ctx.worldBestURL, $.proxy(this._worldBestReceived, this));
+    $.ajax(ctx.championURL, {
+      method: 'GET',
+      dataType: 'json',
+      headers: this._authChampion(),
+      success: $.proxy(this._championReceived, this)
+    });
   },
 
-  beatWorldBest: function() {
-    if (this.scores.current <= this.scores.worldBest) {
+  beatChampion: function() {
+    if (this.records.current <= this.records.champion.score) {
       return;
     }
-    this._worldBestReceived(this.scores.current);
-    if (!ctx.worldBestURL) {
+    this._championReceived($.extend({}, this.records.champion, {
+      score: this.records.current
+    }));
+    if (!ctx.championURL) {
       return;
     }
     if (GameObject.debug) {
       return;
     }
-    $.ajax(ctx.worldBestURL, {
+    var name = '';
+    if (this.records.champion.authorized) {
+      name = this.records.champion.name;
+    }
+    $.ajax(ctx.championURL, {
       method: 'PUT',
-      data: {score: this.scores.current},
-      success: $.proxy(this._worldBestReceived, this)
+      data: {score: this.records.current, name: name},
+      dataType: 'json',
+      success: $.proxy(this._championReceived, this)
+    });
+  },
+
+  renameChampion: function(name) {
+    if (name === this.records.champion.name) {
+      return;
+    }
+    $.ajax(ctx.championURL, {
+      method: 'PUT',
+      dataType: 'json',
+      headers: this._authChampion(),
+      data: {name: name},
+      success: $.proxy(this._championReceived, this)
     });
   },
 
   gameOver: function() {
     this.player.die();
 
-    var cookie;
-    if (this.scores.localBest < this.scores.current) {
-      this.scores.localBest = this.scores.current;
-      // Save local best score in Cookie for a month.
-      var expires = new Date();
-      expires.setMonth(expires.getMonth() + 1);
-      cookie = 'best-score=' + this.scores.localBest + '; '
-      cookie += 'expires=' + expires.toUTCString() + '; ';
-      cookie += 'path=/';
-      document.cookie = cookie;
+    if (this.records.prime < this.records.current) {
+      this.records.prime = this.records.current;
+      // Remember new prime score.
+      Cookies('prime-score', this.records.prime, {
+        expires: 2592000,  // expires in 30 days.
+        path: location.pathname
+      });
     }
 
-    this.beatWorldBest();
+    this.beatChampion();
 
     // Trigger custom event to track the score by outside.
-    $(window).trigger('score', [this.scores.current, !!this.ctx.debug]);
+    $(window).trigger('score', [this.records.current, !!this.ctx.debug]);
   },
 
   __update__: function(frame, prevFrame, deltaTime) {
