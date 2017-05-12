@@ -312,27 +312,22 @@ var Subleerunker = Game.$extend({
     } else {
       $$$.prime.show().text(r.prime);
     }
-    var champions = [$$$.champion, $$$.authorizedChampion];
-    if (r.champion.score <= r.current) {
-      $.each(champions, function() { this.container.hide(); });
-    } else {
-      var i = Number(r.champion.authorized);
-      var j = Number(!r.champion.authorized);
-      champions[i].container.show();
-      champions[i].score.text(r.champion.score);
-      champions[j].container.hide();
-    }
   },
 
-  renderChampionName: function() {
+  renderChampion: function() {
     var $$$ = this.recordElems;
     var r = this.records;
-    var elem = (
-      r.champion.authorized ?
-      $$$.authorizedChampion.name :
-      $$$.champion.name
-    );
-    elem.val(r.champion.name);
+    var champions = [$$$.champion, $$$.authorizedChampion];
+    if (r.champion.score <= 0) {
+      $.each(champions, function() { this.container.hide(); });
+      return;
+    }
+    var i = Number(r.champion.authorized);
+    var j = Number(!r.champion.authorized);
+    champions[i].container.show();
+    champions[i].score.text(r.champion.score);
+    champions[i].name.val(r.champion.name);
+    champions[j].container.hide();
   },
 
   _championReceived: function(data) {
@@ -342,17 +337,19 @@ var Subleerunker = Game.$extend({
       var token = String(data.token);
       this.records.champion.token = token;
       this.records.champion.authorized = true;
-      Cookies('champion-token', token, {
-        expires: new Date(data.expiresAt),
-        path: location.pathname
-      });
+      if (data.expiresAt && Cookies('champion-token') !== token) {
+        Cookies('champion-token', token, {
+          expires: new Date(data.expiresAt),
+          path: location.pathname
+        });
+      }
     } else if (data.authorized) {
       this.records.champion.authorized = true;
     } else {
       this.records.champion.authorized = false;
     }
     this.renderRecords();
-    this.renderChampionName();
+    this.renderChampion();
   },
 
   _authChampion: function(headers) {
