@@ -380,10 +380,10 @@ var Subleerunker = Game.$extend({
   },
 
   loadChampion: function() {
-    if (!ctx.championURL) {
+    if (!this.ctx.championURL) {
       return;
     }
-    $.ajax(ctx.championURL, {
+    $.ajax(this.ctx.championURL, {
       method: 'GET',
       dataType: 'json',
       headers: this._authChampion(),
@@ -408,10 +408,10 @@ var Subleerunker = Game.$extend({
       token: this.records.champion.token,
       authorized: true
     });
-    if (GameObject.debug) {
+    if (this.ctx.debug) {
       return;
     }
-    $.ajax(ctx.championURL, {
+    $.ajax(this.ctx.championURL, {
       method: 'PUT',
       data: {score: this.records.current, name: name},
       dataType: 'json',
@@ -423,7 +423,7 @@ var Subleerunker = Game.$extend({
     if (name === this.records.champion.name) {
       return;
     }
-    $.ajax(ctx.championURL, {
+    $.ajax(this.ctx.championURL, {
       method: 'PUT',
       dataType: 'json',
       headers: this._authChampion(),
