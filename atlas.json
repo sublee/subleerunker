@@ -277,19 +277,24 @@
   "frame": {"x":293,"y":287,"w":7,"h":7},
   "sourceSize": {"w":7,"h":7}
 },
-"palette-current-score":
+"palette-current":
 {
-  "frame": {"x":293,"y":298,"w":7,"h":7},
+  "frame": {"x":293,"y":296,"w":7,"h":7},
   "sourceSize": {"w":7,"h":7}
 },
-"palette-local-best-score":
+"palette-prime":
 {
-  "frame": {"x":293,"y":309,"w":7,"h":7},
+  "frame": {"x":293,"y":305,"w":7,"h":7},
   "sourceSize": {"w":7,"h":7}
 },
-"palette-world-best-score":
+"palette-champion":
 {
-  "frame": {"x":293,"y":320,"w":7,"h":7},
+  "frame": {"x":293,"y":314,"w":7,"h":7},
+  "sourceSize": {"w":7,"h":7}
+},
+"palette-authorized-champion":
+{
+  "frame": {"x":293,"y":323,"w":7,"h":7},
   "sourceSize": {"w":7,"h":7}
 }
 

@@ -444,12 +444,8 @@ var Game = GameObject.$extend({
     });
     // Touch events.
     $(document).on('touchstart touchmove touchend', $.proxy(function(e) {
-      if (e.target !== document.body) {
-        var elem = this.elem();
-        if (!elem || !$.contains(elem.get(0), e.target)) {
-          // Filter touch target.  Some overlapped layers should be touchable.
-          return;
-        }
+      if (this.neglectsTouch(e)) {
+        return;
       }
       if (this.handlers.touch) {
         if (e.type !== 'touchend') {
@@ -464,6 +460,18 @@ var Game = GameObject.$extend({
       this.zoom(scale);
       handlers.resize && handlers.resize.call(this, scale);
     }, this)).trigger('resize');
+  },
+
+  neglectsTouch: function(e) {
+    if (e.target === document.body) {
+      return false;
+    }
+    var elem = this.elem();
+    if (elem && $.contains(elem.get(0), e.target)) {
+      return false;
+    }
+    // Filter touch target.  Some overlapped layers should be touchable.
+    return true;
   },
 
   setup: function() {
