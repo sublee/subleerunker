@@ -397,16 +397,18 @@ var Subleerunker = Game.$extend({
     if (!ctx.championURL) {
       return;
     }
-    this._championReceived($.extend({}, this.records.champion, {
-      score: this.records.current,
-      authorized: true
-    }));
-    if (GameObject.debug) {
-      return;
-    }
     var name = '';
     if (this.records.champion.authorized) {
       name = this.records.champion.name;
+    }
+    this._championReceived({
+      score: this.records.current,
+      name: name,
+      token: this.records.champion.token,
+      authorized: true
+    });
+    if (GameObject.debug) {
+      return;
     }
     $.ajax(ctx.championURL, {
       method: 'PUT',
