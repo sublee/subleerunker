@@ -32,8 +32,8 @@ var Subleerunker = Game.$extend({
         Cookies('my_best_score') ||
       0),
       champion: {
-        score: 0,
-        name: '',
+        score: null,
+        name: null,
         token: null,
         authorized: false
       }
@@ -391,12 +391,12 @@ var Subleerunker = Game.$extend({
   },
 
   beatChampion: function() {
-    if (this.records.current <= this.records.champion.score) {
+    if (this.records.champion.score === null) {
+      return;
+    } else if (this.records.current <= this.records.champion.score) {
       return;
     }
-    if (!ctx.championURL) {
-      return;
-    }
+    // Predict a success.
     var name = '';
     if (this.records.champion.authorized) {
       name = this.records.champion.name;
