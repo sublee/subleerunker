@@ -155,6 +155,15 @@ var Subleerunker = Game.$extend({
     });
   },
 
+  neglectsTouch: function(e) {
+    if (this.$super.apply(this, arguments)) {
+      return true;
+    }
+    // Touch on authorized champion elements is necessary.
+    var elem = this.recordElems.authorizedChampion.container;
+    return $.contains(elem.get(0), e.target);
+  },
+
   hudElem: function() {
     var elem = this.elem();
     var hudElem = elem.find('>.ui:eq(0)');
