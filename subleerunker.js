@@ -147,6 +147,12 @@ var Subleerunker = Game.$extend({
         $$$.authorizedChampion.container.submit();
       }
     }));
+
+    // Prevent useless input mode in mobile.
+    $$$.champion.name.on('focus', function(e) {
+      e.preventDefault();
+      $$$.champion.name.blur();
+    });
   },
 
   hudElem: function() {
