@@ -394,12 +394,13 @@ var Subleerunker = Game.$extend({
     if (this.records.current <= this.records.champion.score) {
       return;
     }
-    this._championReceived($.extend({}, this.records.champion, {
-      score: this.records.current
-    }));
     if (!ctx.championURL) {
       return;
     }
+    this._championReceived($.extend({}, this.records.champion, {
+      score: this.records.current,
+      authorized: true
+    }));
     if (GameObject.debug) {
       return;
     }
