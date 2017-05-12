@@ -52,7 +52,8 @@ var Subleerunker = Game.$extend({
       top: 3,
       textAlign: 'right',
       fontSize: 12,
-      fontFamily: FONT_FAMILY
+      fontFamily: FONT_FAMILY,
+      cursor: 'default'
     }).appendTo(this.hudElem());
 
     var nameStyle = {
