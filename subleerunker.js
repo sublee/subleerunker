@@ -95,6 +95,7 @@ var Subleerunker = Game.$extend({
         .css('color', rgb(this.pickColor('authorized-champion')))
         .on('focus', function() { $(this).select(); })
       .end()
+      .hide()
     .end()
 
     .find('>.champion')
@@ -104,6 +105,7 @@ var Subleerunker = Game.$extend({
         .css('color', rgb(this.pickColor('champion')))
         .css('user-select', 'none')
       .end()
+      .hide()
     .end()
 
     .find('>.prime')
