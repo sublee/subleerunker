@@ -376,7 +376,6 @@ var Subleerunker = Game.$extend({
       // Suggest renaming.
       var letters = 'ABCDEFGHIJKLMNOPQRSTUVWXWZ';
       var letter = letters[Math.floor(Math.random() * letters.length)];
-      console.log(letter);
       var input = this.recordElems.authorizedChampion.name;
       input.val(letter + letter + letter).focus();
     }
@@ -405,7 +404,6 @@ var Subleerunker = Game.$extend({
 
   beatChampion: function() {
     this.loadChampion().then($.proxy(function() {
-      console.log(this.records.champion.score);
       if (this.records.champion.score === null) {
         return;
       } else if (this.records.current <= this.records.champion.score) {
