@@ -428,6 +428,9 @@ var Game = GameObject.$extend({
         if (!key) {
           return;
         }
+        if (!this.handlesKey(e)) {
+          return;
+        }
         var handlerName = 'key' + key.charAt(0).toUpperCase() + key.slice(1);
         var handler = this.handlers[handlerName];
         handler && handler.call(this, pressed);
@@ -444,7 +447,7 @@ var Game = GameObject.$extend({
     });
     // Touch events.
     $(document).on('touchstart touchmove touchend', $.proxy(function(e) {
-      if (this.neglectsTouch(e)) {
+      if (!this.handlesTouch(e)) {
         return;
       }
       if (this.handlers.touch) {
@@ -462,16 +465,23 @@ var Game = GameObject.$extend({
     }, this)).trigger('resize');
   },
 
-  neglectsTouch: function(e) {
-    if (e.target === document.body) {
+  handlesKey: function(e) {
+    return (document.activeElement === document.body);
+  },
+
+  handlesTouch: function(e) {
+    if (document.activeElement !== document.body) {
       return false;
+    }
+    if (e.target === document.body) {
+      return true;
     }
     var elem = this.elem();
     if (elem && $.contains(elem.get(0), e.target)) {
-      return false;
+      return true;
     }
-    // Filter touch target.  Some overlapped layers should be touchable.
-    return true;
+    // Maybe some overlapped layer is touched.
+    return false;
   },
 
   setup: function() {
