@@ -371,6 +371,14 @@ var Subleerunker = Game.$extend({
     }
     this.renderRecords();
     this.renderChampion();
+    if (data.token && !name) {
+      // Suggest renaming.
+      var letters = 'ABCDEFGHIJKLMNOPQRSTUVWXWZ';
+      var letter = letters[Math.floor(Math.random() * letters.length)];
+      console.log(letter);
+      var input = this.recordElems.authorizedChampion.name;
+      input.val(letter + letter + letter).focus();
+    }
   },
 
   _authChampion: function(headers) {
