@@ -518,7 +518,7 @@ $.extend(Subleerunker, {
     __update__: function(frame, prevFrame, deltaTime) {
       this.$super.apply(this, arguments);
       if (this.blink.frame !== frame) {
-        this.blink = {frame: frame, active: this.random() < 0.02};
+        this.blink = {frame: frame, active: Math.random() < 0.02};
       }
       if (this.dead) {
         if (this.animationEnds()) {
