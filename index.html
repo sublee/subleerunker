@@ -83,7 +83,10 @@
       Subleerunker.prototype.rendererClass = PIXI.WebGLRenderer;
     }
 
-    // Set a world-best URL.
+    // Limit cookie scope.
+    Cookies.defaults = {path: location.pathname};
+
+    // Set a champion URL.
     if (/^https:\/\/sublee.github.io/.exec(location.href)) {
       ctx.championURL = 'https://subleerunker-166907.appspot.com/champion';
     }

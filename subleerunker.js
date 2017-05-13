@@ -349,22 +349,25 @@ var Subleerunker = Game.$extend({
   },
 
   _championReceived: function(data) {
-    this.records.champion.score = Number(data.score);
-    this.records.champion.name = String(data.name);
+    var score = Number(data.score);
+    var name = String(data.name);
+    this.records.champion.score = score;
+    this.records.champion.name = name;
     if (data.token) {
+      // Just beated.
       var token = String(data.token);
       this.records.champion.token = token;
       this.records.champion.authorized = true;
       if (data.expiresAt && Cookies('champion-token') !== token) {
         Cookies('champion-token', token, {
           expires: new Date(data.expiresAt),
-          path: location.pathname
         });
       }
-    } else if (data.authorized) {
-      this.records.champion.authorized = true;
     } else {
-      this.records.champion.authorized = false;
+      this.records.champion.authorized = Boolean(data.authorized);
+    }
+    if (this.records.champion.authorized) {
+      Cookies('champion-name', name, {expires: Infinity});
     }
     this.renderRecords();
     this.renderChampion();
@@ -398,10 +401,7 @@ var Subleerunker = Game.$extend({
       return;
     }
     // Predict a success.
-    var name = '';
-    if (this.records.champion.authorized) {
-      name = this.records.champion.name;
-    }
+    var name = Cookies('champion-name') || '';
     this._championReceived({
       score: this.records.current,
       name: name,
@@ -439,8 +439,7 @@ var Subleerunker = Game.$extend({
       this.records.prime = this.records.current;
       // Remember new prime score.
       Cookies('prime-score', this.records.prime, {
-        expires: 2592000,  // expires in 30 days.
-        path: location.pathname
+        expires: 2592000  // expires in 30 days.
       });
     }
 
