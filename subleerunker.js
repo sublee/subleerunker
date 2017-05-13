@@ -302,10 +302,11 @@ var Subleerunker = Game.$extend({
       this.releaseLockedShift();
     }
     this.disp().addChild(this.player.disp());
+    this.ctx.random = new Math.seedrandom(this.ctx.randomSeed);
     this.records.current = 0;
     this.updateScore();
     this.hideSplash();
-    this.ctx.random = new Math.seedrandom(this.ctx.randomSeed);
+    this.loadChampion();
   },
 
   upScore: function() {
@@ -394,7 +395,7 @@ var Subleerunker = Game.$extend({
     if (!this.ctx.championURL) {
       return;
     }
-    $.ajax(this.ctx.championURL, {
+    return $.ajax(this.ctx.championURL, {
       method: 'GET',
       dataType: 'json',
       headers: this._authChampion(),
@@ -403,28 +404,31 @@ var Subleerunker = Game.$extend({
   },
 
   beatChampion: function() {
-    if (this.records.champion.score === null) {
-      return;
-    } else if (this.records.current <= this.records.champion.score) {
-      return;
-    }
-    // Predict a success.
-    var name = Cookies('champion-name') || '';
-    this._championReceived({
-      score: this.records.current,
-      name: name,
-      token: this.records.champion.token,
-      authorized: true
-    });
-    if (this.ctx.debug) {
-      return;
-    }
-    $.ajax(this.ctx.championURL, {
-      method: 'PUT',
-      data: {score: this.records.current, name: name},
-      dataType: 'json',
-      success: $.proxy(this._championReceived, this)
-    });
+    this.loadChampion().then($.proxy(function() {
+      console.log(this.records.champion.score);
+      if (this.records.champion.score === null) {
+        return;
+      } else if (this.records.current <= this.records.champion.score) {
+        return;
+      }
+      // Predict a success.
+      var name = Cookies('champion-name') || '';
+      this._championReceived({
+        score: this.records.current,
+        name: name,
+        token: this.records.champion.token,
+        authorized: true
+      });
+      if (this.ctx.debug) {
+        return;
+      }
+      $.ajax(this.ctx.championURL, {
+        method: 'PUT',
+        data: {score: this.records.current, name: name},
+        dataType: 'json',
+        success: $.proxy(this._championReceived, this)
+      });
+    }, this));
   },
 
   renameChampion: function(name) {
