@@ -224,36 +224,36 @@ var Subleerunker = Game.$extend({
 
   handlers: {
     keyLeft: function(press) {
-      this.ctx.leftPressed = press;
-      this.ctx.rightPrior = false;  // evaluate left first
+      this.leftPressed = press;
+      this.rightPrior = false;  // evaluate left first
       if (press) {
-        this.ctx.shouldPlay = true;
+        this.shouldPlay = true;
       }
     },
     keyRight: function(press) {
-      this.ctx.rightPressed = press;
-      this.ctx.rightPrior = true;  // evaluate right first
+      this.rightPressed = press;
+      this.rightPrior = true;  // evaluate right first
       if (press) {
-        this.ctx.shouldPlay = true;
+        this.shouldPlay = true;
       }
     },
     keyShift: function(press, lock) {
-      this.ctx.shiftPressed = press;
-      this.ctx.shiftLocked = !!lock;
+      this.shiftPressed = press;
+      this.shiftLocked = !!lock;
       if (press && lock) {
-        this.ctx.shouldPlay = true;
+        this.shouldPlay = true;
       }
     },
     blur: function() {
-      this.ctx.leftPressed = false;
-      this.ctx.rightPressed = false;
-      this.ctx.shiftPressed = false;
-      this.ctx.shiftLocked = false;
+      this.leftPressed = false;
+      this.rightPressed = false;
+      this.shiftPressed = false;
+      this.shiftLocked = false;
     },
     touch: function(touches, eventType) {
       if (eventType === 'start' && touches.length === 3) {
         // Toggle shift by 3 fingers.
-        this.handlers.keyShift.call(this, !this.ctx.shiftPressed, true);
+        this.handlers.keyShift.call(this, !this.shiftPressed, true);
         return;
       }
       var pressLeft = false;
@@ -281,14 +281,14 @@ var Subleerunker = Game.$extend({
   },
 
   releaseLockedShift: function() {
-    if (this.ctx.shiftLocked) {
-      this.ctx.shiftPressed = false;
-      this.ctx.shiftLocked = false;
+    if (this.shiftLocked) {
+      this.shiftPressed = false;
+      this.shiftLocked = false;
     }
   },
 
   reset: function() {
-    this.ctx.shouldPlay = false;
+    this.shouldPlay = false;
     this.releaseLockedShift();
     this.showSplash();
     delete this.difficulty;
@@ -297,7 +297,7 @@ var Subleerunker = Game.$extend({
 
   play: function() {
     this.player = new Subleerunker.Player(this);
-    if (this.ctx.shiftPressed) {
+    if (this.shiftPressed) {
       // Hommarju for SUBERUNKER's shift-enter easter egg.
       this.player.acceleration *= 0.25;
       this.releaseLockedShift();
@@ -465,25 +465,25 @@ var Subleerunker = Game.$extend({
   __update__: function(frame, prevFrame, deltaTime) {
     this.$super.apply(this, arguments);
 
-    this.ctx.slow = (this.ctx.debug && this.ctx.shiftPressed);
+    this.ctx.slow = (this.ctx.debug && this.shiftPressed);
 
     if (this.duration !== undefined) {
       this.duration += deltaTime;
     }
 
     if (!this.player) {
-      if (this.ctx.shouldPlay) {
+      if (this.shouldPlay) {
         this.play();
-        this.ctx.shouldPlay = false;
+        this.shouldPlay = false;
         this.rebaseFrame(0);
       }
       return;
     }
 
-    var movements = [[this.ctx.leftPressed, this.player.left],
-                     [this.ctx.rightPressed, this.player.right]];
+    var movements = [[this.leftPressed, this.player.left],
+                     [this.rightPressed, this.player.right]];
     for (var i = 0; i < 2; ++i) {
-      var mov = movements[this.ctx.rightPrior ? 1 - i : i];
+      var mov = movements[this.rightPrior ? 1 - i : i];
       var pressed = mov[0];
       if (pressed) {
         var handler = mov[1];
@@ -491,7 +491,7 @@ var Subleerunker = Game.$extend({
         break;
       }
     }
-    if (this.ctx.leftPressed || this.ctx.rightPressed) {
+    if (this.leftPressed || this.rightPressed) {
       this.player.forward(deltaTime);
     } else {
       this.player.rest(deltaTime);
