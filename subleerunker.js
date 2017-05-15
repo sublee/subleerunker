@@ -420,9 +420,10 @@ var Subleerunker = Game.$extend({
       if (this.ctx.debug) {
         return;
       }
+      var playtime = (this.time - this.baseTime) / 1000;  // in second
       $.ajax(this.ctx.championURL, {
         method: 'PUT',
-        data: {score: this.records.current, name: name},
+        data: {score: this.records.current, name: name, playtime: playtime},
         dataType: 'json',
         success: $.proxy(this._championReceived, this)
       });
