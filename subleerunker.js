@@ -307,6 +307,7 @@ var Subleerunker = Game.$extend({
     this.updateScore();
     this.hideSplash();
     this.loadChampion();
+    this.playtime = 0;
   },
 
   upScore: function() {
@@ -403,6 +404,7 @@ var Subleerunker = Game.$extend({
   },
 
   beatChampion: function() {
+    var playtime = this.playtime / 1000;  // in second
     this.loadChampion().then($.proxy(function() {
       if (this.records.champion.score === null) {
         return;
@@ -420,7 +422,6 @@ var Subleerunker = Game.$extend({
       if (this.ctx.debug) {
         return;
       }
-      var playtime = (this.time - this.baseTime) / 1000;  // in second
       $.ajax(this.ctx.championURL, {
         method: 'PUT',
         data: {score: this.records.current, name: name, playtime: playtime},
@@ -464,6 +465,8 @@ var Subleerunker = Game.$extend({
     this.$super.apply(this, arguments);
 
     this.ctx.slow = (this.ctx.debug && this.ctx.shiftPressed);
+
+    this.playtime += deltaTime;
 
     if (!this.player) {
       if (this.ctx.shouldPlay) {
