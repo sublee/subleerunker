@@ -465,7 +465,7 @@ var Subleerunker = Game.$extend({
   __update__: function(frame, prevFrame, deltaTime) {
     this.$super.apply(this, arguments);
 
-    this.ctx.slow = (this.ctx.debug && this.shiftPressed);
+    this.ctx.timeScale = (this.ctx.debug && this.shiftPressed) ? 0.25 : 1;
 
     if (this.duration !== undefined) {
       this.duration += deltaTime;

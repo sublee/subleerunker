@@ -214,8 +214,8 @@ var GameObject = Class.$extend({
     if (deltaTime === undefined) {
       deltaTime = 1000;
     }
-    var resist = this.ctx.slow ? 0.25 : 1;
-    return resist * deltaTime / 1000;
+    var timeScale = this.ctx.timeScale === undefined ? 1 : this.ctx.timeScale;
+    return timeScale * deltaTime / 1000;
   },
 
   forward: function(deltaTime) {
