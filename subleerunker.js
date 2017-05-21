@@ -292,7 +292,7 @@ var Subleerunker = Game.$extend({
     this.releaseLockedShift();
     this.showSplash();
     delete this.difficulty;
-    delete this.duration;
+    delete this.direction;
   },
 
   play: function() {
@@ -308,7 +308,7 @@ var Subleerunker = Game.$extend({
     this.updateScore();
     this.hideSplash();
     this.loadChampion();
-    this.duration = 0;
+    this.direction = 0;
   },
 
   upScore: function() {
@@ -405,7 +405,7 @@ var Subleerunker = Game.$extend({
   },
 
   beatChampion: function() {
-    var duration = this.duration / 1000;  // in second
+    var direction = this.direction / 1000;  // in second
     this.loadChampion().then($.proxy(function() {
       if (this.records.champion.score === null) {
         return;
@@ -425,7 +425,7 @@ var Subleerunker = Game.$extend({
       }
       $.ajax(this.ctx.championURL, {
         method: 'PUT',
-        data: {score: this.records.current, name: name, duration: duration},
+        data: {score: this.records.current, name: name, direction: direction},
         dataType: 'json',
         success: $.proxy(this._championReceived, this)
       });
@@ -462,14 +462,14 @@ var Subleerunker = Game.$extend({
     $(window).trigger('score', [this.records.current, !!this.ctx.debug]);
   },
 
-  __update__: function(frame, prevFrame, deltaTime) {
+  __update__: function(frame) {
     this.$super.apply(this, arguments);
 
     this.ctx.timeScale = (this.ctx.debug && this.shiftPressed) ? 0.25 : 1;
 
-    if (this.duration !== undefined) {
-      this.duration += deltaTime;
-    }
+    // if (this.direction !== undefined) {
+    //   this.direction += deltaTime;
+    // }
 
     if (!this.player) {
       if (this.shouldPlay) {
@@ -492,20 +492,17 @@ var Subleerunker = Game.$extend({
       }
     }
     if (this.leftPressed || this.rightPressed) {
-      this.player.forward(deltaTime);
+      this.player.forward(1);
     } else {
-      this.player.rest(deltaTime);
+      this.player.rest(1);
     }
 
     if (!this.player.dead) {
-      var deltaFrame = frame - prevFrame;
-      for (var i = 0; i < deltaFrame; ++i) {
-        if (this.random() < this.difficulty) {
-          var flame = new Subleerunker.Flame(this);
-          this.disp().addChild(flame.disp());
-        }
-        this.difficulty *= 1.001;
+      if (this.random() < this.difficulty) {
+        var flame = new Subleerunker.Flame(this);
+        this.disp().addChild(flame.disp());
       }
+      this.difficulty *= 1.001;
     } else {
       var done = true;
       $.each(this.children, function() {
@@ -532,7 +529,7 @@ $.extend(Subleerunker, {
       this.updatePosition();
     },
 
-    __update__: function(frame, prevFrame, deltaTime) {
+    __update__: function(frame) {
       this.$super.apply(this, arguments);
       if (this.blink.frame !== frame) {
         this.blink = {frame: frame, active: Math.random() < 0.02};
@@ -542,7 +539,7 @@ $.extend(Subleerunker, {
           this.kill();
         }
       } else if (this.speed) {
-        this.updatePosition(deltaTime);
+        this.updatePosition(1);
       }
     },
 
@@ -606,18 +603,18 @@ $.extend(Subleerunker, {
 
     /* Move */
 
-    acceleration: 3600,
-    step: 300,
+    acceleration: 60,
+    step: 5,
 
-    setRunAnimation: function(duration) {
+    setRunAnimation: function(direction) {
       var frame;
       if (this.animationName === 'idle') {
         frame = 0;
-      } else if (this.animationName === 'run' && duration !== this.duration) {
+      } else if (this.animationName === 'run' && direction !== this.direction) {
         frame = this.animationFrame() + 4;
       }
       var disp = this.disp();
-      switch (duration) {
+      switch (direction) {
         case -1:
           disp.scale.x = -1;
           disp.anchor.x = 1;
@@ -631,12 +628,12 @@ $.extend(Subleerunker, {
     },
 
     left: function() {
-      this.duration = -1;
+      this.direction = -1;
       this.setRunAnimation(-1);
     },
 
     right: function() {
-      this.duration = +1;
+      this.direction = +1;
       this.setRunAnimation(+1);
     },
 
@@ -645,7 +642,7 @@ $.extend(Subleerunker, {
       this.setAnimation('idle');
     },
 
-    updatePosition: function(deltaTime) {
+    updatePosition: function(deltaFrame) {
       this.$super.apply(this, arguments);
 
       var position = this.position;
@@ -682,7 +679,7 @@ $.extend(Subleerunker, {
       this.position = -this.height;
     },
 
-    __update__: function(frame, prevFrame, deltaTime) {
+    __update__: function(frame) {
       this.$super.apply(this, arguments);
       var player = this.parent.player;
 
@@ -695,8 +692,8 @@ $.extend(Subleerunker, {
         }
       } else {
         var prevPosition = this.position;
-        this.forward(deltaTime);
-        this.updatePosition(deltaTime);
+        this.forward(1);
+        this.updatePosition(1);
 
         var max = this.parent.height - this.height - this.landingMargin;
         var min = this.parent.height - player.height;
@@ -704,7 +701,7 @@ $.extend(Subleerunker, {
         if (this.position > max) {
           this.position = max;
           this.speed = 0;
-          this.updatePosition(deltaTime);
+          this.updatePosition(1);
           this.setAnimation('land');
           this.landed = true;
         } else if (this.position < min) {
@@ -740,15 +737,14 @@ $.extend(Subleerunker, {
 
     /* Move */
 
-    acceleration: 360,
-    step: 600,
+    acceleration: 6,
+    step: 10,
 
-    updatePosition: function(deltaTime) {
-      this.$super.apply(this, arguments);
+    render: function(deltaFrame) {
       var disp = this.disp();
-      if (disp) {
+      if (disp && !disp._destroyed) {
         disp.x = this.xPosition;
-        disp.y = this.position;
+        disp.y = this.nextPosition(deltaFrame);
       }
     },
 

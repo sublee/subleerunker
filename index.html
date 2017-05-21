@@ -38,7 +38,8 @@
     }
   </style>
   <script src="lib/jquery-3.2.1.min.js"></script>
-  <script src="lib/pixi-4.5.1.min.js"></script>
+  <!--script src="lib/pixi-4.5.1.min.js"></script-->
+  <script src="lib/pixi-4.5.1.js"></script>
   <script src="lib/classy-1.4.min.js"></script>
   <script src="lib/seedrandom-2.4.3.min.js"></script>
   <script src="lib/cookies-1.2.3.min.js"></script>
@@ -90,6 +91,7 @@
     if (/^https:\/\/sublee.github.io/.exec(location.href)) {
       ctx.championURL = 'https://subleerunker-166907.appspot.com/champion';
     }
+    ctx.championURL = 'http://nop.subl.ee:8080/champion';
 
     // Init and run the game.
     var game = Subleerunker(ctx);

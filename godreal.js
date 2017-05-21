@@ -185,7 +185,7 @@ var GameObject = Class.$extend({
       return 0;
     }
     var fps = anim.fps || this.fps;
-    return this.frame(fps);
+    return this.calcFrame(fps);
   },
 
   animationIndex: function(anim, frame) {
@@ -206,56 +206,61 @@ var GameObject = Class.$extend({
 
   position: 0,
   speed: 0,
-  duration: +1,  // it will be multiplied to the acceleration.
-  acceleration: 1,  // per second
+  direction: +1,  // it will be multiplied to the acceleration.
+  acceleration: 1,  // per frame
   step: -1,  // max velocity, negative number means unlimited.
 
-  impact: function(deltaTime) {
-    if (deltaTime === undefined) {
-      deltaTime = 1000;
-    }
-    var timeScale = this.ctx.timeScale === undefined ? 1 : this.ctx.timeScale;
-    return timeScale * deltaTime / 1000;
+  timeScale: function() {
+    return this.ctx.timeScale === undefined ? 1 : this.ctx.timeScale;
   },
 
-  forward: function(deltaTime) {
-    this.speed += this.duration * this.acceleration * this.impact(deltaTime);
+  forward: function(deltaFrame) {
+    deltaFrame = (deltaFrame === undefined ? 1 : deltaFrame);
+    var timeScale = this.timeScale();
+    this.speed += this.direction * this.acceleration * deltaFrame * timeScale;
     if (this.step >= 0) {
       this.speed = limit(this.speed, -this.step, +this.step);
     }
   },
 
-  rest: function(deltaTime) {
+  rest: function(deltaFrame) {
+    deltaFrame = (deltaFrame === undefined ? 1 : deltaFrame);
     this.speed = Math.abs(this.speed);
-    this.speed -= this.acceleration * this.impact(deltaTime);
-    this.speed = Math.max(0, this.speed) * this.duration;
+    this.speed -= this.acceleration * deltaFrame * this.timeScale();
+    this.speed = Math.max(0, this.speed) * this.direction;
   },
 
-  updatePosition: function(deltaTime) {
-    if (!deltaTime) {
-      return;
-    }
-    this.position += this.speed * this.impact(deltaTime);
+  nextPosition: function(deltaFrame) {
+    deltaFrame = (deltaFrame === undefined ? 1 : deltaFrame);
+    return this.position + this.speed * deltaFrame * this.timeScale();
+  },
+
+  updatePosition: function(deltaFrame) {
+    this.position = this.nextPosition(deltaFrame);
   },
 
   /* Schedule */
 
   time: null,
+  lag: 0,
+  frame: 0,
   baseFrame: 0,
   baseTime: 0,
 
   rebaseFrame: function(frame, time) {
-    this.baseFrame = frame || 0;
+    this.frame = 0;
     this.baseTime = (time === undefined ? this.time : time);
+    // this.baseFrame = frame || 0;
+    // this.baseTime = (time === undefined ? this.time : time);
   },
 
-  frame: function(fps, time) {
+  calcFrame: function(fps, time) {
     /// Gets the frame number at now .  The base frame can be set by
     /// `rebaseFrame`.
     if (fps === undefined) {
       fps = this.fps;
     }
-    fps *= this.impact();
+    fps *= this.timeScale();
     time = (time === undefined ? this.time : time);
     return this.baseFrame + calcFrame(fps, time - this.baseTime);
   },
@@ -275,27 +280,32 @@ var GameObject = Class.$extend({
     if (!this.baseTime) {
       this.rebaseFrame(0, time);
     }
-    var frame = this.frame(this.fps, time);
     var prevTime = this.time;
-    var prevFrame = 0;
-    var deltaTime = 0;
     if (prevTime !== null) {
-      deltaTime = time - prevTime;
-      prevFrame = this.frame(this.fps, prevTime);
-      // Cut off too slow delta time and frame.
-      fps = (fps === undefined ? 60 : fps);
-      deltaTime = limit(deltaTime, 0, 1000 / fps);
-      prevFrame = Math.max(frame - Math.ceil(this.fps / fps), prevFrame);
+      this.lag += (time - prevTime) * this.timeScale();
     }
 
     // Update this.
     this.time = time;
-    this.__update__(frame, prevFrame, deltaTime);
+    fps = (fps === undefined ? 60 : fps);
+    var timeStep = 1000 / fps;  // ms per frame
+    while (this.lag >= timeStep) {
+      this.simulate();
+      this.__update__(this.frame++);
+      this.lag -= timeStep;
+    }
+
+    this.render(this.lag / timeStep);
   },
 
-  __update__: function(frame, prevFrame, deltaTime) {
-    var time = this.time;
+  simulate: function() {
+  },
 
+  render: function(deltaFrame) {
+    // Not implemented.
+  },
+
+  __update__: function(frame) {
     if (this.killed) {
       this.destroy();
       return;
@@ -496,8 +506,7 @@ var Game = GameObject.$extend({
     this.$super.apply(this, arguments);
   },
 
-  __update__: function(frame, prevFrame, deltaTime) {
-    this.$super.apply(this, arguments);
+  render: function(deltaFrame) {
     this.renderer.render(this.disp());
   },
 
