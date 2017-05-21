@@ -216,8 +216,8 @@ var GameObject = Class.$extend({
 
   forward: function(deltaFrame) {
     deltaFrame = (deltaFrame === undefined ? 1 : deltaFrame);
-    var timeScale = this.timeScale();
-    this.speed += this.direction * this.acceleration * deltaFrame * timeScale;
+    this.speed += this.direction * this.acceleration *
+							    deltaFrame * this.timeScale();
     if (this.step >= 0) {
       this.speed = limit(this.speed, -this.step, +this.step);
     }

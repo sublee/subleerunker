@@ -498,11 +498,14 @@ var Subleerunker = Game.$extend({
     }
 
     if (!this.player.dead) {
-      if (this.random() < this.difficulty) {
-        var flame = new Subleerunker.Flame(this);
-        this.disp().addChild(flame.disp());
+      if (frame % 2 === 0) {
+        if (this.random() < this.difficulty) {
+          var flame = new Subleerunker.Flame(this);
+          flame.render();
+          this.disp().addChild(flame.disp());
+        }
+        this.difficulty *= 1.001;
       }
-      this.difficulty *= 1.001;
     } else {
       var done = true;
       $.each(this.children, function() {
@@ -603,7 +606,7 @@ $.extend(Subleerunker, {
 
     /* Move */
 
-    acceleration: 60,
+    acceleration: 1,
     step: 5,
 
     setRunAnimation: function(direction) {
@@ -737,7 +740,7 @@ $.extend(Subleerunker, {
 
     /* Move */
 
-    acceleration: 6,
+    acceleration: 0.1,
     step: 10,
 
     render: function(deltaFrame) {
