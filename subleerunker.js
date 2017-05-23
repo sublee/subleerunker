@@ -299,7 +299,7 @@ var Subleerunker = Game.$extend({
     this.player = new Subleerunker.Player(this);
     if (this.shiftPressed) {
       // Hommarju for SUBERUNKER's shift-enter easter egg.
-      this.player.acceleration *= 0.25;
+      this.player.force *= 0.25;
       this.releaseLockedShift();
     }
     this.disp().addChild(this.player.disp());
@@ -495,11 +495,6 @@ var Subleerunker = Game.$extend({
     if (!pressed) {
       this.player.rest();
     }
-    if (this.leftPressed || this.rightPressed) {
-      // this.player.forward(1);
-    } else {
-      // this.player.rest(1);
-    }
 
     if (!this.player.dead) {
       if (frame % 2 === 0) {
@@ -611,6 +606,7 @@ $.extend(Subleerunker, {
     /* Move */
 
     acceleration: 0,
+    force: 1,
     friction: 1,
     step: 5,
     direction: +1,
@@ -638,21 +634,21 @@ $.extend(Subleerunker, {
 
     left: function() {
       this.direction = -1;
-      this.acceleration = -1;
+      this.acceleration = -this.force;
       this.friction = 0;
       this.setRunAnimation(-1);
     },
 
     right: function() {
       this.direction = +1;
-      this.acceleration = +1;
+      this.acceleration = +this.force;
       this.friction = 0;
       this.setRunAnimation(+1);
     },
 
     rest: function() {
       this.acceleration = 0;
-      this.friction = 1;
+      this.friction = this.force;
       // this.$super.apply(this, arguments);
       this.setAnimation('idle');
     },
