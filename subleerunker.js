@@ -482,19 +482,23 @@ var Subleerunker = Game.$extend({
 
     var movements = [[this.leftPressed, this.player.left],
                      [this.rightPressed, this.player.right]];
+    var pressed = false;
     for (var i = 0; i < 2; ++i) {
       var mov = movements[this.rightPrior ? 1 - i : i];
-      var pressed = mov[0];
+      pressed = mov[0];
       if (pressed) {
         var handler = mov[1];
         handler.call(this.player);
         break;
       }
     }
+    if (!pressed) {
+      this.player.rest();
+    }
     if (this.leftPressed || this.rightPressed) {
-      this.player.forward(1);
+      // this.player.forward(1);
     } else {
-      this.player.rest(1);
+      // this.player.rest(1);
     }
 
     if (!this.player.dead) {
@@ -529,7 +533,7 @@ $.extend(Subleerunker, {
     __init__: function(parent) {
       this.$super.apply(this, arguments);
       this.position = parent.width / 2 - this.width / 2;
-      this.updatePosition();
+      // this.updatePosition();
     },
 
     __update__: function(frame) {
@@ -542,7 +546,7 @@ $.extend(Subleerunker, {
           this.kill();
         }
       } else if (this.speed) {
-        this.updatePosition(1);
+        // this.updatePosition(1);
       }
     },
 
@@ -606,8 +610,10 @@ $.extend(Subleerunker, {
 
     /* Move */
 
-    acceleration: 1,
+    acceleration: 0,
+    friction: 1,
     step: 5,
+    direction: +1,
 
     setRunAnimation: function(direction) {
       var frame;
@@ -632,16 +638,22 @@ $.extend(Subleerunker, {
 
     left: function() {
       this.direction = -1;
+      this.acceleration = -1;
+      this.friction = 0;
       this.setRunAnimation(-1);
     },
 
     right: function() {
       this.direction = +1;
+      this.acceleration = +1;
+      this.friction = 0;
       this.setRunAnimation(+1);
     },
 
-    rest: function(deltaTime) {
-      this.$super.apply(this, arguments);
+    rest: function() {
+      this.acceleration = 0;
+      this.friction = 1;
+      // this.$super.apply(this, arguments);
       this.setAnimation('idle');
     },
 
@@ -695,8 +707,8 @@ $.extend(Subleerunker, {
         }
       } else {
         var prevPosition = this.position;
-        this.forward(1);
-        this.updatePosition(1);
+        // this.forward(1);
+        // this.updatePosition(1);
 
         var max = this.parent.height - this.height - this.landingMargin;
         var min = this.parent.height - player.height;
@@ -704,7 +716,7 @@ $.extend(Subleerunker, {
         if (this.position > max) {
           this.position = max;
           this.speed = 0;
-          this.updatePosition(1);
+          // this.updatePosition(1);
           this.setAnimation('land');
           this.landed = true;
         } else if (this.position < min) {

@@ -206,8 +206,8 @@ var GameObject = Class.$extend({
 
   position: 0,
   speed: 0,
-  direction: +1,  // it will be multiplied to the acceleration.
-  acceleration: 1,  // per frame
+  acceleration: 0,  // per frame
+  friction: 0,  // per frame
   step: -1,  // max velocity, negative number means unlimited.
 
   timeScale: function() {
@@ -215,12 +215,6 @@ var GameObject = Class.$extend({
   },
 
   forward: function(deltaFrame) {
-    deltaFrame = (deltaFrame === undefined ? 1 : deltaFrame);
-    this.speed += this.direction * this.acceleration *
-							    deltaFrame * this.timeScale();
-    if (this.step >= 0) {
-      this.speed = limit(this.speed, -this.step, +this.step);
-    }
   },
 
   rest: function(deltaFrame) {
@@ -298,7 +292,24 @@ var GameObject = Class.$extend({
     this.render(this.lag / timeStep);
   },
 
-  simulate: function() {
+  simulate: function(deltaFrame) {
+    deltaFrame = (deltaFrame === undefined ? 1 : deltaFrame);
+    var impact = deltaFrame * this.timeScale();
+    var speed = this.speed;
+    speed += this.acceleration * impact;
+    if (speed !== 0) {
+      var positive = speed > 0;
+      speed = Math.abs(speed);
+      speed -= this.friction * impact;
+      speed = Math.max(0, speed) * (positive ? +1 : -1);
+    }
+    if (this.step >= 0) {
+      speed = limit(speed, -this.step, +this.step);
+    }
+    this.speed = speed;
+
+
+    this.updatePosition(deltaFrame);
   },
 
   render: function(deltaFrame) {
