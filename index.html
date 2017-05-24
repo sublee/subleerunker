@@ -113,10 +113,7 @@
       var before = function(time) { stats.begin(); };
       var after = function(time) {
         stats.end();
-        if (this.player) {
-          stats.flames.update(Math.abs(this.player.speed), 500);
-        }
-        // stats.flames.update(countFlames(this), 100);
+        stats.flames.update(countFlames(this), 100);
       };
     }
     var fps = QUERY.fps && Number(QUERY.fps);
