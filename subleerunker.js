@@ -536,12 +536,8 @@ $.extend(Subleerunker, {
       if (this.blink.frame !== frame) {
         this.blink = {frame: frame, active: Math.random() < 0.02};
       }
-      if (this.dead) {
-        if (this.animationEnds()) {
-          this.kill();
-        }
-      } else if (this.speed) {
-        // this.updatePosition(1);
+      if (this.dead && this.animationEnds()) {
+        this.kill();
       }
     },
 
@@ -608,7 +604,7 @@ $.extend(Subleerunker, {
     acceleration: 0,
     force: 1,
     friction: 1,
-    step: 5,
+    maxVelocity: 5,
     direction: +1,
 
     setRunAnimation: function(direction) {
@@ -649,8 +645,11 @@ $.extend(Subleerunker, {
     rest: function() {
       this.acceleration = 0;
       this.friction = this.force;
-      // this.$super.apply(this, arguments);
       this.setAnimation('idle');
+    },
+
+    boundary: function() {
+      return [0, this.parent.width - this.width];
     },
 
     updatePosition: function(deltaFrame) {
@@ -667,13 +666,22 @@ $.extend(Subleerunker, {
       this.disp().x = this.position;
     },
 
+    render: function(deltaFrame) {
+      var disp = this.disp();
+      if (disp && !disp._destroyed) {
+        disp.x = this.simulate(deltaFrame).position;
+      }
+    },
+
     /* Own */
 
     die: function() {
       this.dead = true;
       this.speed = 0;
+      this.acceleration = 0;
+      this.friction = 0;
       this.setAnimation('die');
-      this.left = this.right = this.forward = this.rest = $.noop;
+      this.left = this.right = this.rest = $.noop;
     }
 
   }),
@@ -703,8 +711,6 @@ $.extend(Subleerunker, {
         }
       } else {
         var prevPosition = this.position;
-        // this.forward(1);
-        // this.updatePosition(1);
 
         var max = this.parent.height - this.height - this.landingMargin;
         var min = this.parent.height - player.height;
@@ -749,13 +755,13 @@ $.extend(Subleerunker, {
     /* Move */
 
     acceleration: 0.1,
-    step: 10,
+    maxVelocity: 10,
 
     render: function(deltaFrame) {
       var disp = this.disp();
       if (disp && !disp._destroyed) {
         disp.x = this.xPosition;
-        disp.y = this.nextPosition(deltaFrame);
+        disp.y = this.simulate(deltaFrame).position;
       }
     },
 

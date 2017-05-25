@@ -208,30 +208,28 @@ var GameObject = Class.$extend({
   speed: 0,
   acceleration: 0,  // per frame
   friction: 0,  // per frame
-  step: -1,  // max velocity, negative number means unlimited.
+  maxVelocity: undefined,  // max velocity
 
   timeScale: function() {
     return this.ctx.timeScale === undefined ? 1 : this.ctx.timeScale;
   },
 
-  forward: function(deltaFrame) {
+  boundary: function() {
+    return [-Infinity, +Infinity];
   },
 
-  rest: function(deltaFrame) {
-    deltaFrame = (deltaFrame === undefined ? 1 : deltaFrame);
-    this.speed = Math.abs(this.speed);
-    this.speed -= this.acceleration * deltaFrame * this.timeScale();
-    this.speed = Math.max(0, this.speed) * this.direction;
-  },
+  // nextPosition: function(deltaFrame) {
+  //   deltaFrame = (deltaFrame === undefined ? 1 : deltaFrame);
+  //   var boundary = this.boundary();
+  //   var position = this.position;
+  //   position += this.speed * deltaFrame * this.timeScale();
+  //   position = limit(position, boundary[0], boundary[1]);
+  //   return position;
+  // },
 
-  nextPosition: function(deltaFrame) {
-    deltaFrame = (deltaFrame === undefined ? 1 : deltaFrame);
-    return this.position + this.speed * deltaFrame * this.timeScale();
-  },
-
-  updatePosition: function(deltaFrame) {
-    this.position = this.nextPosition(deltaFrame);
-  },
+  // updatePosition: function(deltaFrame) {
+  //   this.position = this.nextPosition(deltaFrame);
+  // },
 
   /* Schedule */
 
@@ -274,17 +272,24 @@ var GameObject = Class.$extend({
     if (!this.baseTime) {
       this.rebaseFrame(0, time);
     }
-    var prevTime = this.time;
-    if (prevTime !== null) {
-      this.lag += (time - prevTime) * this.timeScale();
+    if (this._refocused) {
+      this.lag = 0;
+      this._refocused = false;
+    } else {
+      var prevTime = this.time;
+      if (prevTime !== null) {
+        this.lag += (time - prevTime) * this.timeScale();
+      }
     }
 
     // Update this.
     this.time = time;
-    fps = (fps === undefined ? 60 : fps);
+    fps = 60; //(fps === undefined ? 60 : fps);
     var timeStep = 1000 / fps;  // ms per frame
     while (this.lag >= timeStep) {
-      this.simulate();
+      var sim = this.simulate();
+      this.position = sim.position;
+      this.speed = sim.speed;
       this.__update__(this.frame++);
       this.lag -= timeStep;
     }
@@ -293,23 +298,32 @@ var GameObject = Class.$extend({
   },
 
   simulate: function(deltaFrame) {
-    deltaFrame = (deltaFrame === undefined ? 1 : deltaFrame);
+    if (deltaFrame === undefined) {
+      deltaFrame = 1;
+    }
     var impact = deltaFrame * this.timeScale();
     var speed = this.speed;
     speed += this.acceleration * impact;
-    if (speed !== 0) {
-      var positive = speed > 0;
+    if (speed !== 0 && this.friction !== 0) {
+      var speedIsPositive = speed > 0;
       speed = Math.abs(speed);
       speed -= this.friction * impact;
-      speed = Math.max(0, speed) * (positive ? +1 : -1);
+      speed = Math.max(0, speed) * (speedIsPositive ? +1 : -1);
     }
-    if (this.step >= 0) {
-      speed = limit(speed, -this.step, +this.step);
+    if (this.maxVelocity !== undefined) {
+      speed = limit(speed, -this.maxVelocity, +this.maxVelocity);
     }
-    this.speed = speed;
-
-
-    this.updatePosition(deltaFrame);
+    var position = this.position;
+    position += speed * impact;
+    var boundary = this.boundary();
+    if (position < boundary[0]) {
+      position = boundary[0];
+      speed = 0;
+    } else if (position > boundary[1]) {
+      position = boundary[1];
+      speed = 0;
+    }
+    return {position: position, speed: speed};
   },
 
   render: function(deltaFrame) {
