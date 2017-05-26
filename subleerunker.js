@@ -528,7 +528,6 @@ $.extend(Subleerunker, {
     __init__: function(parent) {
       this.$super.apply(this, arguments);
       this.position = parent.width / 2 - this.width / 2;
-      // this.updatePosition();
     },
 
     __update__: function(frame) {
@@ -562,9 +561,9 @@ $.extend(Subleerunker, {
 
     blink: {frame: 0, active: false},
 
-    updateAnimation: function(anim, index) {
-      this.$super.apply(this, arguments);
+    renderAnimation: function(anim, index) {
       this.overlapEyelids(anim, index);
+      this.$super.apply(this, arguments);
     },
 
     overlapEyelids: function(anim, index) {
@@ -614,29 +613,17 @@ $.extend(Subleerunker, {
       } else if (this.animationName === 'run' && direction !== this.direction) {
         frame = this.animationFrame() + 4;
       }
-      var disp = this.disp();
-      switch (direction) {
-        case -1:
-          disp.scale.x = -1;
-          disp.anchor.x = 1;
-          break;
-        case +1:
-          disp.scale.x = +1;
-          disp.anchor.x = 0;
-          break;
-      }
+      this.direction = direction;
       this.setAnimation('run', frame);
     },
 
     left: function() {
-      this.direction = -1;
       this.acceleration = -this.force;
       this.friction = 0;
       this.setRunAnimation(-1);
     },
 
     right: function() {
-      this.direction = +1;
       this.acceleration = +this.force;
       this.friction = 0;
       this.setRunAnimation(+1);
@@ -652,25 +639,22 @@ $.extend(Subleerunker, {
       return [0, this.parent.width - this.width];
     },
 
-    updatePosition: function(deltaFrame) {
-      this.$super.apply(this, arguments);
-
-      var position = this.position;
-      var max = this.parent.width - this.width;
-      this.position = limit(this.position, 0, max);
-
-      if (position !== this.position) {
-        this.speed = 0;
-      }
-
-      this.disp().x = this.position;
-    },
-
     render: function(deltaFrame) {
       var disp = this.disp();
       if (disp && !disp._destroyed) {
         disp.x = this.simulate(deltaFrame).position;
+        switch (this.direction) {
+          case -1:
+            disp.scale.x = -1;
+            disp.anchor.x = 1;
+            break;
+          case +1:
+            disp.scale.x = +1;
+            disp.anchor.x = 0;
+            break;
+        }
       }
+      this.$super.apply(this, arguments);
     },
 
     /* Own */
@@ -718,7 +702,6 @@ $.extend(Subleerunker, {
         if (this.position > max) {
           this.position = max;
           this.speed = 0;
-          // this.updatePosition(1);
           this.setAnimation('land');
           this.landed = true;
         } else if (this.position < min) {
@@ -758,6 +741,7 @@ $.extend(Subleerunker, {
     maxVelocity: 10,
 
     render: function(deltaFrame) {
+      this.$super.apply(this, arguments);
       var disp = this.disp();
       if (disp && !disp._destroyed) {
         disp.x = this.xPosition;

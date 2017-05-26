@@ -128,6 +128,7 @@ var GameObject = Class.$extend({
         disp.position.y = this.offset[Y];
       }
       this.disp = function() { return disp; };
+      this.render();
     }
     return disp;
   },
@@ -197,7 +198,7 @@ var GameObject = Class.$extend({
     }
   },
 
-  updateAnimation: function(anim, index) {
+  renderAnimation: function(anim, index) {
     var texture = this.getTexture(anim.textureNames[index]);
     this.disp().texture = texture;
   },
@@ -217,19 +218,6 @@ var GameObject = Class.$extend({
   boundary: function() {
     return [-Infinity, +Infinity];
   },
-
-  // nextPosition: function(deltaFrame) {
-  //   deltaFrame = (deltaFrame === undefined ? 1 : deltaFrame);
-  //   var boundary = this.boundary();
-  //   var position = this.position;
-  //   position += this.speed * deltaFrame * this.timeScale();
-  //   position = limit(position, boundary[0], boundary[1]);
-  //   return position;
-  // },
-
-  // updatePosition: function(deltaFrame) {
-  //   this.position = this.nextPosition(deltaFrame);
-  // },
 
   /* Schedule */
 
@@ -257,12 +245,12 @@ var GameObject = Class.$extend({
     return this.baseFrame + calcFrame(fps, time - this.baseTime);
   },
 
-  update: function(time, fps) {
+  update: function(time) {
     /// Call this method at each animation frames.
 
     // Update children first.
     $.each(this.children, $.proxy(function(childId, child) {
-      child.update(time, fps);
+      child.update(time);
       if (this.killed) {
         return false;
       }
@@ -327,20 +315,18 @@ var GameObject = Class.$extend({
   },
 
   render: function(deltaFrame) {
-    // Not implemented.
+    var anim = this.currentAnimation();
+    if (anim) {
+      var f = this.animationFrame(anim);
+      var i = this.animationIndex(anim, f);
+      this.renderAnimation(anim, i);
+    }
   },
 
   __update__: function(frame) {
     if (this.killed) {
       this.destroy();
       return;
-    }
-
-    var anim = this.currentAnimation();
-    if (anim) {
-      var f = this.animationFrame(anim);
-      var i = this.animationIndex(anim, f);
-      this.updateAnimation(anim, i);
     }
   },
 
@@ -523,7 +509,7 @@ var Game = GameObject.$extend({
     /// Will be called before the first update.
   },
 
-  update: function(time, fps) {
+  update: function(time) {
     if (this._first) {
       this.setup();
       this._first = false;
@@ -545,7 +531,7 @@ var Game = GameObject.$extend({
     PIXI.loader.add(this.atlas).load($.proxy(function() {
       var update = $.proxy(function(time) {
         before && before.call(this, time);
-        game.update(time, fps);
+        game.update(time);
         if (!this.killed) {
           _requestAnimationFrame(update);
         }
