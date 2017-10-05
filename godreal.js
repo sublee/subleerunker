@@ -177,16 +177,6 @@ var GameObject = Class.$extend({
     this.animationName = animationName;
   },
 
-  animationEnds: function() {
-    var anim = this.currentAnimation();
-    if (!anim) {
-      return true;  // never started
-    } else if (!anim.once) {
-      return false;  // never ends
-    }
-    return this.animationFrame(anim) >= anim.textureNames.length;
-  },
-
   animationFrame: function(anim) {
     anim = anim || this.currentAnimation();
     if (!anim) {
@@ -203,6 +193,16 @@ var GameObject = Class.$extend({
     } else {
       return Math.floor(frame % length);
     }
+  },
+
+  hasAnimationEnded: function() {
+    var anim = this.currentAnimation();
+    if (!anim) {
+      return true;  // never started
+    } else if (!anim.once) {
+      return false;  // never ends
+    }
+    return this.animationFrame(anim) >= anim.textureNames.length;
   },
 
   renderAnimation: function(anim, index) {

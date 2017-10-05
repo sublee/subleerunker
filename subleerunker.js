@@ -532,10 +532,12 @@ $.extend(Subleerunker, {
 
     __update__: function(frame) {
       this.$super.apply(this, arguments);
+
       if (this.blink.frame !== frame) {
         this.blink = {frame: frame, active: Math.random() < 0.02};
       }
-      if (this.dead && this.animationEnds()) {
+
+      if (this.dead && this.hasAnimationEnded()) {
         this.kill();
       }
     },
@@ -688,7 +690,7 @@ $.extend(Subleerunker, {
       var player = this.parent.player;
 
       if (this.landed) {
-        if (this.animationEnds()) {
+        if (this.hasAnimationEnded()) {
           this.destroy();
           if (!player.dead) {
             this.parent.upScore();
