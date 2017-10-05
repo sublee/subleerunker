@@ -674,7 +674,8 @@ $.extend(Subleerunker, {
 
     __name__: 'Flame',
 
-    __init__: function(parent) {
+    __init__: function(parent, id) {
+      this.id = id;
       this.$super.apply(this, arguments);
       var W = parent.width;
       var w = this.width;

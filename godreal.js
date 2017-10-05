@@ -16,6 +16,16 @@ var KEYS = {
   89: 'y', 90: 'z'
 };
 
+/**
+ * Gets the next Id.  A new Id is greater than the Ids generated before.
+ */
+var nextId = (function() {
+  var idSeq = 0;
+  return function() {
+    return idSeq++;
+  };
+})();
+
 var limit = function(n, min, max) {
   return Math.max(min, Math.min(max, n));
 };
@@ -55,13 +65,13 @@ var GameObject = Class.$extend({
   __name__: 'GameObject',
 
   __init__: function(/* parent or ctx */arg) {
+    this.__id__ = nextId();
     this.children = {};
-    this.childIdSeq = 0;
     if (arg instanceof GameObject) {
       var parent = arg;
       this.parent = parent;
       this.root = parent.root;
-      this.childId = parent.addChild(this);
+      parent.addChild(this);
       this.ctx = parent.ctx;
     } else {
       this.root = this;
@@ -75,14 +85,11 @@ var GameObject = Class.$extend({
   },
 
   addChild: function(child) {
-    var childId = this.childIdSeq;
-    this.childIdSeq += 1;
-    this.children[childId] = child;
-    return childId;
+    this.children[child.__id__] = child;
   },
 
   removeChild: function(child) {
-    delete this.children[child.childId];
+    delete this.children[child.__id__];
   },
 
   /* Destruct */
