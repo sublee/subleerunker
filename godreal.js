@@ -263,8 +263,6 @@ var GameObject = Class.$extend({
   rebaseFrame: function(frame, time) {
     this.frame = 0;
     this.baseTime = (time === undefined ? this.time : time);
-    // this.baseFrame = frame || 0;
-    // this.baseTime = (time === undefined ? this.time : time);
   },
 
   /** An iteration of the game loop.
