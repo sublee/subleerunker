@@ -778,6 +778,10 @@ $.extend(Subleerunker, {
     acceleration: 0.1,
     maxVelocity: 10,
 
+    boundary: function() {
+      return [-Infinity, this.parent.height - this.height];
+    },
+
     render: function(deltaFrame) {
       this.$super.apply(this, arguments);
       var disp = this.disp();
