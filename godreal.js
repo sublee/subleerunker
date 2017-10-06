@@ -342,10 +342,12 @@ var GameObject = Class.$extend({
       return;
     }
 
-    // __update__() is not interested in an accurate frame as a real number.
+    // Call __update__() when only the current frame as an integer is updated.
     var intFrame     = Math.floor(frame);
     var intPrevFrame = Math.floor(prevFrame);
-    this.__update__(intFrame, intPrevFrame);
+    if (intFrame !== intPrevFrame) {
+      this.__update__(intFrame);
+    }
   },
 
   simulate: function(deltaFrame) {
@@ -391,7 +393,7 @@ var GameObject = Class.$extend({
     /// Will be called before the first tick in the game loop.
   },
 
-  __update__: function(frame, prevFrame) {
+  __update__: function(frame) {
   },
 
   /* Misc */

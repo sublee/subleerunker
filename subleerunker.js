@@ -463,7 +463,7 @@ var Subleerunker = Game.$extend({
     $(window).trigger('score', [this.records.current, !!this.ctx.debug]);
   },
 
-  __update__: function(frame, prevFrame) {
+  __update__: function(frame) {
     this.ctx.timeScale = (this.ctx.debug && this.shiftPressed) ? 0.5 : 1;
 
     // if (this.direction !== undefined) {
@@ -496,7 +496,7 @@ var Subleerunker = Game.$extend({
     }
 
     if (!this.player.dead) {
-      if (frame !== prevFrame && frame % 2 === 0) {
+      if (frame % 2 === 0) {
         if (this.random() < this.difficulty) {
           var flame = new Subleerunker.Flame(this, frame);
           flame.render();
@@ -529,7 +529,7 @@ $.extend(Subleerunker, {
       this.position = parent.width / 2 - this.width / 2;
     },
 
-    __update__: function(frame, prevFrame) {
+    __update__: function(frame) {
       // Decide a blink.
       var BLINK_CONTINUANCE = 4;
       if (frame - this.blink.frame < BLINK_CONTINUANCE) {
@@ -705,7 +705,7 @@ $.extend(Subleerunker, {
       this.position = -this.height;
     },
 
-    __update__: function(frame, prevFrame) {
+    __update__: function(frame) {
       var player = this.parent.player;
 
       if (this.landed) {
