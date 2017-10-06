@@ -1,9 +1,10 @@
-var X = 0;
-var Y = 1;
-var TOP = 0;
-var RIGHT = 1;
+var X      = 0;
+var Y      = 1;
+
+var TOP    = 0;
+var RIGHT  = 1;
 var BOTTOM = 2;
-var LEFT = 3;
+var LEFT   = 3;
 
 var KEYS = {
    8: 'backspace',  9: 'tab',   13: 'enter',    16: 'shift',  17: 'ctrl',
