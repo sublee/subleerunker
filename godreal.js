@@ -163,7 +163,6 @@ var GameObject = Class.$extend({
 
   /* Animation */
 
-  fps: 60,
   animations: null,
   animationName: null,
 
@@ -186,8 +185,8 @@ var GameObject = Class.$extend({
     if (!anim) {
       return 0;
     }
-    var fps = anim.fps || this.fps;
-    return this.getFrame(fps);
+    var fps = anim.fps * this.timeScale();
+    return this.baseFrame + calcFrame(fps, this.time - this.baseTime);
   },
 
   animationIndex: function(anim, frame) {
@@ -245,11 +244,6 @@ var GameObject = Class.$extend({
     // this.baseTime = (time === undefined ? this.time : time);
   },
 
-  getFrame: function(fps, time) {
-    /// Gets the frame number at now .  The base frame can be set by
-    /// `rebaseFrame`.
-    if (fps === undefined) {
-      fps = this.fps;
   /** An iteration of the game loop.
    *
    *  Call this method at each animation frames.

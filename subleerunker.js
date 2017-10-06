@@ -12,7 +12,6 @@ var Subleerunker = Game.$extend({
   height: 480,
   atlas: 'atlas.json',
 
-  fps: 30,
   difficulty: 0.25,
 
   __setup__: function() {
@@ -184,10 +183,13 @@ var Subleerunker = Game.$extend({
       width: 148, height: 66,
       anchor: [0.5, 0],
       offset: [this.width / 2, 156],
-      fps: 0,
-      animations: {'default': {textureNames: ['logo']}},
+      animations: {
+        'default': {fps: 0, textureNames: ['logo']}
+      },
       animationName: 'default',
     });
+    this.logo = new Logo(this);
+
     var control = {};
     if (IS_MOBILE) {
       $.extend(control, {
@@ -203,12 +205,13 @@ var Subleerunker = Game.$extend({
       height: control.height,
       anchor: [0.5, 1],
       offset: [this.width / 2, -31],
-      fps: 1,
-      animations: {'blink': {textureNames: control.animationTextureNames}},
+      animations: {
+        'blink': {fps: 1, textureNames: control.animationTextureNames}
+      },
       animationName: 'blink'
     });
-    this.logo = new Logo(this);
     this.control = new Control(this);
+
     var disp = this.disp();
     disp.addChild(this.logo.disp());
     disp.addChild(this.control.disp());
@@ -552,20 +555,29 @@ $.extend(Subleerunker, {
 
     /* Animation */
 
-    fps: 12,
     animations: {
-      idle: {textureNames: [
-        'player-idle-0', 'player-idle-1', 'player-idle-2', 'player-idle-3',
-        'player-idle-4', 'player-idle-5', 'player-idle-6'
-      ]},
-      run: {textureNames: [
-        'player-run-0', 'player-run-1', 'player-run-2', 'player-run-3',
-        'player-run-4', 'player-run-5', 'player-run-6', 'player-run-7'
-      ]},
-      die: {textureNames: [
-        'player-die-0', 'player-die-1', 'player-die-2', 'player-die-3',
-        'player-die-4', 'player-die-5', 'player-die-6', 'player-die-7'
-      ], once: true}
+      idle: {
+        fps: 12,
+        textureNames: [
+          'player-idle-0', 'player-idle-1', 'player-idle-2', 'player-idle-3',
+          'player-idle-4', 'player-idle-5', 'player-idle-6'
+        ]
+      },
+      run: {
+        fps: 12,
+        textureNames: [
+          'player-run-0', 'player-run-1', 'player-run-2', 'player-run-3',
+          'player-run-4', 'player-run-5', 'player-run-6', 'player-run-7'
+        ]
+      },
+      die: {
+        fps: 12,
+        once: true,
+        textureNames: [
+          'player-die-0', 'player-die-1', 'player-die-2', 'player-die-3',
+          'player-die-4', 'player-die-5', 'player-die-6', 'player-die-7'
+        ]
+      }
     },
     animationName: 'idle',
 
@@ -744,13 +756,20 @@ $.extend(Subleerunker, {
     /* Animation */
 
     animations: {
-      burn: {fps: 12, textureNames: [
-        'flame-burn-0', 'flame-burn-1', 'flame-burn-2', 'flame-burn-3',
-        'flame-burn-4', 'flame-burn-5', 'flame-burn-6'
-      ]},
-      land: {fps: 24, textureNames: [
-        'flame-land-0', 'flame-land-1', 'flame-land-2'
-      ], once: true}
+      burn: {
+        fps: 12,
+        textureNames: [
+          'flame-burn-0', 'flame-burn-1', 'flame-burn-2', 'flame-burn-3',
+          'flame-burn-4', 'flame-burn-5', 'flame-burn-6'
+        ]
+      },
+      land: {
+        fps: 24,
+        once: true,
+        textureNames: [
+          'flame-land-0', 'flame-land-1', 'flame-land-2'
+        ]
+      }
     },
     animationName: 'burn',
 
