@@ -532,7 +532,7 @@ var Game = GameObject.$extend({
         console.log('focus');
         // this.ctx.timeScale = 1;
         this.time = null;
-        // this._refocused = true;
+        this._refocused = true;
       }, this)
     }).trigger('resize');
   },
