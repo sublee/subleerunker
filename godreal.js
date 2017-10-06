@@ -449,6 +449,7 @@ var Game = GameObject.$extend({
     this.$super.apply(this, arguments);
     this.renderer = new this.rendererClass(this.width, this.height);
     this.handlers = this.handlers || {};
+    this._refocused = false;
   },
 
   __disp__: function() {
@@ -517,11 +518,23 @@ var Game = GameObject.$extend({
       }
     }, this));
     // Window events.
-    $(window).on('resize', $.proxy(function() {
-      var scale = Math.max(1, Math.floor(window.innerHeight / this.height));
-      this.zoom(scale);
-      handlers.resize && handlers.resize.call(this, scale);
-    }, this)).trigger('resize');
+    $(window).on({
+      resize: $.proxy(function() {
+        var scale = Math.max(1, Math.floor(window.innerHeight / this.height));
+        this.zoom(scale);
+        handlers.resize && handlers.resize.call(this, scale);
+      }, this),
+      blur: $.proxy(function() {
+        console.log('blur');
+        // this.ctx.timeScale = 0;
+      }, this),
+      focus: $.proxy(function() {
+        console.log('focus');
+        // this.ctx.timeScale = 1;
+        this.time = null;
+        // this._refocused = true;
+      }, this)
+    }).trigger('resize');
   },
 
   handlesKey: function(e) {
