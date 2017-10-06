@@ -238,11 +238,11 @@ var GameObject = Class.$extend({
 
   /* Move */
 
-  position: 0,
-  speed: 0,
+  position:     0,
+  speed:        0,
   acceleration: 0,  // per frame
-  friction: 0,  // per frame
-  maxVelocity: undefined,  // max velocity
+  friction:     0,  // per frame
+  maxVelocity:  undefined,  // max velocity
 
   timeScale: function() {
     return this.ctx.timeScale === undefined ? 1 : this.ctx.timeScale;
@@ -252,13 +252,13 @@ var GameObject = Class.$extend({
     return [-Infinity, +Infinity];
   },
 
-  /* Schedule */
+  /* Game loop */
 
-  time: null,
-  lag: 0,
-  frame: 0,
+  time:      null,
+  lag:       0,
+  frame:     0,
   baseFrame: 0,
-  baseTime: 0,
+  baseTime:  0,
 
   rebaseFrame: function(frame, time) {
     this.frame = 0;
