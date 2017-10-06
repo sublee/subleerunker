@@ -66,7 +66,10 @@ var GameObject = Class.$extend({
 
   __init__: function(/* parent or ctx */arg) {
     this.__id__ = nextId();
+    this._first = true;
+    this._killed = false;
     this.children = {};
+
     if (arg instanceof GameObject) {
       var parent = arg;
       this.parent = parent;
@@ -77,8 +80,9 @@ var GameObject = Class.$extend({
       this.root = this;
       this.ctx = arg ? arg : {};
     }
+
     this.innerPadding = normalizePadding(this.innerPadding);
-    this.killed = false;
+
     if (this.animationName) {
       this.setAnimation(this.animationName);
     }
@@ -95,7 +99,7 @@ var GameObject = Class.$extend({
   /* Destruct */
 
   kill: function() {
-    this.killed = true;
+    this._killed = true;
   },
 
   destroy: function() {
@@ -246,27 +250,28 @@ var GameObject = Class.$extend({
     /// `rebaseFrame`.
     if (fps === undefined) {
       fps = this.fps;
+  /** An iteration of the game loop.
+   *
+   *  Call this method at each animation frames.
+   *
+   *  The game loop follows the deterministic lockstep style with fixed delta
+   *  time.  See also: https://gafferongames.com/post/fix_your_timestep
+   *
+   */
+  tick: function(time) {
+    // Call __setup__ at the first tick.
+    if (this._first) {
+      this._first = false;
+      this.__setup__();
+      return;
     }
-    fps *= this.timeScale();
-    time = (time === undefined ? this.time : time);
-    return this.baseFrame + calcFrame(fps, time - this.baseTime);
-  },
 
-  update: function(time) {
-    /// Call this method at each animation frames.
-
-    // Update children first.
-    $.each(this.children, $.proxy(function(childId, child) {
-      child.update(time);
-      if (this.killed) {
-        return false;
-      }
-    }, this));
-
-    // Arguments for __update__().
+    // Ensure that the base frame is set.
     if (!this.baseTime) {
       this.rebaseFrame(0, time);
     }
+
+    // Accumulate lag.
     if (this._refocused) {
       this.lag = 0;
       this._refocused = false;
@@ -277,19 +282,52 @@ var GameObject = Class.$extend({
       }
     }
 
-    // Update this.
     this.time = time;
-    fps = 60; //(fps === undefined ? 60 : fps);
-    var timeStep = 1000 / fps;  // ms per frame
-    while (this.lag >= timeStep) {
-      var sim = this.simulate();
-      this.position = sim.position;
-      this.speed = sim.speed;
-      this.__update__(this.frame++);
-      this.lag -= timeStep;
+
+    var FPS = 60;
+    var TIME_STEP = 1000 / FPS;  // ms per frame
+    var MAX_STEPS = 6;
+
+    var i = 0;
+    var prevFrame = Math.floor(this.frame);
+
+    while (this.lag >= TIME_STEP) {
+      this.frame += this.timeScale();
+      var frame = Math.floor(this.frame);
+
+      this.simulateThenUpdate(frame, prevFrame);
+
+      this.lag -= TIME_STEP;
+      prevFrame = frame;
+
+      ++i;
+      if (i >= MAX_STEPS) {
+        break;
+      }
     }
 
-    this.render(this.lag / timeStep);
+    this.render(this.lag / TIME_STEP);
+  },
+
+  simulateThenUpdate: function(frame, prevFrame) {
+    $.each(this.children, $.proxy(function(__, child) {
+      child.time = this.time;
+      child.simulateThenUpdate(frame, prevFrame);
+      if (this._killed) {
+        return false;
+      }
+    }, this));
+
+    var sim = this.simulate();
+    this.position = sim.position;
+    this.speed = sim.speed;
+
+    if (this._killed) {
+      this.destroy();
+      return;
+    }
+
+    this.__update__(frame, prevFrame);
   },
 
   simulate: function(deltaFrame) {
@@ -330,11 +368,11 @@ var GameObject = Class.$extend({
     }
   },
 
-  __update__: function(frame) {
-    if (this.killed) {
-      this.destroy();
-      return;
-    }
+  __setup__: function() {
+    /// Will be called before the first tick in the game loop.
+  },
+
+  __update__: function(frame, prevFrame) {
   },
 
   /* Misc */
@@ -417,7 +455,6 @@ var Game = GameObject.$extend({
     this.$super.apply(this, arguments);
     this.renderer = new this.rendererClass(this.width, this.height);
     this.handlers = this.handlers || {};
-    this._first = true;
   },
 
   __disp__: function() {
@@ -512,19 +549,11 @@ var Game = GameObject.$extend({
     return false;
   },
 
-  setup: function() {
-    /// Will be called before the first update.
-  },
-
-  update: function(time) {
-    if (this._first) {
-      this.setup();
-      this._first = false;
-    }
-    this.$super.apply(this, arguments);
-  },
-
   render: function(deltaFrame) {
+    $.each(this.children, $.proxy(function(__, child) {
+      child.render(deltaFrame);
+    }, this));
+
     this.renderer.render(this.disp());
   },
 
@@ -536,15 +565,15 @@ var Game = GameObject.$extend({
       };
     }
     PIXI.loader.add(this.atlas).load($.proxy(function() {
-      var update = $.proxy(function(time) {
+      var tick = $.proxy(function(time) {
         before && before.call(this, time);
-        game.update(time);
-        if (!this.killed) {
-          _requestAnimationFrame(update);
+        game.tick(time);
+        if (!this._killed) {
+          _requestAnimationFrame(tick);
         }
         after && after.call(this, time);
       }, this);
-      _requestAnimationFrame(update);
+      _requestAnimationFrame(tick);
     }, this));
   }
 

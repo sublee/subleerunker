@@ -15,7 +15,7 @@ var Subleerunker = Game.$extend({
   fps: 30,
   difficulty: 0.25,
 
-  setup: function() {
+  __setup__: function() {
     // Set background color.
     this.renderer.backgroundColor = this.pickColor('background');
 
@@ -462,10 +462,8 @@ var Subleerunker = Game.$extend({
     $(window).trigger('score', [this.records.current, !!this.ctx.debug]);
   },
 
-  __update__: function(frame) {
-    this.$super.apply(this, arguments);
-
-    this.ctx.timeScale = (this.ctx.debug && this.shiftPressed) ? 0.25 : 1;
+  __update__: function(frame, prevFrame) {
+    this.ctx.timeScale = (this.ctx.debug && this.shiftPressed) ? 0.5 : 1;
 
     // if (this.direction !== undefined) {
     //   this.direction += deltaTime;
@@ -497,9 +495,9 @@ var Subleerunker = Game.$extend({
     }
 
     if (!this.player.dead) {
-      if (frame % 2 === 0) {
+      if (frame !== prevFrame && frame % 2 === 0) {
         if (this.random() < this.difficulty) {
-          var flame = new Subleerunker.Flame(this);
+          var flame = new Subleerunker.Flame(this, frame);
           flame.render();
           this.disp().addChild(flame.disp());
         }
@@ -530,11 +528,21 @@ $.extend(Subleerunker, {
       this.position = parent.width / 2 - this.width / 2;
     },
 
-    __update__: function(frame) {
-      this.$super.apply(this, arguments);
+    __update__: function(frame, prevFrame) {
+      // Decide a blink.
+      var BLINK_CONTINUANCE = 4;
+      if (frame - this.blink.frame < BLINK_CONTINUANCE) {
+        // A blink decision is not changed for 4 frames.
+        // To avoid too quick blink.
+      } else {
+        this.blink = {frame: frame, active: null};
 
-      if (this.blink.frame !== frame) {
-        this.blink = {frame: frame, active: Math.random() < 0.02};
+        if (this.blink.active) {
+          // Don't close eyes for too long term.
+          this.blink.active = false;
+        } else {
+          this.blink.active = (Math.random() < 0.02);
+        }
       }
 
       if (this.dead && this.hasAnimationEnded()) {
@@ -561,6 +569,8 @@ $.extend(Subleerunker, {
     },
     animationName: 'idle',
 
+    // frame:  the frame decided to blink or not.
+    // active: if true, eyes are closed for a short term.
     blink: {frame: 0, active: false},
 
     renderAnimation: function(anim, index) {
@@ -685,8 +695,7 @@ $.extend(Subleerunker, {
       this.position = -this.height;
     },
 
-    __update__: function(frame) {
-      this.$super.apply(this, arguments);
+    __update__: function(frame, prevFrame) {
       var player = this.parent.player;
 
       if (this.landed) {
@@ -696,26 +705,33 @@ $.extend(Subleerunker, {
             this.parent.upScore();
           }
         }
-      } else {
-        var prevPosition = this.position;
-
-        var max = this.parent.height - this.height - this.landingMargin;
-        var min = this.parent.height - player.height;
-
-        if (this.position > max) {
-          this.position = max;
-          this.speed = 0;
-          this.setAnimation('land');
-          this.landed = true;
-        } else if (this.position < min) {
-          return;
-        }
-
-        if (!player.dead && this.hits(player, prevPosition)) {
-          this.destroy();
-          this.parent.gameOver();
-        }
+        return;
       }
+
+      var prevPosition = this.position;
+
+      var max = this.parent.height - this.height - this.landingMargin;
+      var min = this.parent.height - player.height;
+
+      if (this.position > max) {
+        this.position = max;
+        this.speed = 0;
+        this.setAnimation('land');
+        this.landed = true;
+      } else if (this.position < min) {
+        return;
+      }
+
+      if (!player.dead && this.hits(player, prevPosition)) {
+        this.destroy();
+        this.parent.gameOver();
+      }
+    },
+
+    simulate: function(deltaFrame) {
+      var sim = this.$super.apply(this, arguments);
+      // console.log([sim.position, deltaFrame]);
+      return sim;
     },
 
     /* View */
