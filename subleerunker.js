@@ -218,9 +218,7 @@ var Subleerunker = Game.$extend({
   },
 
   hideSplash: function() {
-    this.logo.destroySoon();
     this.logo.destroy();
-    this.control.destroySoon();
     this.control.destroy();
     delete this.logo, this.control;
   },
