@@ -31,6 +31,24 @@ var limit = function(n, min, max) {
   return Math.max(min, Math.min(max, n));
 };
 
+/**
+ * Normalizes a padding array into a 4-element array by CSS padding
+ * normalization rule.
+ *
+ * e.g.:
+ *
+ *   > normalizePadding([])
+ *   [0, 0, 0, 0]
+ *   > normalizePadding([3])
+ *   [3, 3, 3, 3]
+ *   > normalizePadding([2, 4])
+ *   [2, 4, 2, 4]
+ *   > normalizePadding([5, 10, 15])
+ *   [5, 10, 15, 10]
+ *   > normalizePadding([1, 2, 3, 4])
+ *   [1, 2, 3, 4]
+ *
+ */
 var normalizePadding = function(padding) {
   switch (padding ? padding.length : 0) {
     case 0:
