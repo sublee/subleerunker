@@ -278,7 +278,7 @@ var GameObject = Class.$extend({
 
     this.time = time;
 
-    var FPS = 60;
+    var FPS       = 60;
     var TIME_STEP = 1000 / FPS;  // ms per frame
     var MAX_STEPS = 6;
 
