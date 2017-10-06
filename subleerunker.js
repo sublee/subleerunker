@@ -666,7 +666,7 @@ $.extend(Subleerunker, {
     render: function(deltaFrame) {
       var disp = this.disp();
       if (disp && !disp._destroyed) {
-        disp.x = this.simulate(deltaFrame).position;
+        disp.x = this.position;
         switch (this.direction) {
           case -1:
             disp.scale.x = -1;
@@ -781,7 +781,7 @@ $.extend(Subleerunker, {
       var disp = this.disp();
       if (disp && !disp._destroyed) {
         disp.x = this.xPosition;
-        disp.y = this.simulate(deltaFrame).position;
+        disp.y = this.position;
       }
     },
 
