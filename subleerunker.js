@@ -218,9 +218,9 @@ var Subleerunker = Game.$extend({
   },
 
   hideSplash: function() {
-    this.logo.kill();
+    this.logo.destroySoon();
     this.logo.destroy();
-    this.control.kill();
+    this.control.destroySoon();
     this.control.destroy();
     delete this.logo, this.control;
   },
@@ -549,7 +549,7 @@ $.extend(Subleerunker, {
       }
 
       if (this.dead && this.hasAnimationEnded()) {
-        this.kill();
+        this.destroySoon();
       }
     },
 

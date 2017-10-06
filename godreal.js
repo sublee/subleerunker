@@ -65,10 +65,10 @@ var GameObject = Class.$extend({
   __name__: 'GameObject',
 
   __init__: function(/* parent or ctx */arg) {
-    this.__id__ = nextId();
-    this._first = true;
-    this._killed = false;
-    this.children = {};
+    this.__id__     = nextId();
+    this.children   = {};
+    this._firstTick = true;
+    this._destroyed = false;
 
     if (arg instanceof GameObject) {
       var parent = arg;
@@ -98,18 +98,21 @@ var GameObject = Class.$extend({
 
   /* Destruct */
 
-  kill: function() {
-    this._killed = true;
-  },
-
   destroy: function() {
+    this._destroyed = true;
+
     var disp = this.disp();
     if (disp) {
       disp.destroy();
     }
+
     if (this.parent) {
       this.parent.removeChild(this);
     }
+  },
+
+  destroySoon: function() {
+    this._destroyed = true;
   },
 
   /* View */
@@ -254,8 +257,8 @@ var GameObject = Class.$extend({
    */
   tick: function(time) {
     // Call __setup__ at the first tick.
-    if (this._first) {
-      this._first = false;
+    if (this._firstTick) {
+      this._firstTick = false;
       this.__setup__();
       return;
     }
@@ -305,7 +308,7 @@ var GameObject = Class.$extend({
     $.each(this.children, $.proxy(function(__, child) {
       child.time = this.time;
       child.simulateThenUpdate(frame, prevFrame);
-      if (this._killed) {
+      if (this._destroyed) {
         return false;
       }
     }, this));
@@ -314,7 +317,7 @@ var GameObject = Class.$extend({
     this.position = sim.position;
     this.speed = sim.speed;
 
-    if (this._killed) {
+    if (this._destroyed) {
       this.destroy();
       return;
     }
@@ -577,7 +580,7 @@ var Game = GameObject.$extend({
       var tick = $.proxy(function(time) {
         before && before.call(this, time);
         game.tick(time);
-        if (!this._killed) {
+        if (!this._destroyed) {
           _requestAnimationFrame(tick);
         }
         after && after.call(this, time);
