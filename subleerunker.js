@@ -475,15 +475,17 @@ var Subleerunker = Game.$extend({
       return;
     }
 
-    var movements = [[this.leftPressed, this.player.left],
-                     [this.rightPressed, this.player.right]];
+    var movements = [
+      {pressed: this.leftPressed,  handler: this.player.left},
+      {pressed: this.rightPressed, handler: this.player.right}
+    ];
+
     var pressed = false;
     for (var i = 0; i < 2; ++i) {
       var mov = movements[this.rightPrior ? 1 - i : i];
-      pressed = mov[0];
-      if (pressed) {
-        var handler = mov[1];
-        handler.call(this.player);
+      if (mov.pressed) {
+        mov.handler.call(this.player);
+        pressed = true;
         break;
       }
     }
