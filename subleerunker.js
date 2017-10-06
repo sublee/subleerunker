@@ -14,7 +14,7 @@ var Subleerunker = Game.$extend({
 
   difficulty: 0.25,
 
-  __setup__: function() {
+  setup: function() {
     // Set background color.
     this.renderer.backgroundColor = this.pickColor('background');
 
@@ -463,7 +463,7 @@ var Subleerunker = Game.$extend({
     $(window).trigger('score', [this.records.current, !!this.ctx.debug]);
   },
 
-  __update__: function(frame) {
+  update: function(frame) {
     this.ctx.timeScale = (this.ctx.debug && this.shiftPressed) ? 0.5 : 1;
 
     if (!this.player) {
@@ -527,7 +527,7 @@ $.extend(Subleerunker, {
       this.position = parent.width / 2 - this.width / 2;
     },
 
-    __update__: function(frame) {
+    update: function(frame) {
       // Decide a blink.
       var BLINK_CONTINUANCE = 4;
       if (frame - this.blink.frame < BLINK_CONTINUANCE) {
@@ -703,7 +703,7 @@ $.extend(Subleerunker, {
       this.position = -this.height;
     },
 
-    __update__: function(frame) {
+    update: function(frame) {
       var player = this.parent.player;
 
       if (this.landed) {

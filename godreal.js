@@ -274,10 +274,10 @@ var GameObject = Class.$extend({
    *
    */
   tick: function(time) {
-    // Call __setup__ at the first tick.
+    // Call setup() at the first tick.
     if (this._firstTick) {
       this._firstTick = false;
-      this.__setup__();
+      this.setup();
       return;
     }
 
@@ -340,11 +340,11 @@ var GameObject = Class.$extend({
       return;
     }
 
-    // Call __update__() when only the current frame as an integer is updated.
+    // Call update() when only the current frame as an integer is updated.
     var intFrame     = Math.floor(frame);
     var intPrevFrame = Math.floor(prevFrame);
     if (intFrame !== intPrevFrame) {
-      this.__update__(intFrame);
+      this.update(intFrame);
     }
   },
 
@@ -387,11 +387,11 @@ var GameObject = Class.$extend({
     }
   },
 
-  __setup__: function() {
+  setup: function() {
     /// Will be called before the first tick in the game loop.
   },
 
-  __update__: function(frame) {
+  update: function(frame) {
   },
 
   /* Misc */
