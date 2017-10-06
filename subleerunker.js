@@ -740,12 +740,6 @@ $.extend(Subleerunker, {
       }
     },
 
-    simulate: function(deltaFrame) {
-      var sim = this.$super.apply(this, arguments);
-      // console.log([sim.position, deltaFrame]);
-      return sim;
-    },
-
     /* View */
 
     width: 24,

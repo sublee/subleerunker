@@ -275,24 +275,22 @@ var GameObject = Class.$extend({
         this.lag += (time - prevTime) * this.timeScale();
       }
     }
-
     this.time = time;
 
-    var FPS       = 60;
+    var FPS       = 60;          // FPS for simulation
     var TIME_STEP = 1000 / FPS;  // ms per frame
-    var MAX_STEPS = 6;
+    var MAX_STEPS = 6;           // prevent the spiral of death.
 
     var i = 0;
-    var prevFrame = Math.floor(this.frame);
+    var prevFrame = this.frame;
 
     while (this.lag >= TIME_STEP) {
       this.frame += this.timeScale();
-      var frame = Math.floor(this.frame);
 
-      this.simulateThenUpdate(frame, prevFrame);
+      this.simulateThenUpdate(this.frame, prevFrame);
 
       this.lag -= TIME_STEP;
-      prevFrame = frame;
+      prevFrame = this.frame;
 
       ++i;
       if (i >= MAX_STEPS) {
@@ -312,7 +310,7 @@ var GameObject = Class.$extend({
       }
     }, this));
 
-    var sim = this.simulate();
+    var sim = this.simulate(frame - prevFrame);
     this.position = sim.position;
     this.speed = sim.speed;
 
@@ -321,14 +319,15 @@ var GameObject = Class.$extend({
       return;
     }
 
-    this.__update__(frame, prevFrame);
+    // __update__() is not interested in an accurate frame as a real number.
+    var intFrame     = Math.floor(frame);
+    var intPrevFrame = Math.floor(prevFrame);
+    this.__update__(intFrame, intPrevFrame);
   },
 
   simulate: function(deltaFrame) {
-    if (deltaFrame === undefined) {
-      deltaFrame = 1;
-    }
-    var impact = deltaFrame * this.timeScale();
+    var impact = deltaFrame;
+
     var speed = this.speed;
     speed += this.acceleration * impact;
     if (speed !== 0 && this.friction !== 0) {
@@ -340,8 +339,10 @@ var GameObject = Class.$extend({
     if (this.maxVelocity !== undefined) {
       speed = limit(speed, -this.maxVelocity, +this.maxVelocity);
     }
+
     var position = this.position;
     position += speed * impact;
+
     var boundary = this.boundary();
     if (position < boundary[0]) {
       position = boundary[0];
@@ -350,6 +351,7 @@ var GameObject = Class.$extend({
       position = boundary[1];
       speed = 0;
     }
+
     return {position: position, speed: speed};
   },
 
