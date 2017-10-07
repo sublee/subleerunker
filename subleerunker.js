@@ -330,6 +330,7 @@ var Subleerunker = Game.$extend({
     this.hideSplash();
     this.loadChampion();
     this.direction = 0;
+    this.startedAt = this.time;
 
     if (this.replaying) {
       this.replay.rewind();
@@ -441,7 +442,9 @@ var Subleerunker = Game.$extend({
   },
 
   beatChampion: function() {
-    var direction = this.direction / 1000;  // in second
+    var duration = this.time - this.startedAt;
+    var durationSeconds = duration / 1000;
+
     this.loadChampion().then($.proxy(function() {
       if (this.records.champion.score === null) {
         return;
@@ -467,7 +470,11 @@ var Subleerunker = Game.$extend({
 
       $.ajax(this.ctx.championURL, {
         method: 'PUT',
-        data: {score: this.records.current, name: name, direction: direction},
+        data: {
+          score:     this.records.current,
+          name:      name,
+          duration:  durationSeconds
+        },
         dataType: 'json',
         success: $.proxy(this._championReceived, this)
       });
