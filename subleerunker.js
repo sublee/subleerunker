@@ -325,14 +325,26 @@ var Subleerunker = Game.$extend({
     }
     this.disp().addChild(this.player.disp());
 
-    var randomSeed = this.ctx.randomSeed || makeRandomSeed();
-    this.ctx.random = new Math.seedrandom(randomSeed);
-
     this.records.current = 0;
     this.updateScore();
     this.hideSplash();
     this.loadChampion();
     this.direction = 0;
+
+    if (this.replaying) {
+      this.replay.rewind();
+      this.ctx.random = new Math.seedrandom(this.replay.randomSeed);
+    } else {
+      var randomSeed = this.ctx.randomSeed || makeRandomSeed();
+      this.ctx.random = new Math.seedrandom(randomSeed);
+      this.replay = new Replay(randomSeed);
+    }
+  },
+
+  replay: function(replay) {
+    this.replay = replay;
+    this.replaying = true;
+    this.shouldPlay = true;
   },
 
   upScore: function() {
@@ -484,6 +496,8 @@ var Subleerunker = Game.$extend({
 
     // Trigger custom event to track the score by outside.
     $(window).trigger('score', [this.records.current, !!this.ctx.debug]);
+
+    console.log(Replay.encode(this.replay));
   },
 
   update: function(frame) {
@@ -527,14 +541,15 @@ var Subleerunker = Game.$extend({
     }
 
     // Record or replay input.
-    if (this.recording) {
+    if (this.replaying) {
+      this.input = this.replay.nextInput();
+    } else {
+      // TODO: Replay should check input updated.
       var inputUpdated = (this.input !== this.prevInput);
       this.prevInput = this.input;
       if (inputUpdated) {
         this.replay.recordInput(frame, this.input);
       }
-    } else {
-      this.input = this.replay.nextInput();
     }
 
     // Handle input.
@@ -940,7 +955,7 @@ var Replay = Class.$extend({
         var frame = Math.floor(Number(frameAndInput[0]));
         var input = Math.floor(Number(frameAndInput[1]));
 
-        replay.record(frame, input);
+        replay.recordInput(frame, input);
       }
 
       return replay;
