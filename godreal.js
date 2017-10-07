@@ -289,75 +289,85 @@ var GameObject = Class.$extend({
     // Accumulate lag.
     var prevTime = this.time;
     if (prevTime !== null) {
-      this.lag += (time - prevTime) * this.timeScale();
+      var deltaTime = time - prevTime;
+      this.lag += deltaTime;
     }
     this.time = time;
 
-    var FPS       = 60;          // FPS for simulation
-    var TIME_STEP = 1000 / FPS;  // ms per frame
-    var MAX_STEPS = 6;           // prevent the spiral of death.
+    // Game loop settings
+    var ts = this.timeScale();
+    var FPS       = 60;               // FPS for simulation
+    var TIME_STEP = 1000 / FPS / ts;  // ms per frame
+    var MAX_STEPS = 6 * ts;           // prevent the spiral of death.
 
     var i = 0;
-    var prevFrame = this.frame;
-
     while (this.lag >= TIME_STEP) {
-      this.frame += this.timeScale();
+      // Each iteration is one frame.
+      this.frame++;
 
-      this.simulateThenUpdate(this.frame, prevFrame);
+      this._update(this.frame);
 
       this.lag -= TIME_STEP;
-      prevFrame = this.frame;
 
-      ++i;
-      if (i >= MAX_STEPS) {
+      if (++i >= MAX_STEPS) {
         // Reset lag.  Perhaps the window is refocused.
         this.lag = 0;
         break;
       }
     }
 
-    this.render();
-    $.each(this.children, $.proxy(function(__, child) {
-      child.render();
-    }, this));
+    // The rendering time is behind of the simulation time.  The game objects
+    // should be predicted to be rendered smoothly.
+    if (this.lag > 0) {
+      this._predict(this.lag / TIME_STEP);
+    }
+
+    this._render();
   },
 
-  simulateThenUpdate: function(frame, prevFrame) {
-    $.each(this.children, $.proxy(function(__, child) {
-      if (this._destroyed) {
-        return false;
-      }
-      child.time = this.time;
-      child.simulateThenUpdate(frame, prevFrame);
-    }, this));
-
+  _update: function(frame) {
     if (this._destroyed) {
+      // Perhaps destroySoon() has been called.  Here calls destroy() multiple
+      // times.  So the destroy() method must be idempotent.
       this.destroy();
       return;
     }
 
-    // Call update() when only the current frame as an integer is updated.
-    var intFrame     = Math.floor(frame);
-    var intPrevFrame = Math.floor(prevFrame);
+    // Simulate for the gameplay logic.
+    var state = this.simulate(this.state(), 1);
 
-    if (intFrame === intPrevFrame) {
-      // The frame is not updated yet.  Just predict to render.
-      var deltaFrame = frame - prevFrame;
-      var state = this._prediction || this.state();
-      this._prediction = this.simulate(state, deltaFrame);
-      return;
-    }
-
-    for (var frame = intPrevFrame + 1; frame <= intFrame; ++frame) {
-      var sim = this.simulate(this.state(), 1);
-
-      this.position = sim.position;
-      this.speed    = sim.speed;
-
-      this.update(frame);
-    }
+    this.position = state.position;
+    this.speed    = state.speed;
 
     delete this._prediction;
+
+    // Run a tick for the gameplay logic.
+    this.update(frame);
+
+    // Update children recursively.
+    $.each(this.children, $.proxy(function(__, child) {
+      child.time = this.time;
+      child._update(frame);
+    }, this));
+  },
+
+  _predict: function(deltaFrame) {
+    var state = this._prediction || this.state();
+    this._prediction = this.simulate(state, deltaFrame);
+
+    // Predict children recursively.
+    $.each(this.children, $.proxy(function(__, child) {
+      child._predict(deltaFrame);
+    }, this));
+  },
+
+  _render: function() {
+    this.render();
+
+    // Render children recursively.
+    $.each(this.children, $.proxy(function(__, child) {
+      child.render();
+    }, this));
   },
 
   state: function() {
