@@ -512,9 +512,9 @@ var Subleerunker = Game.$extend({
     this.beatChampion();
 
     // Trigger custom event to track the score by outside.
-    $(window).trigger('score', [this.records.current, !!this.ctx.debug]);
-
-    console.log(Replay.encode(this.replay));
+    var debug = Boolean(this.ctx.debug);
+    var args  = [this.records.current, Replay.clone(this.replay), debug];
+    $(window).trigger('gameOver', args);
   },
 
   update: function(frame) {
@@ -884,15 +884,16 @@ var Replay = Class.$extend({
   __init__: function(randomSeed) {
     this.randomSeed = randomSeed;
     this.inputHistory = {};
+    this.lastRecordedInput = 0;
     this.rewind();
   },
 
   recordInput: function(frame, input) {
-    if (input === this._prevRecordingInput) {
+    if (input === this.lastRecordedInput) {
       return;
     }
     this.inputHistory[frame] = input;
-    this._prevRecordingInput = input;
+    this.lastRecordedInput   = input;
   },
 
   nextInput: function() {
@@ -909,8 +910,6 @@ var Replay = Class.$extend({
 
   /** Resets the cursor for nextInput(). */
   rewind: function() {
-    this._prevRecordingInput = 0;
-
     this._replayingFrame     = 0;
     this._lastReplayingInput = 0;
   },
@@ -980,6 +979,7 @@ var Replay = Class.$extend({
 
       // Read input history.
       var frame = 0;
+      var input = 0;
       while (words.length !== 0) {
         var deltaFrameColonInput = words.shift();
         var deltaFrameAndInput   = deltaFrameColonInput.split(':');
@@ -988,11 +988,12 @@ var Replay = Class.$extend({
         var inputHex      = deltaFrameAndInput[1];
 
         var deltaFrame = parseInt(deltaFrameHex, 16);
-        var input      = parseInt(inputHex, 16);
+        input          = parseInt(inputHex, 16);
 
         frame += deltaFrame;
         replay.recordInput(frame, input);
       }
+      replay.lastRecordedInput = input;
 
       return replay;
     },
@@ -1012,6 +1013,13 @@ var Replay = Class.$extend({
       }
 
       return null;
+    },
+
+    clone: function(replay) {
+      var replayClone = new Replay(replay.randomSeed);
+      $.extend(replayClone.inputHistory, replay.inputHistory);
+      replayClone.lastRecordedInput = replay.lastRecordedInput;
+      return replayClone;
     }
 
   }
