@@ -391,10 +391,13 @@ var Subleerunker = Game.$extend({
   _championReceived: function(data) {
     var score = Number(data.score);
     var name = String(data.name);
+
     this.records.champion.score = score;
     this.records.champion.name = name;
-    if (data.token) {
-      // Just beated.
+
+    var justBeaten = Boolean(data.token);
+
+    if (justBeaten) {
       var token = String(data.token);
       this.records.champion.token = token;
       this.records.champion.authorized = true;
@@ -406,17 +409,19 @@ var Subleerunker = Game.$extend({
     } else {
       this.records.champion.authorized = Boolean(data.authorized);
     }
+
+    var cachedName = Cookies('champion-name');
     if (this.records.champion.authorized) {
       Cookies('champion-name', name, {expires: Infinity});
     }
+
     this.renderRecords();
     this.renderChampion();
-    if (data.token && !name) {
+
+    if (justBeaten && !cachedName) {
       // Suggest renaming.
-      var letters = 'ABCDEFGHIJKLMNOPQRSTUVWXWZ';
-      var letter = letters[Math.floor(Math.random() * letters.length)];
       var input = this.recordElems.authorizedChampion.name;
-      input.val(letter + letter + letter).focus();
+      input.focus();
     }
   },
 
