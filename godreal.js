@@ -321,7 +321,8 @@ var GameObject = Class.$extend({
     // The rendering time is behind of the simulation time.  The game objects
     // should be predicted to be rendered smoothly.
     if (this.lag > 0) {
-      this._predict(this.lag / TIME_STEP);
+      var deltaFrame = this.lag * ts / TIME_STEP;
+      this._predict(deltaFrame);
     }
 
     this._render();
