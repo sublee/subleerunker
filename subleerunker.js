@@ -506,12 +506,14 @@ var Subleerunker = Game.$extend({
   gameOver: function() {
     this.player.die();
 
-    if (this.records.prime < this.records.current) {
-      this.records.prime = this.records.current;
-      // Remember new prime score.
-      Cookies('prime-score', this.records.prime, {
-        expires: 2592000  // expires in 30 days.
-      });
+    if (!this.replaying) {
+      if (this.records.prime < this.records.current) {
+        this.records.prime = this.records.current;
+        // Remember new prime score.
+        Cookies('prime-score', this.records.prime, {
+          expires: 2592000  // expires in 30 days.
+        });
+      }
     }
 
     this.beatChampion();
