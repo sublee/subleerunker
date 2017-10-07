@@ -544,12 +544,7 @@ var Subleerunker = Game.$extend({
     if (this.replaying) {
       this.input = this.replay.nextInput();
     } else {
-      // TODO: Replay should check input updated.
-      var inputUpdated = (this.input !== this.prevInput);
-      this.prevInput = this.input;
-      if (inputUpdated) {
-        this.replay.recordInput(frame, this.input);
-      }
+      this.replay.recordInput(frame, this.input);
     }
 
     // Handle input.
@@ -876,25 +871,31 @@ var Replay = Class.$extend({
   },
 
   recordInput: function(frame, input) {
+    if (input === this._prevRecordingInput) {
+      return;
+    }
     this.inputHistory[frame] = input;
+    this._prevRecordingInput = input;
   },
 
   nextInput: function() {
-    var frame = this._prevFrame++;
+    var frame = this._replayingFrame++;
     var input = this.inputHistory[frame];
 
     if (input !== undefined) {
-      this._lastInput = input;
+      this._lastReplayingInput = input;
       return input;
     }
 
-    return this._lastInput;
+    return this._lastReplayingInput;
   },
 
   /** Resets the cursor for nextInput(). */
   rewind: function() {
-    this._prevFrame = 0;
-    this._lastInput = 0;
+    this._prevRecordingInput = 0;
+
+    this._replayingFrame     = 0;
+    this._lastReplayingInput = 0;
   },
 
   __classvars__: {
