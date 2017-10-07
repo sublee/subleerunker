@@ -126,6 +126,17 @@
     // Run the game.
     var fps = QUERY.fps && Number(QUERY.fps);
     game.run(fps, before, after);
+
+    // Report replay URL on console.
+    $(window).on('gameOver', function(e, score, replay, debug) {
+      if (window.console === undefined) {
+        return;
+      }
+      var encodedReplay = Replay.encode(replay);
+      var replayQuerystring = '?replay=' + encodeURIComponent(encodedReplay);
+      var replayURL = location.href.replace(/(\?.*)?$/, replayQuerystring);
+      console.log(replayURL);
+    });
   </script>
   <script src="ga.js"></script>
 </body>
