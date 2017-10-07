@@ -293,6 +293,7 @@ var GameObject = Class.$extend({
       this.lag += deltaTime;
     }
     this.time = time;
+    $.each(this.children, function(__, c) { c.time = time; });
 
     // Game loop settings
     var ts = this.timeScale();
@@ -305,6 +306,7 @@ var GameObject = Class.$extend({
       // Each iteration is one frame.
       this.frame++;
 
+      this._simulate();
       this._update(this.frame);
 
       this.lag -= TIME_STEP;
@@ -325,14 +327,7 @@ var GameObject = Class.$extend({
     this._render();
   },
 
-  _update: function(frame) {
-    if (this._destroyed) {
-      // Perhaps destroySoon() has been called.  Here calls destroy() multiple
-      // times.  So the destroy() method must be idempotent.
-      this.destroy();
-      return;
-    }
-
+  _simulate: function() {
     // Simulate for the gameplay logic.
     var state = this.simulate(this.state(), 1);
 
@@ -341,14 +336,22 @@ var GameObject = Class.$extend({
 
     delete this._prediction;
 
-    // Run a tick for the gameplay logic.
-    this.update(frame);
+    // Simulate children recursively.
+    $.each(this.children, function(__, c) { c._simulate(); });
+  },
+
+  _update: function(frame) {
+    if (this._destroyed) {
+      // Perhaps destroySoon() has been called.  Here calls destroy() multiple
+      // times.  So the destroy() method must be idempotent.
+      this.destroy();
+    } else {
+      // Run a tick for the gameplay logic.
+      this.update(frame);
+    }
 
     // Update children recursively.
-    $.each(this.children, $.proxy(function(__, child) {
-      child.time = this.time;
-      child._update(frame);
-    }, this));
+    $.each(this.children, function(__, c) { c._update(frame); });
   },
 
   _predict: function(deltaFrame) {
@@ -356,18 +359,14 @@ var GameObject = Class.$extend({
     this._prediction = this.simulate(state, deltaFrame);
 
     // Predict children recursively.
-    $.each(this.children, $.proxy(function(__, child) {
-      child._predict(deltaFrame);
-    }, this));
+    $.each(this.children, function(__, c) { c._predict(deltaFrame); });
   },
 
   _render: function() {
     this.render();
 
     // Render children recursively.
-    $.each(this.children, $.proxy(function(__, child) {
-      child.render();
-    }, this));
+    $.each(this.children, function(__, c) { c._render(); });
   },
 
   state: function() {
