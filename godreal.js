@@ -1,25 +1,55 @@
-var X = 0;
-var Y = 1;
-var TOP = 0;
-var RIGHT = 1;
+var X      = 0;
+var Y      = 1;
+
+var TOP    = 0;
+var RIGHT  = 1;
 var BOTTOM = 2;
-var LEFT = 3;
+var LEFT   = 3;
 
 var KEYS = {
-  8: 'backspace', 9: 'tab', 13: 'enter', 16: 'shift', 17: 'ctrl', 18: 'alt',
-  19: 'pause', 20: 'capsLock', 27: 'esc', 33: 'pageUp', 34: 'pageDown',
-  35: 'end', 36: 'home', 37: 'left', 38: 'up', 39: 'right', 40: 'down',
-  45: 'insert', 46: 'delete',
+   8: 'backspace',  9: 'tab',   13: 'enter',    16: 'shift',  17: 'ctrl',
+  18: 'alt',       19: 'pause', 20: 'capsLock', 27: 'esc',    33: 'pageUp',
+  34: 'pageDown',  35: 'end',   36: 'home',     37: 'left',   38: 'up',
+  39: 'right',     40: 'down',  45: 'insert',   46: 'delete',
+
   65: 'a', 66: 'b', 67: 'c', 68: 'd', 69: 'e', 70: 'f', 71: 'g', 72: 'h',
   73: 'i', 74: 'j', 75: 'k', 76: 'l', 77: 'm', 78: 'n', 79: 'o', 80: 'p',
   81: 'q', 82: 'r', 83: 's', 84: 't', 85: 'u', 86: 'v', 87: 'w', 88: 'x',
   89: 'y', 90: 'z'
 };
 
+/**
+ * Gets the next Id.  A new Id is greater than the Ids generated before.
+ */
+var nextId = (function() {
+  var idSeq = 0;
+  return function() {
+    return idSeq++;
+  };
+})();
+
 var limit = function(n, min, max) {
   return Math.max(min, Math.min(max, n));
 };
 
+/**
+ * Normalizes a padding array into a 4-element array by CSS padding
+ * normalization rule.
+ *
+ * e.g.:
+ *
+ *   > normalizePadding([])
+ *   [0, 0, 0, 0]
+ *   > normalizePadding([3])
+ *   [3, 3, 3, 3]
+ *   > normalizePadding([2, 4])
+ *   [2, 4, 2, 4]
+ *   > normalizePadding([5, 10, 15])
+ *   [5, 10, 15, 10]
+ *   > normalizePadding([1, 2, 3, 4])
+ *   [1, 2, 3, 4]
+ *
+ */
 var normalizePadding = function(padding) {
   switch (padding ? padding.length : 0) {
     case 0:
@@ -55,50 +85,54 @@ var GameObject = Class.$extend({
   __name__: 'GameObject',
 
   __init__: function(/* parent or ctx */arg) {
-    this.children = {};
-    this.childIdSeq = 0;
+    this.__id__     = nextId();
+    this.children   = {};
+    this._firstTick = true;
+    this._destroyed = false;
+
     if (arg instanceof GameObject) {
       var parent = arg;
       this.parent = parent;
       this.root = parent.root;
-      this.childId = parent.addChild(this);
+      parent.addChild(this);
       this.ctx = parent.ctx;
     } else {
       this.root = this;
       this.ctx = arg ? arg : {};
     }
+
     this.innerPadding = normalizePadding(this.innerPadding);
-    this.killed = false;
+
     if (this.animationName) {
       this.setAnimation(this.animationName);
     }
   },
 
   addChild: function(child) {
-    var childId = this.childIdSeq;
-    this.childIdSeq += 1;
-    this.children[childId] = child;
-    return childId;
+    this.children[child.__id__] = child;
   },
 
   removeChild: function(child) {
-    delete this.children[child.childId];
+    delete this.children[child.__id__];
   },
 
   /* Destruct */
 
-  kill: function() {
-    this.killed = true;
-  },
-
   destroy: function() {
+    this._destroyed = true;
+
     var disp = this.disp();
     if (disp) {
       disp.destroy();
     }
+
     if (this.parent) {
       this.parent.removeChild(this);
     }
+  },
+
+  destroySoon: function() {
+    this._destroyed = true;
   },
 
   /* View */
@@ -128,6 +162,7 @@ var GameObject = Class.$extend({
         disp.position.y = this.offset[Y];
       }
       this.disp = function() { return disp; };
+      this.render();
     }
     return disp;
   },
@@ -151,7 +186,6 @@ var GameObject = Class.$extend({
 
   /* Animation */
 
-  fps: 60,
   animations: null,
   animationName: null,
 
@@ -169,23 +203,13 @@ var GameObject = Class.$extend({
     this.animationName = animationName;
   },
 
-  animationEnds: function() {
-    var anim = this.currentAnimation();
-    if (!anim) {
-      return true;  // never started
-    } else if (!anim.once) {
-      return false;  // never ends
-    }
-    return this.animationFrame(anim) >= anim.textureNames.length;
-  },
-
   animationFrame: function(anim) {
     anim = anim || this.currentAnimation();
     if (!anim) {
       return 0;
     }
-    var fps = anim.fps || this.fps;
-    return this.frame(fps);
+    var fps = anim.fps * this.timeScale();
+    return this.baseFrame + calcFrame(fps, this.time - this.baseTime);
   },
 
   animationIndex: function(anim, frame) {
@@ -197,116 +221,177 @@ var GameObject = Class.$extend({
     }
   },
 
-  updateAnimation: function(anim, index) {
+  hasAnimationEnded: function() {
+    var anim = this.currentAnimation();
+    if (!anim) {
+      return true;  // never started
+    } else if (!anim.once) {
+      return false;  // never ends
+    }
+    return this.animationFrame(anim) >= anim.textureNames.length;
+  },
+
+  renderAnimation: function(anim, index) {
     var texture = this.getTexture(anim.textureNames[index]);
     this.disp().texture = texture;
   },
 
   /* Move */
 
-  position: 0,
-  speed: 0,
-  duration: +1,  // it will be multiplied to the acceleration.
-  acceleration: 1,  // per second
-  step: -1,  // max velocity, negative number means unlimited.
+  position:     0,
+  speed:        0,
+  acceleration: 0,  // per frame
+  friction:     0,  // per frame
+  maxVelocity:  undefined,  // max velocity
 
-  impact: function(deltaTime) {
-    if (deltaTime === undefined) {
-      deltaTime = 1000;
-    }
-    var timeScale = this.ctx.timeScale === undefined ? 1 : this.ctx.timeScale;
-    return timeScale * deltaTime / 1000;
+  timeScale: function() {
+    return this.ctx.timeScale === undefined ? 1 : this.ctx.timeScale;
   },
 
-  forward: function(deltaTime) {
-    this.speed += this.duration * this.acceleration * this.impact(deltaTime);
-    if (this.step >= 0) {
-      this.speed = limit(this.speed, -this.step, +this.step);
-    }
+  boundary: function() {
+    return [-Infinity, +Infinity];
   },
 
-  rest: function(deltaTime) {
-    this.speed = Math.abs(this.speed);
-    this.speed -= this.acceleration * this.impact(deltaTime);
-    this.speed = Math.max(0, this.speed) * this.duration;
-  },
+  /* Game loop */
 
-  updatePosition: function(deltaTime) {
-    if (!deltaTime) {
-      return;
-    }
-    this.position += this.speed * this.impact(deltaTime);
-  },
-
-  /* Schedule */
-
-  time: null,
+  time:      null,
+  lag:       0,
+  frame:     0,
   baseFrame: 0,
-  baseTime: 0,
+  baseTime:  0,
 
   rebaseFrame: function(frame, time) {
-    this.baseFrame = frame || 0;
+    this.frame = 0;
     this.baseTime = (time === undefined ? this.time : time);
   },
 
-  frame: function(fps, time) {
-    /// Gets the frame number at now .  The base frame can be set by
-    /// `rebaseFrame`.
-    if (fps === undefined) {
-      fps = this.fps;
+  /** An iteration of the game loop.
+   *
+   *  Call this method at each animation frames.
+   *
+   *  The game loop follows the deterministic lockstep style with fixed delta
+   *  time.  See also: https://gafferongames.com/post/fix_your_timestep
+   *
+   */
+  tick: function(time) {
+    // Call setup() at the first tick.
+    if (this._firstTick) {
+      this._firstTick = false;
+      this.setup();
+      return;
     }
-    fps *= this.impact();
-    time = (time === undefined ? this.time : time);
-    return this.baseFrame + calcFrame(fps, time - this.baseTime);
+
+    // Ensure that the base frame is set.
+    if (!this.baseTime) {
+      this.rebaseFrame(0, time);
+    }
+
+    // Accumulate lag.
+    if (this._refocused) {
+      this.lag = 0;
+      this._refocused = false;
+    } else {
+      var prevTime = this.time;
+      if (prevTime !== null) {
+        this.lag += (time - prevTime) * this.timeScale();
+      }
+    }
+    this.time = time;
+
+    var FPS       = 60;          // FPS for simulation
+    var TIME_STEP = 1000 / FPS;  // ms per frame
+    var MAX_STEPS = 6;           // prevent the spiral of death.
+
+    var i = 0;
+    var prevFrame = this.frame;
+
+    while (this.lag >= TIME_STEP) {
+      this.frame += this.timeScale();
+
+      this.simulateThenUpdate(this.frame, prevFrame);
+
+      this.lag -= TIME_STEP;
+      prevFrame = this.frame;
+
+      ++i;
+      if (i >= MAX_STEPS) {
+        break;
+      }
+    }
+
+    this.render(this.lag / TIME_STEP);
   },
 
-  update: function(time, fps) {
-    /// Call this method at each animation frames.
-
-    // Update children first.
-    $.each(this.children, $.proxy(function(childId, child) {
-      child.update(time, fps);
-      if (this.killed) {
+  simulateThenUpdate: function(frame, prevFrame) {
+    $.each(this.children, $.proxy(function(__, child) {
+      child.time = this.time;
+      child.simulateThenUpdate(frame, prevFrame);
+      if (this._destroyed) {
         return false;
       }
     }, this));
 
-    // Arguments for __update__().
-    if (!this.baseTime) {
-      this.rebaseFrame(0, time);
-    }
-    var frame = this.frame(this.fps, time);
-    var prevTime = this.time;
-    var prevFrame = 0;
-    var deltaTime = 0;
-    if (prevTime !== null) {
-      deltaTime = time - prevTime;
-      prevFrame = this.frame(this.fps, prevTime);
-      // Cut off too slow delta time and frame.
-      fps = (fps === undefined ? 60 : fps);
-      deltaTime = limit(deltaTime, 0, 1000 / fps);
-      prevFrame = Math.max(frame - Math.ceil(this.fps / fps), prevFrame);
-    }
+    var sim = this.simulate(frame - prevFrame);
+    this.position = sim.position;
+    this.speed = sim.speed;
 
-    // Update this.
-    this.time = time;
-    this.__update__(frame, prevFrame, deltaTime);
-  },
-
-  __update__: function(frame, prevFrame, deltaTime) {
-    var time = this.time;
-
-    if (this.killed) {
+    if (this._destroyed) {
       this.destroy();
       return;
     }
 
+    // Call update() when only the current frame as an integer is updated.
+    var intFrame     = Math.floor(frame);
+    var intPrevFrame = Math.floor(prevFrame);
+    if (intFrame !== intPrevFrame) {
+      this.update(intFrame);
+    }
+  },
+
+  simulate: function(deltaFrame) {
+    var impact = deltaFrame;
+
+    var speed = this.speed;
+    speed += this.acceleration * impact;
+    if (speed !== 0 && this.friction !== 0) {
+      var speedIsPositive = speed > 0;
+      speed = Math.abs(speed);
+      speed -= this.friction * impact;
+      speed = Math.max(0, speed) * (speedIsPositive ? +1 : -1);
+    }
+    if (this.maxVelocity !== undefined) {
+      speed = limit(speed, -this.maxVelocity, +this.maxVelocity);
+    }
+
+    var position = this.position;
+    position += speed * impact;
+
+    var boundary = this.boundary();
+    if (position < boundary[0]) {
+      position = boundary[0];
+      speed = 0;
+    } else if (position > boundary[1]) {
+      position = boundary[1];
+      speed = 0;
+    }
+
+    return {position: position, speed: speed};
+  },
+
+  render: function(deltaFrame) {
     var anim = this.currentAnimation();
     if (anim) {
       var f = this.animationFrame(anim);
       var i = this.animationIndex(anim, f);
-      this.updateAnimation(anim, i);
+      this.renderAnimation(anim, i);
     }
+  },
+
+  setup: function() {
+    /// Will be called before the first tick in the game loop.
+  },
+
+  update: function(frame) {
   },
 
   /* Misc */
@@ -389,7 +474,7 @@ var Game = GameObject.$extend({
     this.$super.apply(this, arguments);
     this.renderer = new this.rendererClass(this.width, this.height);
     this.handlers = this.handlers || {};
-    this._first = true;
+    this._refocused = false;
   },
 
   __disp__: function() {
@@ -458,11 +543,23 @@ var Game = GameObject.$extend({
       }
     }, this));
     // Window events.
-    $(window).on('resize', $.proxy(function() {
-      var scale = Math.max(1, Math.floor(window.innerHeight / this.height));
-      this.zoom(scale);
-      handlers.resize && handlers.resize.call(this, scale);
-    }, this)).trigger('resize');
+    $(window).on({
+      resize: $.proxy(function() {
+        var scale = Math.max(1, Math.floor(window.innerHeight / this.height));
+        this.zoom(scale);
+        handlers.resize && handlers.resize.call(this, scale);
+      }, this),
+      blur: $.proxy(function() {
+        console.log('blur');
+        // this.ctx.timeScale = 0;
+      }, this),
+      focus: $.proxy(function() {
+        console.log('focus');
+        // this.ctx.timeScale = 1;
+        this.time = null;
+        this._refocused = true;
+      }, this)
+    }).trigger('resize');
   },
 
   handlesKey: function(e) {
@@ -484,20 +581,11 @@ var Game = GameObject.$extend({
     return false;
   },
 
-  setup: function() {
-    /// Will be called before the first update.
-  },
+  render: function(deltaFrame) {
+    $.each(this.children, $.proxy(function(__, child) {
+      child.render(deltaFrame);
+    }, this));
 
-  update: function(time, fps) {
-    if (this._first) {
-      this.setup();
-      this._first = false;
-    }
-    this.$super.apply(this, arguments);
-  },
-
-  __update__: function(frame, prevFrame, deltaTime) {
-    this.$super.apply(this, arguments);
     this.renderer.render(this.disp());
   },
 
@@ -509,15 +597,15 @@ var Game = GameObject.$extend({
       };
     }
     PIXI.loader.add(this.atlas).load($.proxy(function() {
-      var update = $.proxy(function(time) {
+      var tick = $.proxy(function(time) {
         before && before.call(this, time);
-        game.update(time, fps);
-        if (!this.killed) {
-          _requestAnimationFrame(update);
+        game.tick(time);
+        if (!this._destroyed) {
+          _requestAnimationFrame(tick);
         }
         after && after.call(this, time);
       }, this);
-      _requestAnimationFrame(update);
+      _requestAnimationFrame(tick);
     }, this));
   }
 

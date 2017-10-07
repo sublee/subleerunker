@@ -87,11 +87,9 @@
     Cookies.defaults = {path: location.pathname};
 
     // Set a champion URL.
-    if (/^https:\/\/sublee.github.io/.exec(location.href)) {
-      ctx.championURL = 'https://subleerunker-166907.appspot.com/champion';
-    }
+    ctx.championURL = 'https://subleerunker-166907.appspot.com/champion';
 
-    // Init and run the game.
+    // Init the game.
     var game = Subleerunker(ctx);
     game.elem().appendTo('.bezel');
     game.watch(window, document, {
@@ -102,6 +100,8 @@
         });
       }
     });
+
+    // Enable stats.js.
     if (ctx.debug) {
       function countFlames(game) {
         var numFlames = 0;
@@ -116,6 +116,14 @@
         stats.flames.update(countFlames(this), 100);
       };
     }
+
+    // Set replay.
+    if (QUERY.replay) {
+      var replay = Replay.decode(QUERY.replay);
+      game.replay(replay);
+    }
+
+    // Run the game.
     var fps = QUERY.fps && Number(QUERY.fps);
     game.run(fps, before, after);
   </script>

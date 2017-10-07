@@ -2,6 +2,14 @@ var IS_MOBILE = (typeof window.orientation !== 'undefined');
 var RESOLUTION = (window.devicePixelRatio || 1);
 var FONT_FAMILY = '"Share Tech Mono", monospace';
 
+var LEFT_PRESSED  = 0;
+var RIGHT_PRESSED = 1;
+var RIGHT_PRIOR   = 2;
+
+var makeRandomSeed = function() {
+  return Math.floor(Math.random() * 4294967295);
+};
+
 var Subleerunker = Game.$extend({
 
   __name__: 'Subleerunker',
@@ -12,7 +20,6 @@ var Subleerunker = Game.$extend({
   height: 480,
   atlas: 'atlas.json',
 
-  fps: 30,
   difficulty: 0.25,
 
   setup: function() {
@@ -184,10 +191,13 @@ var Subleerunker = Game.$extend({
       width: 148, height: 66,
       anchor: [0.5, 0],
       offset: [this.width / 2, 156],
-      fps: 0,
-      animations: {'default': {textureNames: ['logo']}},
+      animations: {
+        'default': {fps: 0, textureNames: ['logo']}
+      },
       animationName: 'default',
     });
+    this.logo = new Logo(this);
+
     var control = {};
     if (IS_MOBILE) {
       $.extend(control, {
@@ -203,36 +213,45 @@ var Subleerunker = Game.$extend({
       height: control.height,
       anchor: [0.5, 1],
       offset: [this.width / 2, -31],
-      fps: 1,
-      animations: {'blink': {textureNames: control.animationTextureNames}},
+      animations: {
+        'blink': {fps: 1, textureNames: control.animationTextureNames}
+      },
       animationName: 'blink'
     });
-    this.logo = new Logo(this);
     this.control = new Control(this);
+
     var disp = this.disp();
     disp.addChild(this.logo.disp());
     disp.addChild(this.control.disp());
   },
 
   hideSplash: function() {
-    this.logo.kill();
     this.logo.destroy();
-    this.control.kill();
     this.control.destroy();
     delete this.logo, this.control;
   },
 
+  setInputBit: function(offset, value) {
+    // bits = bits & ~(1 << n) | (x << n); for change the n-th bit to x.
+    // See also: https://stackoverflow.com/questions/47981
+    this.input = this.input & ~(1 << offset) | ((value ? 1 : 0) << offset);
+  },
+
+  getInputBit: function(offset) {
+    return Boolean(this.input & (1 << offset));
+  },
+
   handlers: {
     keyLeft: function(press) {
-      this.leftPressed = press;
-      this.rightPrior = false;  // evaluate left first
+      this.setInputBit(LEFT_PRESSED, press);
+      this.setInputBit(RIGHT_PRIOR, false);
       if (press) {
         this.shouldPlay = true;
       }
     },
     keyRight: function(press) {
-      this.rightPressed = press;
-      this.rightPrior = true;  // evaluate right first
+      this.setInputBit(RIGHT_PRESSED, press);
+      this.setInputBit(RIGHT_PRIOR, true);
       if (press) {
         this.shouldPlay = true;
       }
@@ -245,8 +264,7 @@ var Subleerunker = Game.$extend({
       }
     },
     blur: function() {
-      this.leftPressed = false;
-      this.rightPressed = false;
+      this.input = 0;
       this.shiftPressed = false;
       this.shiftLocked = false;
     },
@@ -288,27 +306,46 @@ var Subleerunker = Game.$extend({
   },
 
   reset: function() {
+    this.input      = 0;
     this.shouldPlay = false;
+
     this.releaseLockedShift();
     this.showSplash();
+
     delete this.difficulty;
-    delete this.duration;
+    delete this.direction;
   },
 
   play: function() {
     this.player = new Subleerunker.Player(this);
     if (this.shiftPressed) {
       // Hommarju for SUBERUNKER's shift-enter easter egg.
-      this.player.acceleration *= 0.25;
+      this.player.force *= 0.25;
       this.releaseLockedShift();
     }
     this.disp().addChild(this.player.disp());
-    this.ctx.random = new Math.seedrandom(this.ctx.randomSeed);
+
     this.records.current = 0;
     this.updateScore();
     this.hideSplash();
     this.loadChampion();
-    this.duration = 0;
+    this.direction = 0;
+    this.startedAt = this.time;
+
+    if (this.replaying) {
+      this.replay.rewind();
+      this.ctx.random = new Math.seedrandom(this.replay.randomSeed);
+    } else {
+      var randomSeed = this.ctx.randomSeed || makeRandomSeed();
+      this.ctx.random = new Math.seedrandom(randomSeed);
+      this.replay = new Replay(randomSeed);
+    }
+  },
+
+  replay: function(replay) {
+    this.replay = replay;
+    this.replaying = true;
+    this.shouldPlay = true;
   },
 
   upScore: function() {
@@ -405,13 +442,16 @@ var Subleerunker = Game.$extend({
   },
 
   beatChampion: function() {
-    var duration = this.duration / 1000;  // in second
+    // Gameplay duration should not be calculated in an Ajax callback.
+    var duration = this.time - this.startedAt;
+
     this.loadChampion().then($.proxy(function() {
       if (this.records.champion.score === null) {
         return;
       } else if (this.records.current <= this.records.champion.score) {
         return;
       }
+
       // Predict a success.
       var name = Cookies('champion-name') || '';
       this._championReceived({
@@ -420,12 +460,25 @@ var Subleerunker = Game.$extend({
         token: this.records.champion.token,
         authorized: true
       });
-      if (this.ctx.debug) {
+
+      // Don't beat champion in these special modes.
+      if (this.replaying) {
+        return;
+      } else if (this.ctx.debug) {
         return;
       }
+
+      var durationSeconds = duration / 1000;
+      var encodedReplay = Replay.encode(this.replay);
+
       $.ajax(this.ctx.championURL, {
         method: 'PUT',
-        data: {score: this.records.current, name: name, duration: duration},
+        data: {
+          score:    this.records.current,
+          name:     name,
+          replay:   encodedReplay,
+          duration: durationSeconds
+        },
         dataType: 'json',
         success: $.proxy(this._championReceived, this)
       });
@@ -460,16 +513,12 @@ var Subleerunker = Game.$extend({
 
     // Trigger custom event to track the score by outside.
     $(window).trigger('score', [this.records.current, !!this.ctx.debug]);
+
+    console.log(Replay.encode(this.replay));
   },
 
-  __update__: function(frame, prevFrame, deltaTime) {
-    this.$super.apply(this, arguments);
-
-    this.ctx.timeScale = (this.ctx.debug && this.shiftPressed) ? 0.25 : 1;
-
-    if (this.duration !== undefined) {
-      this.duration += deltaTime;
-    }
+  update: function(frame) {
+    this.ctx.timeScale = (this.ctx.debug && this.shiftPressed) ? 0.5 : 1;
 
     if (!this.player) {
       if (this.shouldPlay) {
@@ -480,33 +529,12 @@ var Subleerunker = Game.$extend({
       return;
     }
 
-    var movements = [[this.leftPressed, this.player.left],
-                     [this.rightPressed, this.player.right]];
-    for (var i = 0; i < 2; ++i) {
-      var mov = movements[this.rightPrior ? 1 - i : i];
-      var pressed = mov[0];
-      if (pressed) {
-        var handler = mov[1];
-        handler.call(this.player);
-        break;
-      }
-    }
-    if (this.leftPressed || this.rightPressed) {
-      this.player.forward(deltaTime);
-    } else {
-      this.player.rest(deltaTime);
-    }
+    this.updateGameplay(frame);
+  },
 
-    if (!this.player.dead) {
-      var deltaFrame = frame - prevFrame;
-      for (var i = 0; i < deltaFrame; ++i) {
-        if (this.random() < this.difficulty) {
-          var flame = new Subleerunker.Flame(this);
-          this.disp().addChild(flame.disp());
-        }
-        this.difficulty *= 1.001;
-      }
-    } else {
+  updateGameplay: function(frame) {
+    // Wait for all objects destroyed when the player is dead.
+    if (this.player.dead) {
       var done = true;
       $.each(this.children, function() {
         done = false;
@@ -516,6 +544,43 @@ var Subleerunker = Game.$extend({
         delete this.player;
         this.reset();
       }
+      return;
+    }
+
+    // Spawn flames when the player is alive.
+    if (frame % 2 === 0) {
+      if (this.random() < this.difficulty) {
+        var flame = new Subleerunker.Flame(this, frame);
+        flame.render();
+        this.disp().addChild(flame.disp());
+      }
+      this.difficulty *= 1.001;
+    }
+
+    // Record or replay input.
+    if (this.replaying) {
+      this.input = this.replay.nextInput();
+    } else {
+      this.replay.recordInput(frame, this.input);
+    }
+
+    // Handle input.
+    var movements = [
+      {pressed: this.getInputBit(LEFT_PRESSED),  handler: this.player.left},
+      {pressed: this.getInputBit(RIGHT_PRESSED), handler: this.player.right}
+    ];
+    var rightPrior = this.getInputBit(RIGHT_PRIOR);
+    var pressed = false;
+    for (var i = 0; i < 2; ++i) {
+      var mov = movements[rightPrior ? 1 - i : i];
+      if (mov.pressed) {
+        mov.handler.call(this.player);
+        pressed = true;
+        break;
+      }
+    }
+    if (!pressed) {
+      this.player.rest();
     }
   }
 });
@@ -529,47 +594,65 @@ $.extend(Subleerunker, {
     __init__: function(parent) {
       this.$super.apply(this, arguments);
       this.position = parent.width / 2 - this.width / 2;
-      this.updatePosition();
     },
 
-    __update__: function(frame, prevFrame, deltaTime) {
-      this.$super.apply(this, arguments);
-      if (this.blink.frame !== frame) {
-        this.blink = {frame: frame, active: Math.random() < 0.02};
-      }
-      if (this.dead) {
-        if (this.animationEnds()) {
-          this.kill();
+    update: function(frame) {
+      // Decide a blink.
+      var BLINK_CONTINUANCE = 4;
+      if (frame - this.blink.frame < BLINK_CONTINUANCE) {
+        // A blink decision is not changed for 4 frames.
+        // To avoid too quick blink.
+      } else {
+        this.blink = {frame: frame, active: null};
+
+        if (this.blink.active) {
+          // Don't close eyes for too long term.
+          this.blink.active = false;
+        } else {
+          this.blink.active = (Math.random() < 0.02);
         }
-      } else if (this.speed) {
-        this.updatePosition(deltaTime);
+      }
+
+      if (this.dead && this.hasAnimationEnded()) {
+        this.destroySoon();
       }
     },
 
     /* Animation */
 
-    fps: 12,
     animations: {
-      idle: {textureNames: [
-        'player-idle-0', 'player-idle-1', 'player-idle-2', 'player-idle-3',
-        'player-idle-4', 'player-idle-5', 'player-idle-6'
-      ]},
-      run: {textureNames: [
-        'player-run-0', 'player-run-1', 'player-run-2', 'player-run-3',
-        'player-run-4', 'player-run-5', 'player-run-6', 'player-run-7'
-      ]},
-      die: {textureNames: [
-        'player-die-0', 'player-die-1', 'player-die-2', 'player-die-3',
-        'player-die-4', 'player-die-5', 'player-die-6', 'player-die-7'
-      ], once: true}
+      idle: {
+        fps: 12,
+        textureNames: [
+          'player-idle-0', 'player-idle-1', 'player-idle-2', 'player-idle-3',
+          'player-idle-4', 'player-idle-5', 'player-idle-6'
+        ]
+      },
+      run: {
+        fps: 12,
+        textureNames: [
+          'player-run-0', 'player-run-1', 'player-run-2', 'player-run-3',
+          'player-run-4', 'player-run-5', 'player-run-6', 'player-run-7'
+        ]
+      },
+      die: {
+        fps: 12,
+        once: true,
+        textureNames: [
+          'player-die-0', 'player-die-1', 'player-die-2', 'player-die-3',
+          'player-die-4', 'player-die-5', 'player-die-6', 'player-die-7'
+        ]
+      }
     },
     animationName: 'idle',
 
+    // frame:  the frame decided to blink or not.
+    // active: if true, eyes are closed for a short term.
     blink: {frame: 0, active: false},
 
-    updateAnimation: function(anim, index) {
-      this.$super.apply(this, arguments);
+    renderAnimation: function(anim, index) {
       this.overlapEyelids(anim, index);
+      this.$super.apply(this, arguments);
     },
 
     overlapEyelids: function(anim, index) {
@@ -606,57 +689,61 @@ $.extend(Subleerunker, {
 
     /* Move */
 
-    acceleration: 3600,
-    step: 300,
+    acceleration: 0,
+    force: 1,
+    friction: 1,
+    maxVelocity: 5,
+    direction: +1,
 
-    setRunAnimation: function(duration) {
+    setRunAnimation: function(direction) {
       var frame;
       if (this.animationName === 'idle') {
         frame = 0;
-      } else if (this.animationName === 'run' && duration !== this.duration) {
+      } else if (this.animationName === 'run' && direction !== this.direction) {
         frame = this.animationFrame() + 4;
       }
-      var disp = this.disp();
-      switch (duration) {
-        case -1:
-          disp.scale.x = -1;
-          disp.anchor.x = 1;
-          break;
-        case +1:
-          disp.scale.x = +1;
-          disp.anchor.x = 0;
-          break;
-      }
+      this.direction = direction;
       this.setAnimation('run', frame);
     },
 
     left: function() {
-      this.duration = -1;
+      this.acceleration = -this.force;
+      this.friction = 0;
       this.setRunAnimation(-1);
     },
 
     right: function() {
-      this.duration = +1;
+      this.acceleration = +this.force;
+      this.friction = 0;
       this.setRunAnimation(+1);
     },
 
-    rest: function(deltaTime) {
-      this.$super.apply(this, arguments);
+    rest: function() {
+      this.acceleration = 0;
+      this.friction = this.force;
       this.setAnimation('idle');
     },
 
-    updatePosition: function(deltaTime) {
-      this.$super.apply(this, arguments);
+    boundary: function() {
+      return [0, this.parent.width - this.width];
+    },
 
-      var position = this.position;
-      var max = this.parent.width - this.width;
-      this.position = limit(this.position, 0, max);
-
-      if (position !== this.position) {
-        this.speed = 0;
+    render: function(deltaFrame) {
+      var disp = this.disp();
+      if (disp && !disp._destroyed) {
+        disp.x = this.position;
+        switch (this.direction) {
+          case -1:
+            disp.scale.x = -1;
+            disp.anchor.x = 1;
+            break;
+          case +1:
+            disp.scale.x = +1;
+            disp.anchor.x = 0;
+            break;
+        }
       }
-
-      this.disp().x = this.position;
+      this.$super.apply(this, arguments);
     },
 
     /* Own */
@@ -664,8 +751,10 @@ $.extend(Subleerunker, {
     die: function() {
       this.dead = true;
       this.speed = 0;
+      this.acceleration = 0;
+      this.friction = 0;
       this.setAnimation('die');
-      this.left = this.right = this.forward = this.rest = $.noop;
+      this.left = this.right = this.rest = $.noop;
     }
 
   }),
@@ -674,7 +763,8 @@ $.extend(Subleerunker, {
 
     __name__: 'Flame',
 
-    __init__: function(parent) {
+    __init__: function(parent, id) {
+      this.id = id;
       this.$super.apply(this, arguments);
       var W = parent.width;
       var w = this.width;
@@ -682,39 +772,36 @@ $.extend(Subleerunker, {
       this.position = -this.height;
     },
 
-    __update__: function(frame, prevFrame, deltaTime) {
-      this.$super.apply(this, arguments);
+    update: function(frame) {
       var player = this.parent.player;
 
       if (this.landed) {
-        if (this.animationEnds()) {
+        if (this.hasAnimationEnded()) {
           this.destroy();
           if (!player.dead) {
             this.parent.upScore();
           }
         }
-      } else {
-        var prevPosition = this.position;
-        this.forward(deltaTime);
-        this.updatePosition(deltaTime);
+        return;
+      }
 
-        var max = this.parent.height - this.height - this.landingMargin;
-        var min = this.parent.height - player.height;
+      var prevPosition = this.position;
 
-        if (this.position > max) {
-          this.position = max;
-          this.speed = 0;
-          this.updatePosition(deltaTime);
-          this.setAnimation('land');
-          this.landed = true;
-        } else if (this.position < min) {
-          return;
-        }
+      var max = this.parent.height - this.height - this.landingMargin;
+      var min = this.parent.height - player.height;
 
-        if (!player.dead && this.hits(player, prevPosition)) {
-          this.destroy();
-          this.parent.gameOver();
-        }
+      if (this.position > max) {
+        this.position = max;
+        this.speed = 0;
+        this.setAnimation('land');
+        this.landed = true;
+      } else if (this.position < min) {
+        return;
+      }
+
+      if (!player.dead && this.hits(player, prevPosition)) {
+        this.destroy();
+        this.parent.gameOver();
       }
     },
 
@@ -728,25 +815,36 @@ $.extend(Subleerunker, {
     /* Animation */
 
     animations: {
-      burn: {fps: 12, textureNames: [
-        'flame-burn-0', 'flame-burn-1', 'flame-burn-2', 'flame-burn-3',
-        'flame-burn-4', 'flame-burn-5', 'flame-burn-6'
-      ]},
-      land: {fps: 24, textureNames: [
-        'flame-land-0', 'flame-land-1', 'flame-land-2'
-      ], once: true}
+      burn: {
+        fps: 12,
+        textureNames: [
+          'flame-burn-0', 'flame-burn-1', 'flame-burn-2', 'flame-burn-3',
+          'flame-burn-4', 'flame-burn-5', 'flame-burn-6'
+        ]
+      },
+      land: {
+        fps: 24,
+        once: true,
+        textureNames: [
+          'flame-land-0', 'flame-land-1', 'flame-land-2'
+        ]
+      }
     },
     animationName: 'burn',
 
     /* Move */
 
-    acceleration: 360,
-    step: 600,
+    acceleration: 0.1,
+    maxVelocity: 10,
 
-    updatePosition: function(deltaTime) {
+    boundary: function() {
+      return [-Infinity, this.parent.height - this.height];
+    },
+
+    render: function(deltaFrame) {
       this.$super.apply(this, arguments);
       var disp = this.disp();
-      if (disp) {
+      if (disp && !disp._destroyed) {
         disp.x = this.xPosition;
         disp.y = this.position;
       }
@@ -778,5 +876,144 @@ $.extend(Subleerunker, {
     }
 
   })
+
+});
+
+var Replay = Class.$extend({
+
+  __init__: function(randomSeed) {
+    this.randomSeed = randomSeed;
+    this.inputHistory = {};
+    this.rewind();
+  },
+
+  recordInput: function(frame, input) {
+    if (input === this._prevRecordingInput) {
+      return;
+    }
+    this.inputHistory[frame] = input;
+    this._prevRecordingInput = input;
+  },
+
+  nextInput: function() {
+    var frame = this._replayingFrame++;
+    var input = this.inputHistory[frame];
+
+    if (input !== undefined) {
+      this._lastReplayingInput = input;
+      return input;
+    }
+
+    return this._lastReplayingInput;
+  },
+
+  /** Resets the cursor for nextInput(). */
+  rewind: function() {
+    this._prevRecordingInput = 0;
+
+    this._replayingFrame     = 0;
+    this._lastReplayingInput = 0;
+  },
+
+  __classvars__: {
+
+    /** Encodes a replay into a string.
+     *
+     *  Structure:
+     *
+     *    VERSION;RANDOM_SEED;DELTA_FRAME1:INPUT1;DELTA_FRAME2:INPUT2;...
+     *
+     *  All numbers are encoded in hexadecimal to reduce the size of result
+     *  strings.
+     *
+     *  The encoded string can be decoded by Replay.decode().
+     *
+     */
+    encode: function(replay) {
+      var words = [];
+
+      var version = '1';
+      words.push(version);
+
+      var randomSeedHex = replay.randomSeed.toString(16);
+      words.push(randomSeedHex);
+
+      // Sort input history by frame.
+      var sortedInputHistory = [];
+      $.each(replay.inputHistory, function(frame, input) {
+        sortedInputHistory.push({frame: frame, input: input});
+      });
+      sortedInputHistory.sort(function(a, b) {
+        return a.frame - b.frame;
+      });
+
+      var frame = 0;
+      for (var i = 0; i < sortedInputHistory.length; ++i) {
+        // Use delta frame instead of raw frame to reduce result size.
+        var deltaFrame = sortedInputHistory[i].frame - frame;
+        frame          = sortedInputHistory[i].frame;
+
+        var input      = sortedInputHistory[i].input;
+
+        var deltaFrameHex = deltaFrame.toString(16);
+        var inputHex      = input.toString(16);
+        words.push(deltaFrameHex + ':' + inputHex);
+      }
+
+      return words.join(';');
+    },
+
+    /** Decodes an encoded replay string at version-1.
+     *
+     *  Structure:
+     *
+     *    VERSION;RANDOM_SEED;DELTA_FRAME1:INPUT1;DELTA_FRAME2:INPUT2;...
+     *
+     *  Use Replay.decode() instead.  The version is automatically resolved.
+     *
+     */
+    _decodeV1: function(words) {
+      var randomSeedHex = words.shift();
+      var randomSeed    = parseInt(randomSeedHex, 16);
+
+      var replay = new Replay(randomSeed);
+
+      // Read input history.
+      var frame = 0;
+      while (words.length !== 0) {
+        var deltaFrameColonInput = words.shift();
+        var deltaFrameAndInput   = deltaFrameColonInput.split(':');
+
+        var deltaFrameHex = deltaFrameAndInput[0];
+        var inputHex      = deltaFrameAndInput[1];
+
+        var deltaFrame = parseInt(deltaFrameHex, 16);
+        var input      = parseInt(inputHex, 16);
+
+        frame += deltaFrame;
+        replay.recordInput(frame, input);
+      }
+
+      return replay;
+    },
+
+    /** Decodes an encoded replay string.
+     *
+     *  A replay can be encoded by Replay.encode().
+     *
+     */
+    decode: function(encodedReplay) {
+      var words = encodedReplay.split(';');
+
+      var version = words.shift();
+      switch (version) {
+        case '1':
+          return Replay._decodeV1(words);
+      }
+
+      return null;
+    }
+
+  }
 
 });
