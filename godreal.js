@@ -317,6 +317,9 @@ var GameObject = Class.$extend({
     }
 
     this.render();
+    $.each(this.children, $.proxy(function(__, child) {
+      child.render();
+    }, this));
   },
 
   simulateThenUpdate: function(frame, prevFrame) {
@@ -391,9 +394,6 @@ var GameObject = Class.$extend({
     return {position: position, speed: speed};
   },
 
-  visualize: function(state) {
-  },
-
   render: function() {
     var state = this._prediction || this.state();
     this.visualize(state);
@@ -406,11 +406,19 @@ var GameObject = Class.$extend({
     }
   },
 
+  /* Override */
+
+  visualize: function(state) {
+    // Called before rendering.  Make the view reflect the given state.
+    // The state argument is {position: Number, speed: Number}.
+  },
+
   setup: function() {
-    /// Will be called before the first tick in the game loop.
+    // Called before the first tick in the game loop.
   },
 
   update: function(frame) {
+    // Called at every ticks in the game loop.
   },
 
   /* Misc */
@@ -591,10 +599,6 @@ var Game = GameObject.$extend({
 
   render: function() {
     this.renderer.render(this.disp());
-
-    $.each(this.children, $.proxy(function(__, child) {
-      child.render();
-    }, this));
   },
 
   run: function(fps, before, after) {
