@@ -442,8 +442,8 @@ var Subleerunker = Game.$extend({
   },
 
   beatChampion: function() {
+    // Gameplay duration should not be calculated in an Ajax callback.
     var duration = this.time - this.startedAt;
-    var durationSeconds = duration / 1000;
 
     this.loadChampion().then($.proxy(function() {
       if (this.records.champion.score === null) {
@@ -468,12 +468,16 @@ var Subleerunker = Game.$extend({
         return;
       }
 
+      var durationSeconds = duration / 1000;
+      var encodedReplay = Replay.encode(this.replay);
+
       $.ajax(this.ctx.championURL, {
         method: 'PUT',
         data: {
-          score:     this.records.current,
-          name:      name,
-          duration:  durationSeconds
+          score:    this.records.current,
+          name:     name,
+          replay:   encodedReplay,
+          duration: durationSeconds
         },
         dataType: 'json',
         success: $.proxy(this._championReceived, this)
