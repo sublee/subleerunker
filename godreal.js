@@ -287,14 +287,9 @@ var GameObject = Class.$extend({
     }
 
     // Accumulate lag.
-    if (this._refocused) {
-      this.lag = 0;
-      this._refocused = false;
-    } else {
-      var prevTime = this.time;
-      if (prevTime !== null) {
-        this.lag += (time - prevTime) * this.timeScale();
-      }
+    var prevTime = this.time;
+    if (prevTime !== null) {
+      this.lag += (time - prevTime) * this.timeScale();
     }
     this.time = time;
 
@@ -315,6 +310,8 @@ var GameObject = Class.$extend({
 
       ++i;
       if (i >= MAX_STEPS) {
+        // Reset lag.  Perhaps the window is refocused.
+        this.lag = 0;
         break;
       }
     }
@@ -474,7 +471,6 @@ var Game = GameObject.$extend({
     this.$super.apply(this, arguments);
     this.renderer = new this.rendererClass(this.width, this.height);
     this.handlers = this.handlers || {};
-    this._refocused = false;
   },
 
   __disp__: function() {
@@ -548,16 +544,6 @@ var Game = GameObject.$extend({
         var scale = Math.max(1, Math.floor(window.innerHeight / this.height));
         this.zoom(scale);
         handlers.resize && handlers.resize.call(this, scale);
-      }, this),
-      blur: $.proxy(function() {
-        console.log('blur');
-        // this.ctx.timeScale = 0;
-      }, this),
-      focus: $.proxy(function() {
-        console.log('focus');
-        // this.ctx.timeScale = 1;
-        this.time = null;
-        this._refocused = true;
       }, this)
     }).trigger('resize');
   },
