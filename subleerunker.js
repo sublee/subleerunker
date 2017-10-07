@@ -735,10 +735,10 @@ $.extend(Subleerunker, {
       return [0, this.parent.width - this.width];
     },
 
-    render: function(deltaFrame) {
+    visualize: function(state) {
       var disp = this.disp();
       if (disp && !disp._destroyed) {
-        disp.x = this.position;
+        disp.x = state.position;
         switch (this.direction) {
           case -1:
             disp.scale.x = -1;
@@ -750,7 +750,6 @@ $.extend(Subleerunker, {
             break;
         }
       }
-      this.$super.apply(this, arguments);
     },
 
     /* Own */
@@ -848,12 +847,11 @@ $.extend(Subleerunker, {
       return [-Infinity, this.parent.height - this.height];
     },
 
-    render: function(deltaFrame) {
-      this.$super.apply(this, arguments);
+    visualize: function(state) {
       var disp = this.disp();
       if (disp && !disp._destroyed) {
         disp.x = this.xPosition;
-        disp.y = this.position;
+        disp.y = state.position;
       }
     },
 
