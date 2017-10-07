@@ -436,7 +436,7 @@ var Subleerunker = Game.$extend({
 
   loadChampion: function() {
     if (!this.ctx.championURL) {
-      return;
+      return {then: $.noop};
     }
     return $.ajax(this.ctx.championURL, {
       method: 'GET',
