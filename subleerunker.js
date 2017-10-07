@@ -448,6 +448,7 @@ var Subleerunker = Game.$extend({
       } else if (this.records.current <= this.records.champion.score) {
         return;
       }
+
       // Predict a success.
       var name = Cookies('champion-name') || '';
       this._championReceived({
@@ -456,9 +457,14 @@ var Subleerunker = Game.$extend({
         token: this.records.champion.token,
         authorized: true
       });
-      if (this.ctx.debug) {
+
+      // Don't beat champion in these special modes.
+      if (this.replaying) {
+        return;
+      } else if (this.ctx.debug) {
         return;
       }
+
       $.ajax(this.ctx.championURL, {
         method: 'PUT',
         data: {score: this.records.current, name: name, direction: direction},
