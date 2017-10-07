@@ -789,15 +789,15 @@ $.extend(Subleerunker, {
 
       var player = this.parent.player;
 
+      // Ignore if it didn't enter into the hitbox.
       var hitboxMin = this.parent.height - player.height;
       if (this.position < hitboxMin) {
-        // Ignore if it didn't enter into the hitbox.
         return;
       }
 
+      // Check if just landed.
       var hitboxMax = this.boundary()[1];
       if (this.position >= hitboxMax) {
-        // Just landed.
         this.landed = true;
         this.setAnimation('land');
 
@@ -807,8 +807,8 @@ $.extend(Subleerunker, {
         return;
       }
 
+      // If it kills the player, the game is over.
       if (!player.dead && this.hits(player, this.position)) {
-        // Kill the player.  The game is over.
         this.destroy();
         this.parent.gameOver();
       }
