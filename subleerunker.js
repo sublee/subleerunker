@@ -2,6 +2,14 @@ var IS_MOBILE = (typeof window.orientation !== 'undefined');
 var RESOLUTION = (window.devicePixelRatio || 1);
 var FONT_FAMILY = '"Share Tech Mono", monospace';
 
+var LEFT_PRESSED  = 0;
+var RIGHT_PRESSED = 1;
+var RIGHT_PRIOR   = 2;
+
+var makeRandomSeed = function() {
+  return Math.floor(Math.random() * 4294967295);
+};
+
 var Subleerunker = Game.$extend({
 
   __name__: 'Subleerunker',
@@ -223,17 +231,27 @@ var Subleerunker = Game.$extend({
     delete this.logo, this.control;
   },
 
+  setInputBit: function(offset, value) {
+    // bits = bits & ~(1 << n) | (x << n); for change the n-th bit to x.
+    // See also: https://stackoverflow.com/questions/47981
+    this.input = this.input & ~(1 << offset) | ((value ? 1 : 0) << offset);
+  },
+
+  getInputBit: function(offset) {
+    return Boolean(this.input & (1 << offset));
+  },
+
   handlers: {
     keyLeft: function(press) {
-      this.leftPressed = press;
-      this.rightPrior = false;  // evaluate left first
+      this.setInputBit(LEFT_PRESSED, press);
+      this.setInputBit(RIGHT_PRIOR, false);
       if (press) {
         this.shouldPlay = true;
       }
     },
     keyRight: function(press) {
-      this.rightPressed = press;
-      this.rightPrior = true;  // evaluate right first
+      this.setInputBit(RIGHT_PRESSED, press);
+      this.setInputBit(RIGHT_PRIOR, true);
       if (press) {
         this.shouldPlay = true;
       }
@@ -246,8 +264,7 @@ var Subleerunker = Game.$extend({
       }
     },
     blur: function() {
-      this.leftPressed = false;
-      this.rightPressed = false;
+      this.input = 0;
       this.shiftPressed = false;
       this.shiftLocked = false;
     },
@@ -289,9 +306,12 @@ var Subleerunker = Game.$extend({
   },
 
   reset: function() {
+    this.input      = 0;
     this.shouldPlay = false;
+
     this.releaseLockedShift();
     this.showSplash();
+
     delete this.difficulty;
     delete this.direction;
   },
@@ -304,7 +324,10 @@ var Subleerunker = Game.$extend({
       this.releaseLockedShift();
     }
     this.disp().addChild(this.player.disp());
-    this.ctx.random = new Math.seedrandom(this.ctx.randomSeed);
+
+    var randomSeed = this.ctx.randomSeed || makeRandomSeed();
+    this.ctx.random = new Math.seedrandom(randomSeed);
+
     this.records.current = 0;
     this.updateScore();
     this.hideSplash();
@@ -475,34 +498,12 @@ var Subleerunker = Game.$extend({
       return;
     }
 
-    var movements = [
-      {pressed: this.leftPressed,  handler: this.player.left},
-      {pressed: this.rightPressed, handler: this.player.right}
-    ];
+    this.updateGameplay(frame);
+  },
 
-    var pressed = false;
-    for (var i = 0; i < 2; ++i) {
-      var mov = movements[this.rightPrior ? 1 - i : i];
-      if (mov.pressed) {
-        mov.handler.call(this.player);
-        pressed = true;
-        break;
-      }
-    }
-    if (!pressed) {
-      this.player.rest();
-    }
-
-    if (!this.player.dead) {
-      if (frame % 2 === 0) {
-        if (this.random() < this.difficulty) {
-          var flame = new Subleerunker.Flame(this, frame);
-          flame.render();
-          this.disp().addChild(flame.disp());
-        }
-        this.difficulty *= 1.001;
-      }
-    } else {
+  updateGameplay: function(frame) {
+    // Wait for all objects destroyed when the player is dead.
+    if (this.player.dead) {
       var done = true;
       $.each(this.children, function() {
         done = false;
@@ -512,6 +513,47 @@ var Subleerunker = Game.$extend({
         delete this.player;
         this.reset();
       }
+      return;
+    }
+
+    // Spawn flames when the player is alive.
+    if (frame % 2 === 0) {
+      if (this.random() < this.difficulty) {
+        var flame = new Subleerunker.Flame(this, frame);
+        flame.render();
+        this.disp().addChild(flame.disp());
+      }
+      this.difficulty *= 1.001;
+    }
+
+    // Record or replay input.
+    if (this.recording) {
+      var inputUpdated = (this.input !== this.prevInput);
+      this.prevInput = this.input;
+      if (inputUpdated) {
+        this.replay.recordInput(frame, this.input);
+      }
+    } else {
+      this.input = this.replay.nextInput();
+    }
+
+    // Handle input.
+    var movements = [
+      {pressed: this.getInputBit(LEFT_PRESSED),  handler: this.player.left},
+      {pressed: this.getInputBit(RIGHT_PRESSED), handler: this.player.right}
+    ];
+    var rightPrior = this.getInputBit(RIGHT_PRIOR);
+    var pressed = false;
+    for (var i = 0; i < 2; ++i) {
+      var mov = movements[rightPrior ? 1 - i : i];
+      if (mov.pressed) {
+        mov.handler.call(this.player);
+        pressed = true;
+        break;
+      }
+    }
+    if (!pressed) {
+      this.player.rest();
     }
   }
 });
@@ -807,5 +849,103 @@ $.extend(Subleerunker, {
     }
 
   })
+
+});
+
+var Replay = Class.$extend({
+
+  __init__: function(randomSeed) {
+    this.randomSeed = randomSeed;
+    this.inputHistory = {};
+    this.rewind();
+  },
+
+  recordInput: function(frame, input) {
+    this.inputHistory[frame] = input;
+  },
+
+  nextInput: function() {
+    var frame = this._prevFrame++;
+    var input = this.inputHistory[frame];
+
+    if (input !== undefined) {
+      this._lastInput = input;
+      return input;
+    }
+
+    return this._lastInput;
+  },
+
+  /** Resets the cursor for nextInput(). */
+  rewind: function() {
+    this._prevFrame = 0;
+    this._lastInput = 0;
+  },
+
+  __classvars__: {
+
+    /** Encodes a replay into a string.
+     *
+     *  Structure:
+     *
+     *    RANDOM_SEED;FRAME1:INPUT1;FRAME2:INPUT2;...
+     *
+     *  The encoded string can be decoded by Replay.decode().
+     *
+     */
+    encode: function(replay) {
+      var words = [];
+
+      words.push(String(replay.randomSeed));
+
+      // Sort input history by frame.
+      var sortedInputHistory = [];
+      $.each(replay.inputHistory, function(frame, input) {
+        sortedInputHistory.push({frame: frame, input: input});
+      });
+      sortedInputHistory.sort(function(a, b) {
+        return a.frame - b.frame;
+      });
+
+      for (var i = 0; i < sortedInputHistory.length; ++i) {
+        var frame = sortedInputHistory[i].frame;
+        var input = sortedInputHistory[i].input;
+        words.push(frame + ':' + input);
+      }
+
+      return words.join(';');
+    },
+
+    /** Decodes an encoded replay string.
+     *
+     *  Structure:
+     *
+     *    RANDOM_SEED;FRAME1:INPUT1;FRAME2:INPUT2;...
+     *
+     *  A replay can be encoded by Replay.encode().
+     *
+     */
+    decode: function(encodedReplay) {
+      var words = encodedReplay.split(';');
+
+      var randomSeed = Number(words.shift());
+      var replay = new Replay(randomSeed);
+
+      // Read input history.
+      while (words.length !== 0) {
+        var frameColonInput = words.shift();
+        var frameAndInput   = frameColonInput.split(':');
+
+        // frame and input should always be an integer.
+        var frame = Math.floor(Number(frameAndInput[0]));
+        var input = Math.floor(Number(frameAndInput[1]));
+
+        replay.record(frame, input);
+      }
+
+      return replay;
+    }
+
+  }
 
 });
