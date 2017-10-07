@@ -65,7 +65,7 @@
     // Setup context and init debug mode.
     var ctx = {
       debug: (QUERY.debug !== undefined),
-      randomSeed: QUERY.seed
+      randomSeed: parseInt(QUERY.seed, 16)
     };
     if (ctx.debug) {
       $(document.head).append('<script src="lib/stats-r17.min.js">');

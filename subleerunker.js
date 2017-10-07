@@ -735,10 +735,10 @@ $.extend(Subleerunker, {
       return [0, this.parent.width - this.width];
     },
 
-    render: function(deltaFrame) {
+    visualize: function(state) {
       var disp = this.disp();
       if (disp && !disp._destroyed) {
-        disp.x = this.position;
+        disp.x = state.position;
         switch (this.direction) {
           case -1:
             disp.scale.x = -1;
@@ -750,7 +750,6 @@ $.extend(Subleerunker, {
             break;
         }
       }
-      this.$super.apply(this, arguments);
     },
 
     /* Own */
@@ -780,33 +779,36 @@ $.extend(Subleerunker, {
     },
 
     update: function(frame) {
-      var player = this.parent.player;
-
       if (this.landed) {
+        // Already landed.  Destroy when the landing animation is done.
         if (this.hasAnimationEnded()) {
           this.destroy();
-          if (!player.dead) {
-            this.parent.upScore();
-          }
         }
         return;
       }
 
-      var prevPosition = this.position;
+      var player = this.parent.player;
 
-      var max = this.parent.height - this.height - this.landingMargin;
-      var min = this.parent.height - player.height;
-
-      if (this.position > max) {
-        this.position = max;
-        this.speed = 0;
-        this.setAnimation('land');
-        this.landed = true;
-      } else if (this.position < min) {
+      var hitboxMin = this.parent.height - player.height;
+      if (this.position < hitboxMin) {
+        // Ignore if it didn't enter into the hitbox.
         return;
       }
 
-      if (!player.dead && this.hits(player, prevPosition)) {
+      var hitboxMax = this.boundary()[1];
+      if (this.position >= hitboxMax) {
+        // Just landed.
+        this.landed = true;
+        this.setAnimation('land');
+
+        if (!player.dead) {
+          this.parent.upScore();
+        }
+        return;
+      }
+
+      if (!player.dead && this.hits(player, this.position)) {
+        // Kill the player.  The game is over.
         this.destroy();
         this.parent.gameOver();
       }
@@ -845,15 +847,17 @@ $.extend(Subleerunker, {
     maxVelocity: 10,
 
     boundary: function() {
-      return [-Infinity, this.parent.height - this.height];
+      return [
+        -Infinity,
+        this.parent.height - this.height - this.landingMargin
+      ];
     },
 
-    render: function(deltaFrame) {
-      this.$super.apply(this, arguments);
+    visualize: function(state) {
       var disp = this.disp();
       if (disp && !disp._destroyed) {
         disp.x = this.xPosition;
-        disp.y = this.position;
+        disp.y = state.position;
       }
     },
 

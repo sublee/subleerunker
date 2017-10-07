@@ -316,21 +316,17 @@ var GameObject = Class.$extend({
       }
     }
 
-    this.render(this.lag / TIME_STEP);
+    this.render();
   },
 
   simulateThenUpdate: function(frame, prevFrame) {
     $.each(this.children, $.proxy(function(__, child) {
-      child.time = this.time;
-      child.simulateThenUpdate(frame, prevFrame);
       if (this._destroyed) {
         return false;
       }
+      child.time = this.time;
+      child.simulateThenUpdate(frame, prevFrame);
     }, this));
-
-    var sim = this.simulate(frame - prevFrame);
-    this.position = sim.position;
-    this.speed = sim.speed;
 
     if (this._destroyed) {
       this.destroy();
@@ -340,15 +336,35 @@ var GameObject = Class.$extend({
     // Call update() when only the current frame as an integer is updated.
     var intFrame     = Math.floor(frame);
     var intPrevFrame = Math.floor(prevFrame);
-    if (intFrame !== intPrevFrame) {
-      this.update(intFrame);
+
+    if (intFrame === intPrevFrame) {
+      // The frame is not updated yet.  Just predict to render.
+      var deltaFrame = frame - prevFrame;
+      var state = this._prediction || this.state();
+      this._prediction = this.simulate(state, deltaFrame);
+      return;
     }
+
+    for (var frame = intPrevFrame + 1; frame <= intFrame; ++frame) {
+      var sim = this.simulate(this.state(), 1);
+
+      this.position = sim.position;
+      this.speed    = sim.speed;
+
+      this.update(frame);
+    }
+
+    delete this._prediction;
   },
 
-  simulate: function(deltaFrame) {
+  state: function() {
+    return {position: this.position, speed: this.speed};
+  },
+
+  simulate: function(state, deltaFrame) {
     var impact = deltaFrame;
 
-    var speed = this.speed;
+    var speed = state.speed;
     speed += this.acceleration * impact;
     if (speed !== 0 && this.friction !== 0) {
       var speedIsPositive = speed > 0;
@@ -360,7 +376,7 @@ var GameObject = Class.$extend({
       speed = limit(speed, -this.maxVelocity, +this.maxVelocity);
     }
 
-    var position = this.position;
+    var position = state.position;
     position += speed * impact;
 
     var boundary = this.boundary();
@@ -375,7 +391,13 @@ var GameObject = Class.$extend({
     return {position: position, speed: speed};
   },
 
-  render: function(deltaFrame) {
+  visualize: function(state) {
+  },
+
+  render: function() {
+    var state = this._prediction || this.state();
+    this.visualize(state);
+
     var anim = this.currentAnimation();
     if (anim) {
       var f = this.animationFrame(anim);
@@ -567,12 +589,12 @@ var Game = GameObject.$extend({
     return false;
   },
 
-  render: function(deltaFrame) {
-    $.each(this.children, $.proxy(function(__, child) {
-      child.render(deltaFrame);
-    }, this));
-
+  render: function() {
     this.renderer.render(this.disp());
+
+    $.each(this.children, $.proxy(function(__, child) {
+      child.render();
+    }, this));
   },
 
   run: function(fps, before, after) {
