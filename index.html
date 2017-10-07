@@ -87,7 +87,9 @@
     Cookies.defaults = {path: location.pathname};
 
     // Set a champion URL.
-    ctx.championURL = 'https://subleerunker-166907.appspot.com/champion';
+    if (/^https:\/\/sublee.github.io/.exec(location.href)) {
+      ctx.championURL = 'https://subleerunker-166907.appspot.com/champion';
+    }
 
     // Init the game.
     var game = Subleerunker(ctx);
