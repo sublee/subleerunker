@@ -904,7 +904,10 @@ var Replay = Class.$extend({
      *
      *  Structure:
      *
-     *    RANDOM_SEED;FRAME1:INPUT1;FRAME2:INPUT2;...
+     *    VERSION;RANDOM_SEED;DELTA_FRAME1:INPUT1;DELTA_FRAME2:INPUT2;...
+     *
+     *  All numbers are encoded in hexadecimal to reduce the size of result
+     *  strings.
      *
      *  The encoded string can be decoded by Replay.decode().
      *
@@ -912,7 +915,11 @@ var Replay = Class.$extend({
     encode: function(replay) {
       var words = [];
 
-      words.push(String(replay.randomSeed));
+      var version = '1';
+      words.push(version);
+
+      var randomSeedHex = replay.randomSeed.toString(16);
+      words.push(randomSeedHex);
 
       // Sort input history by frame.
       var sortedInputHistory = [];
@@ -923,20 +930,57 @@ var Replay = Class.$extend({
         return a.frame - b.frame;
       });
 
+      var frame = 0;
       for (var i = 0; i < sortedInputHistory.length; ++i) {
-        var frame = sortedInputHistory[i].frame;
-        var input = sortedInputHistory[i].input;
-        words.push(frame + ':' + input);
+        // Use delta frame instead of raw frame to reduce result size.
+        var deltaFrame = sortedInputHistory[i].frame - frame;
+        frame          = sortedInputHistory[i].frame;
+
+        var input      = sortedInputHistory[i].input;
+
+        var deltaFrameHex = deltaFrame.toString(16);
+        var inputHex      = input.toString(16);
+        words.push(deltaFrameHex + ':' + inputHex);
       }
 
       return words.join(';');
     },
 
-    /** Decodes an encoded replay string.
+    /** Decodes an encoded replay string at version-1.
      *
      *  Structure:
      *
-     *    RANDOM_SEED;FRAME1:INPUT1;FRAME2:INPUT2;...
+     *    VERSION;RANDOM_SEED;DELTA_FRAME1:INPUT1;DELTA_FRAME2:INPUT2;...
+     *
+     *  Use Replay.decode() instead.  The version is automatically resolved.
+     *
+     */
+    _decodeV1: function(words) {
+      var randomSeedHex = words.shift();
+      var randomSeed    = parseInt(randomSeedHex, 16);
+
+      var replay = new Replay(randomSeed);
+
+      // Read input history.
+      var frame = 0;
+      while (words.length !== 0) {
+        var deltaFrameColonInput = words.shift();
+        var deltaFrameAndInput   = deltaFrameColonInput.split(':');
+
+        var deltaFrameHex = deltaFrameAndInput[0];
+        var inputHex      = deltaFrameAndInput[1];
+
+        var deltaFrame = parseInt(deltaFrameHex, 16);
+        var input      = parseInt(inputHex, 16);
+
+        frame += deltaFrame;
+        replay.recordInput(frame, input);
+      }
+
+      return replay;
+    },
+
+    /** Decodes an encoded replay string.
      *
      *  A replay can be encoded by Replay.encode().
      *
@@ -944,22 +988,13 @@ var Replay = Class.$extend({
     decode: function(encodedReplay) {
       var words = encodedReplay.split(';');
 
-      var randomSeed = Number(words.shift());
-      var replay = new Replay(randomSeed);
-
-      // Read input history.
-      while (words.length !== 0) {
-        var frameColonInput = words.shift();
-        var frameAndInput   = frameColonInput.split(':');
-
-        // frame and input should always be an integer.
-        var frame = Math.floor(Number(frameAndInput[0]));
-        var input = Math.floor(Number(frameAndInput[1]));
-
-        replay.recordInput(frame, input);
+      var version = words.shift();
+      switch (version) {
+        case '1':
+          return Replay._decodeV1(words);
       }
 
-      return replay;
+      return null;
     }
 
   }
