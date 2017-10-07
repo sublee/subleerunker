@@ -931,7 +931,7 @@ var Replay = Class.$extend({
      *
      *  Structure:
      *
-     *    VERSION;RANDOM_SEED;DELTA_FRAME1:INPUT1;DELTA_FRAME2:INPUT2;...
+     *    VERSION!RANDOM_SEED!DELTA_FRAME1.INPUT1!DELTA_FRAME2.INPUT2;...
      *
      *  All numbers are encoded in hexadecimal to reduce the size of result
      *  strings.
@@ -942,8 +942,8 @@ var Replay = Class.$extend({
     encode: function(replay) {
       var words = [];
 
-      var version = '1';
-      words.push(version);
+      var version = 2;
+      words.push(version.toString(10));
 
       var randomSeedHex = replay.randomSeed.toString(16);
       words.push(randomSeedHex);
@@ -967,10 +967,71 @@ var Replay = Class.$extend({
 
         var deltaFrameHex = deltaFrame.toString(16);
         var inputHex      = input.toString(16);
-        words.push(deltaFrameHex + ':' + inputHex);
+        words.push(deltaFrameHex + '.' + inputHex);
       }
 
-      return words.join(';');
+      return words.join('!');
+    },
+
+    /** Decodes an encoded replay string.
+     *
+     *  A replay can be encoded by Replay.encode().
+     *
+     */
+    decode: function(encodedReplay) {
+      // The version number is at ahead of the encoded replay.
+      // parseInt() can detect first digits of a string.
+      // So parseInt() of the encoded replay returns the version number.
+      var version = parseInt(encodedReplay, 10);
+
+      switch (version) {
+        case 2:
+          return Replay._decodeV2(encodedReplay);
+        case 1:
+          return Replay._decodeV1(encodedReplay);
+      }
+
+      return null;
+    },
+
+    /** Decodes an encoded replay string at version-2.  Version-2 changed
+     *  delimiters for URI awareness.
+     *
+     *  Structure:
+     *
+     *    VERSION!RANDOM_SEED!DELTA_FRAME1.INPUT1!DELTA_FRAME2.INPUT2;...
+     *
+     *  Use Replay.decode() instead.  The version is automatically resolved.
+     *
+     */
+    _decodeV2: function(encodedReplay) {
+      var words = encodedReplay.split('!');
+      words.shift();  // discard version
+
+      var randomSeedHex = words.shift();
+      var randomSeed    = parseInt(randomSeedHex, 16);
+
+      var replay = new Replay(randomSeed);
+
+      // Read input history.
+      var frame = 0;
+      var input = 0;
+      while (words.length !== 0) {
+        var deltaFrameColonInput = words.shift();
+        var deltaFrameAndInput   = deltaFrameColonInput.split('.');
+
+        var deltaFrameHex = deltaFrameAndInput[0];
+        var inputHex      = deltaFrameAndInput[1];
+
+        var deltaFrame = parseInt(deltaFrameHex, 16);
+        input          = parseInt(inputHex, 16);
+
+        frame += deltaFrame;
+        replay.recordInput(frame, input);
+      }
+      replay.lastRecordedInput = input;
+
+      return replay;
     },
 
     /** Decodes an encoded replay string at version-1.
@@ -982,7 +1043,10 @@ var Replay = Class.$extend({
      *  Use Replay.decode() instead.  The version is automatically resolved.
      *
      */
-    _decodeV1: function(words) {
+    _decodeV1: function(encodedReplay) {
+      var words = encodedReplay.split(';');
+      words.shift();  // discard version
+
       var randomSeedHex = words.shift();
       var randomSeed    = parseInt(randomSeedHex, 16);
 
@@ -1007,23 +1071,6 @@ var Replay = Class.$extend({
       replay.lastRecordedInput = input;
 
       return replay;
-    },
-
-    /** Decodes an encoded replay string.
-     *
-     *  A replay can be encoded by Replay.encode().
-     *
-     */
-    decode: function(encodedReplay) {
-      var words = encodedReplay.split(';');
-
-      var version = words.shift();
-      switch (version) {
-        case '1':
-          return Replay._decodeV1(words);
-      }
-
-      return null;
     },
 
     clone: function(replay) {
