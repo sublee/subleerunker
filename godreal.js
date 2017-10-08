@@ -321,7 +321,7 @@ var GameObject = Class.$extend({
     // The rendering time is behind of the simulation time.  The game objects
     // should be predicted to be rendered smoothly.
     if (this.lag > 0) {
-      var deltaFrame = this.lag * ts / TIME_STEP;
+      var deltaFrame = this.lag / TIME_STEP;
       this._predict(deltaFrame);
     }
 
@@ -356,8 +356,7 @@ var GameObject = Class.$extend({
   },
 
   _predict: function(deltaFrame) {
-    var state = this._prediction || this.state();
-    this._prediction = this.simulate(state, deltaFrame);
+    this._prediction = this.simulate(this.state(), deltaFrame);
 
     // Predict children recursively.
     $.each(this.children, function(__, c) { c._predict(deltaFrame); });
