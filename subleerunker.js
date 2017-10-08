@@ -566,7 +566,7 @@ var Subleerunker = Game.$extend({
 
     // Record or replay input.
     if (this.replaying) {
-      this.input = this.replay.nextInput();
+      this.input = this.replay.nextInput(frame);
     } else {
       this.replay.recordInput(frame, this.input);
     }
@@ -907,8 +907,11 @@ var Replay = Class.$extend({
     this.lastRecordedInput   = input;
   },
 
-  nextInput: function() {
-    var frame = this._replayingFrame++;
+  nextInput: function(expectedFrame) {
+    var frame = ++this._replayingFrame;
+    if (frame !== expectedFrame) {
+      throw new Error('replaying frame and expected frame not same');
+    }
     var input = this.inputHistory[frame];
 
     if (input !== undefined) {
