@@ -191,21 +191,21 @@ var Subleerunker = Game.$extend({
       width: 148, height: 66,
       anchor: [0.5, 0],
       offset: [this.width / 2, 156],
-      animations: {
+      anims: {
         'default': {fps: 0, textureNames: ['logo']}
       },
-      animationName: 'default',
+      animName: 'default',
     });
     this.logo = new Logo(this);
 
     var control = {};
     if (IS_MOBILE) {
       $.extend(control, {
-        width: 33, height: 35, animationTextureNames: ['touch-0', 'touch-1']
+        width: 33, height: 35, animTextureNames: ['touch-0', 'touch-1']
       });
     } else {
       $.extend(control, {
-        width: 65, height: 14, animationTextureNames: ['key-0', 'key-1']
+        width: 65, height: 14, animTextureNames: ['key-0', 'key-1']
       });
     }
     var Control = GameObject.$extend({
@@ -213,10 +213,10 @@ var Subleerunker = Game.$extend({
       height: control.height,
       anchor: [0.5, 1],
       offset: [this.width / 2, -31],
-      animations: {
-        'blink': {fps: 1, textureNames: control.animationTextureNames}
+      anims: {
+        'blink': {fps: 1, textureNames: control.animTextureNames}
       },
-      animationName: 'blink'
+      animName: 'blink'
     });
     this.control = new Control(this);
 
@@ -627,14 +627,14 @@ $.extend(Subleerunker, {
         }
       }
 
-      if (this.dead && this.hasAnimationEnded()) {
+      if (this.dead && this.hasAnimEnded()) {
         this.destroySoon();
       }
     },
 
     /* Animation */
 
-    animations: {
+    anims: {
       idle: {
         fps: 12,
         textureNames: [
@@ -658,13 +658,13 @@ $.extend(Subleerunker, {
         ]
       }
     },
-    animationName: 'idle',
+    animName: 'idle',
 
     // frame:  the frame decided to blink or not.
     // active: if true, eyes are closed for a short term.
     blink: {frame: 0, active: false},
 
-    renderAnimation: function(anim, index) {
+    renderAnim: function(anim, index) {
       this.overlapEyelids(anim, index);
       this.$super.apply(this, arguments);
     },
@@ -673,7 +673,7 @@ $.extend(Subleerunker, {
       if (this._eyelids) {
         this._eyelids.visible = false;
       }
-      if (this.animationName === 'die') {
+      if (this.animName === 'die') {
         // There's no eyelids for "die" animation.
         return;
       }
@@ -709,39 +709,39 @@ $.extend(Subleerunker, {
     maxVelocity: 5,
     direction: +1,
 
-    setRunAnimation: function(direction) {
-      var prevAnimationName = this.animationName;
-      switch (prevAnimationName) {
+    setRunAnim: function(direction) {
+      var prevAnimName = this.animName;
+      switch (prevAnimName) {
         case 'idle':
-          this.rebaseAnimationFrame(0);
+          this.rebaseAnimFrame(0);
           break;
         case 'run':
           if (direction !== this.direction) {
-            var flippedAnimationFrame = this.animationFrame() + 4;
-            this.rebaseAnimationFrame(flippedAnimationFrame);
+            var flippedAnimFrame = this.animFrame() + 4;
+            this.rebaseAnimFrame(flippedAnimFrame);
           }
           break;
       }
       this.direction = direction;
-      this.setAnimation('run');
+      this.setAnim('run');
     },
 
     left: function() {
       this.acceleration = -this.force;
       this.friction = 0;
-      this.setRunAnimation(-1);
+      this.setRunAnim(-1);
     },
 
     right: function() {
       this.acceleration = +this.force;
       this.friction = 0;
-      this.setRunAnimation(+1);
+      this.setRunAnim(+1);
     },
 
     rest: function() {
       this.acceleration = 0;
       this.friction = this.force;
-      this.setAnimation('idle');
+      this.setAnim('idle');
     },
 
     boundary: function() {
@@ -772,7 +772,7 @@ $.extend(Subleerunker, {
       this.speed = 0;
       this.acceleration = 0;
       this.friction = 0;
-      this.setAnimation('die');
+      this.setAnim('die');
       this.left = this.right = this.rest = $.noop;
     }
 
@@ -794,7 +794,7 @@ $.extend(Subleerunker, {
     update: function(frame) {
       if (this.landed) {
         // Already landed.  Destroy when the landing animation is done.
-        if (this.hasAnimationEnded()) {
+        if (this.hasAnimEnded()) {
           this.destroy();
         }
         return;
@@ -812,7 +812,7 @@ $.extend(Subleerunker, {
       var hitboxMax = this.boundary()[1];
       if (this.position >= hitboxMax) {
         this.landed = true;
-        this.setAnimation('land');
+        this.setAnim('land');
 
         if (!player.dead) {
           this.parent.upScore();
@@ -836,7 +836,7 @@ $.extend(Subleerunker, {
 
     /* Animation */
 
-    animations: {
+    anims: {
       burn: {
         fps: 12,
         textureNames: [
@@ -852,7 +852,7 @@ $.extend(Subleerunker, {
         ]
       }
     },
-    animationName: 'burn',
+    animName: 'burn',
 
     /* Move */
 

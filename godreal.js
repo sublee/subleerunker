@@ -103,8 +103,8 @@ var GameObject = Class.$extend({
 
     this.innerPadding = normalizePadding(this.innerPadding);
 
-    if (this.animationName) {
-      this.setAnimation(this.animationName);
+    if (this.animName) {
+      this.setAnim(this.animName);
     }
   },
 
@@ -168,7 +168,7 @@ var GameObject = Class.$extend({
   },
 
   __disp__: function() {
-    var anim = this.currentAnimation();
+    var anim = this.currentAnim();
     if (!anim || !anim.textureNames) {
       return null;
     }
@@ -186,33 +186,33 @@ var GameObject = Class.$extend({
 
   /* Animation */
 
-  animations:    null,
-  animationName: null,
+  anims:    null,
+  animName: null,
 
-  currentAnimation: function() {
-    if (!this.animations || !this.animationName) {
+  currentAnim: function() {
+    if (!this.anims || !this.animName) {
       return null;
     }
-    return this.animations[this.animationName] || null;
+    return this.anims[this.animName] || null;
   },
 
-  setAnimation: function(animationName, animationFrame) {
-    if (this.animationName !== animationName) {
-      this.rebaseAnimationFrame(animationFrame || 0);
+  setAnim: function(animName, animFrame) {
+    if (this.animName !== animName) {
+      this.rebaseAnimFrame(animFrame || 0);
     }
-    this.animationName = animationName;
+    this.animName = animName;
   },
 
-  animationFrame: function(anim) {
-    anim = anim || this.currentAnimation();
+  animFrame: function(anim) {
+    anim = anim || this.currentAnim();
     if (!anim) {
       return 0;
     }
     var fps = anim.fps * this.timeScale();
-    return this.baseAnimationFrame + calcFrame(fps, this.time - this.baseAnimationTime);
+    return this.baseAnimFrame + calcFrame(fps, this.time - this.baseAnimTime);
   },
 
-  animationIndex: function(anim, frame) {
+  animIndex: function(anim, frame) {
     var length = anim.textureNames.length;
     if (anim.once) {
       return Math.min(frame, length - 1);
@@ -221,25 +221,25 @@ var GameObject = Class.$extend({
     }
   },
 
-  hasAnimationEnded: function() {
-    var anim = this.currentAnimation();
+  hasAnimEnded: function() {
+    var anim = this.currentAnim();
     if (!anim) {
       return true;  // never started
     } else if (!anim.once) {
       return false;  // never ends
     }
-    return this.animationFrame(anim) >= anim.textureNames.length;
+    return this.animFrame(anim) >= anim.textureNames.length;
   },
 
-  baseAnimationFrame: 0,
-  baseAnimationTime:  0,
+  baseAnimFrame: 0,
+  baseAnimTime:  0,
 
-  rebaseAnimationFrame: function(animationFrame) {
-    this.baseAnimationFrame = animationFrame;
-    this.baseAnimationTime  = this.time;
+  rebaseAnimFrame: function(animFrame) {
+    this.baseAnimFrame = animFrame;
+    this.baseAnimTime  = this.time;
   },
 
-  renderAnimation: function(anim, index) {
+  renderAnim: function(anim, index) {
     var texture = this.getTexture(anim.textureNames[index]);
     this.disp().texture = texture;
   },
@@ -403,11 +403,11 @@ var GameObject = Class.$extend({
     var state = this._prediction || this.state();
     this.visualize(state);
 
-    var anim = this.currentAnimation();
+    var anim = this.currentAnim();
     if (anim) {
-      var f = this.animationFrame(anim);
-      var i = this.animationIndex(anim, f);
-      this.renderAnimation(anim, i);
+      var f = this.animFrame(anim);
+      var i = this.animIndex(anim, f);
+      this.renderAnim(anim, i);
     }
   },
 
