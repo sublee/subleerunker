@@ -231,6 +231,10 @@ var Subleerunker = Game.$extend({
     delete this.logo, this.control;
   },
 
+  isPlaying: function() {
+    return Boolean(this.player);
+  },
+
   setInputBit: function(offset, value) {
     // bits = bits & ~(1 << n) | (x << n); for change the n-th bit to x.
     // See also: https://stackoverflow.com/questions/47981
@@ -245,21 +249,21 @@ var Subleerunker = Game.$extend({
     keyLeft: function(press) {
       this.setInputBit(LEFT_PRESSED, press);
       this.setInputBit(RIGHT_PRIOR, false);
-      if (press) {
+      if (press && !this.isPlaying()) {
         this.shouldPlay = true;
       }
     },
     keyRight: function(press) {
       this.setInputBit(RIGHT_PRESSED, press);
       this.setInputBit(RIGHT_PRIOR, true);
-      if (press) {
+      if (press && !this.isPlaying()) {
         this.shouldPlay = true;
       }
     },
     keyShift: function(press, lock) {
       this.shiftPressed = press;
       this.shiftLocked = !!lock;
-      if (press && lock) {
+      if (press && lock && !this.isPlaying()) {
         this.shouldPlay = true;
       }
     },
@@ -306,8 +310,7 @@ var Subleerunker = Game.$extend({
   },
 
   reset: function() {
-    this.input      = 0;
-    this.shouldPlay = false;
+    this.input = 0;
 
     this.releaseLockedShift();
     this.showSplash();
@@ -345,7 +348,6 @@ var Subleerunker = Game.$extend({
   replay: function(replay) {
     this.replay = replay;
     this.replaying = true;
-    this.shouldPlay = true;
   },
 
   upScore: function() {
@@ -527,7 +529,7 @@ var Subleerunker = Game.$extend({
   update: function(frame) {
     this.ctx.timeScale = (this.ctx.debug && this.shiftPressed) ? 0.5 : 1;
 
-    if (!this.player) {
+    if (!this.isPlaying()) {
       if (this.shouldPlay) {
         this.play();
         this.shouldPlay = false;
