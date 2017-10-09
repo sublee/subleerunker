@@ -534,7 +534,6 @@ var Subleerunker = Game.$extend({
       if (this.shouldPlay) {
         this.play();
         this.shouldPlay = false;
-        this.rebaseFrame(0);
       }
       return;
     }
@@ -620,6 +619,7 @@ $.extend(Subleerunker, {
           // Don't close eyes for too long term.
           this.blink.active = false;
         } else {
+          // Blinking is not required to be deterministic.
           this.blink.active = (Math.random() < 0.02);
         }
       }
@@ -707,14 +707,20 @@ $.extend(Subleerunker, {
     direction: +1,
 
     setRunAnimation: function(direction) {
-      var frame;
-      if (this.animationName === 'idle') {
-        frame = 0;
-      } else if (this.animationName === 'run' && direction !== this.direction) {
-        frame = this.animationFrame() + 4;
+      var prevAnimationName = this.animationName;
+      switch (prevAnimationName) {
+        case 'idle':
+          this.rebaseAnimationFrame(0);
+          break;
+        case 'run':
+          if (direction !== this.direction) {
+            var flippedAnimationFrame = this.animationFrame() + 4;
+            this.rebaseAnimationFrame(flippedAnimationFrame);
+          }
+          break;
       }
       this.direction = direction;
-      this.setAnimation('run', frame);
+      this.setAnimation('run');
     },
 
     left: function() {

@@ -186,7 +186,7 @@ var GameObject = Class.$extend({
 
   /* Animation */
 
-  animations: null,
+  animations:    null,
   animationName: null,
 
   currentAnimation: function() {
@@ -196,10 +196,7 @@ var GameObject = Class.$extend({
     return this.animations[this.animationName] || null;
   },
 
-  setAnimation: function(animationName, frame) {
-    if (this.animationName !== animationName || frame !== undefined) {
-      this.rebaseFrame(frame);
-    }
+  setAnimation: function(animationName) {
     this.animationName = animationName;
   },
 
@@ -209,7 +206,7 @@ var GameObject = Class.$extend({
       return 0;
     }
     var fps = anim.fps * this.timeScale();
-    return this.baseFrame + calcFrame(fps, this.time - this.baseTime);
+    return this.baseAnimationFrame + calcFrame(fps, this.time - this.baseAnimationTime);
   },
 
   animationIndex: function(anim, frame) {
@@ -229,6 +226,14 @@ var GameObject = Class.$extend({
       return false;  // never ends
     }
     return this.animationFrame(anim) >= anim.textureNames.length;
+  },
+
+  baseAnimationFrame: 0,
+  baseAnimationTime:  0,
+
+  rebaseAnimationFrame: function(animationFrame) {
+    this.baseAnimationFrame = animationFrame;
+    this.baseAnimationTime  = this.time;
   },
 
   renderAnimation: function(anim, index) {
@@ -254,16 +259,9 @@ var GameObject = Class.$extend({
 
   /* Game loop */
 
-  time:      null,
-  lag:       0,
-  frame:     0,
-  baseFrame: 0,
-  baseTime:  0,
-
-  rebaseFrame: function(frame, time) {
-    this.frame = 0;
-    this.baseTime = (time === undefined ? this.time : time);
-  },
+  time:  null,
+  lag:   0,
+  frame: 0,
 
   /** An iteration of the game loop.
    *
@@ -279,11 +277,6 @@ var GameObject = Class.$extend({
       this._firstTick = false;
       this.setup();
       return;
-    }
-
-    // Ensure that the base frame is set.
-    if (!this.baseTime) {
-      this.rebaseFrame(0, time);
     }
 
     // Accumulate lag.
