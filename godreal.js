@@ -196,7 +196,10 @@ var GameObject = Class.$extend({
     return this.animations[this.animationName] || null;
   },
 
-  setAnimation: function(animationName) {
+  setAnimation: function(animationName, animationFrame) {
+    if (this.animationName !== animationName) {
+      this.rebaseAnimationFrame(animationFrame || 0);
+    }
     this.animationName = animationName;
   },
 
