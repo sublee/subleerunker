@@ -319,35 +319,9 @@ var Subleerunker = Game.$extend({
     delete this.direction;
   },
 
-  play: function() {
-    this.player = new Subleerunker.Player(this);
-    if (this.shiftPressed) {
-      // Hommarju for SUBERUNKER's shift-enter easter egg.
-      this.player.force *= 0.25;
-      this.releaseLockedShift();
-    }
-    this.disp().addChild(this.player.disp());
-
-    this.records.current = 0;
-    this.updateScore();
-    this.hideSplash();
-    this.loadChampion();
-    this.direction = 0;
-    this.startedAt = this.time;
-
-    if (this.replaying) {
-      this.replay.rewind();
-      this.ctx.random = new Math.seedrandom(this.replay.randomSeed);
-    } else {
-      var randomSeed = this.ctx.randomSeed || makeRandomSeed();
-      this.ctx.random = new Math.seedrandom(randomSeed);
-      this.replay = new Replay(randomSeed);
-    }
-  },
-
-  replay: function(replay) {
-    this.replay = replay;
-    this.replaying = true;
+  loadReplay: function(replay) {
+    this.replay     = replay;
+    this.replaying  = true;
     this.shouldPlay = true;
   },
 
@@ -532,13 +506,42 @@ var Subleerunker = Game.$extend({
 
     if (!this.isPlaying()) {
       if (this.shouldPlay) {
-        this.play();
+        this.startGameplay();
         this.shouldPlay = false;
       }
       return;
     }
 
     this.updateGameplay(frame);
+  },
+
+  startGameplay: function() {
+    // Reset frame because the flame spawner depends on frame numbers.
+    this.frame = 0;
+
+    this.player = new Subleerunker.Player(this);
+    if (this.shiftPressed) {
+      // Hommarju for SUBERUNKER's shift-enter easter egg.
+      this.player.force *= 0.25;
+      this.releaseLockedShift();
+    }
+    this.disp().addChild(this.player.disp());
+
+    this.records.current = 0;
+    this.updateScore();
+    this.hideSplash();
+    this.loadChampion();
+    this.direction = 0;
+    this.startedAt = this.time;
+
+    if (this.replaying) {
+      this.replay.rewind();
+      this.ctx.random = new Math.seedrandom(this.replay.randomSeed);
+    } else {
+      var randomSeed = this.ctx.randomSeed || makeRandomSeed();
+      this.ctx.random = new Math.seedrandom(randomSeed);
+      this.replay = new Replay(randomSeed);
+    }
   },
 
   updateGameplay: function(frame) {
@@ -919,7 +922,7 @@ var Replay = Class.$extend({
 
   nextInput: function(expectedFrame) {
     var frame = ++this._replayingFrame;
-    if (frame !== expectedFrame) {
+    if (this._replayingBaseFrame + frame !== expectedFrame) {
       throw new Error('replaying frame and expected frame not same');
     }
     var input = this.inputHistory[frame];
@@ -933,7 +936,8 @@ var Replay = Class.$extend({
   },
 
   /** Resets the cursor for nextInput(). */
-  rewind: function() {
+  rewind: function(baseFrame) {
+    this._replayingBaseFrame = baseFrame || 0;
     this._replayingFrame     = 0;
     this._lastReplayingInput = 0;
   },
@@ -1103,7 +1107,7 @@ var Replay = Class.$extend({
 function fastForwardReplay(encodedReplay) {
   var game   = Subleerunker();
   var replay = Replay.decode(encodedReplay);
-  game.replay(replay);
+  game.loadReplay(replay);
 
   var time = 0;
   var dt   = (1000 / 60) * 6;  // (second / fps) * max_steps
