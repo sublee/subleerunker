@@ -208,8 +208,10 @@ var GameObject = Class.$extend({
     if (!anim) {
       return 0;
     }
-    var fps = anim.fps * this.timeScale();
-    return this.baseAnimFrame + calcFrame(fps, this.time - this.baseAnimTime);
+    var fps   = anim.fps * this.timeScale();
+    var time  = this.time - this.animBaseTime;
+    var frame = calcFrame(fps, time);
+    return this.animBaseFrame + frame;
   },
 
   animIndex: function(anim, frame) {
@@ -231,12 +233,12 @@ var GameObject = Class.$extend({
     return this.animFrame(anim) >= anim.textureNames.length;
   },
 
-  baseAnimFrame: 0,
-  baseAnimTime:  0,
+  animBaseFrame: 0,
+  animBaseTime:  0,
 
-  rebaseAnimFrame: function(animFrame) {
-    this.baseAnimFrame = animFrame;
-    this.baseAnimTime  = this.time;
+  rebaseAnimFrame: function(animBaseFrame) {
+    this.animBaseFrame = animBaseFrame;
+    this.animBaseTime  = this.time;
   },
 
   renderAnim: function(anim, index) {
