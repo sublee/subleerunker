@@ -1088,3 +1088,31 @@ var Replay = Class.$extend({
   }
 
 });
+
+/** A helper function to simulate a replay to get outcome.  It runs the game in
+ *  headless mode.  So the outcome can be determined very quickly.
+ */
+function fastForwardReplay(encodedReplay) {
+  var game   = Subleerunker();
+  var replay = Replay.decode(encodedReplay);
+  game.replay(replay);
+
+  var time = 0;
+  var dt   = (1000 / 60) * 6;  // (second / fps) * max_steps
+
+  // play the game
+  game.shouldPlay = true;
+  while (!game.isPlaying()) {
+    game.tick(time);
+    time += dt;
+  }
+
+  // replay until game over
+  while (game.isPlaying()) {
+    game.tick(time);
+    time += dt;
+  }
+
+  var score = game.records.current;
+  return score;
+}
