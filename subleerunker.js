@@ -935,7 +935,9 @@ var Replay = Class.$extend({
     return this._lastReplayingInput;
   },
 
-  /** Resets the cursor for nextInput(). */
+  /**
+   * Resets the cursor for nextInput().
+   */
   rewind: function(baseFrame) {
     this._replayingBaseFrame = baseFrame || 0;
     this._replayingFrame     = 0;
@@ -944,16 +946,17 @@ var Replay = Class.$extend({
 
   __classvars__: {
 
-    /** Encodes a replay into a string.
+    /**
+     * Encodes a replay into a string.
      *
-     *  Structure:
+     * Structure:
      *
-     *    VERSION!RANDOM_SEED!DELTA_FRAME1.INPUT1!DELTA_FRAME2.INPUT2;...
+     *   VERSION!RANDOM_SEED!DELTA_FRAME1.INPUT1!DELTA_FRAME2.INPUT2;...
      *
-     *  All numbers are encoded in hexadecimal to reduce the size of result
-     *  strings.
+     * All numbers are encoded in hexadecimal to reduce the size of result
+     * strings.
      *
-     *  The encoded string can be decoded by Replay.decode().
+     * The encoded string can be decoded by Replay.decode().
      *
      */
     encode: function(replay) {
@@ -990,9 +993,10 @@ var Replay = Class.$extend({
       return words.join('!');
     },
 
-    /** Decodes an encoded replay string.
+    /**
+     * Decodes an encoded replay string.
      *
-     *  A replay can be encoded by Replay.encode().
+     * A replay can be encoded by Replay.encode().
      *
      */
     decode: function(encodedReplay) {
@@ -1011,14 +1015,15 @@ var Replay = Class.$extend({
       return null;
     },
 
-    /** Decodes an encoded replay string at version-2.  Version-2 changed
-     *  delimiters for URI awareness.
+    /**
+     * Decodes an encoded replay string at version-2.  Version-2 changed
+     * delimiters for URI awareness.
      *
-     *  Structure:
+     * Structure:
      *
-     *    VERSION!RANDOM_SEED!DELTA_FRAME1.INPUT1!DELTA_FRAME2.INPUT2;...
+     *   VERSION!RANDOM_SEED!DELTA_FRAME1.INPUT1!DELTA_FRAME2.INPUT2;...
      *
-     *  Use Replay.decode() instead.  The version is automatically resolved.
+     * Use Replay.decode() instead.  The version is automatically resolved.
      *
      */
     _decodeV2: function(encodedReplay) {
@@ -1051,13 +1056,14 @@ var Replay = Class.$extend({
       return replay;
     },
 
-    /** Decodes an encoded replay string at version-1.
+    /**
+     * Decodes an encoded replay string at version-1.
      *
-     *  Structure:
+     * Structure:
      *
-     *    VERSION;RANDOM_SEED;DELTA_FRAME1:INPUT1;DELTA_FRAME2:INPUT2;...
+     *   VERSION;RANDOM_SEED;DELTA_FRAME1:INPUT1;DELTA_FRAME2:INPUT2;...
      *
-     *  Use Replay.decode() instead.  The version is automatically resolved.
+     * Use Replay.decode() instead.  The version is automatically resolved.
      *
      */
     _decodeV1: function(encodedReplay) {
@@ -1101,8 +1107,9 @@ var Replay = Class.$extend({
 
 });
 
-/** A helper function to simulate a replay to get outcome.  It runs the game in
- *  headless mode.  So the outcome can be determined very quickly.
+/**
+ * A helper function to simulate a replay to get outcome.  It runs the game in
+ * headless mode.  So the outcome can be determined very quickly.
  */
 function fastForwardReplay(encodedReplay) {
   var game   = Subleerunker();

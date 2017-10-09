@@ -268,12 +268,13 @@ var GameObject = Class.$extend({
   lag:   0,
   frame: 0,
 
-  /** An iteration of the game loop.
+  /**
+   * An iteration of the game loop.
    *
-   *  Call this method at each animation frames.
+   * Call this method at each animation frames.
    *
-   *  The game loop follows the deterministic lockstep style with fixed delta
-   *  time.  See also: https://gafferongames.com/post/fix_your_timestep
+   * The game loop follows the deterministic lockstep style with fixed delta
+   * time.  See also: https://gafferongames.com/post/fix_your_timestep
    *
    */
   tick: function(time) {
