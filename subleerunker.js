@@ -348,6 +348,7 @@ var Subleerunker = Game.$extend({
   replay: function(replay) {
     this.replay = replay;
     this.replaying = true;
+    this.shouldPlay = true;
   },
 
   upScore: function() {
@@ -551,6 +552,7 @@ var Subleerunker = Game.$extend({
       });
       if (done) {
         delete this.player;
+        this.replaying = false;
         this.reset();
       }
       return;
