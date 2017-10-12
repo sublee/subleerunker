@@ -65,6 +65,7 @@
     // Setup context and init debug mode.
     var ctx = {
       debug: (QUERY.debug !== undefined),
+      triggerEvents: true,
       randomSeed: parseInt(QUERY.seed, 16)
     };
     if (ctx.debug) {
@@ -130,7 +131,7 @@
     game.run(fps, before, after);
 
     // Report replay URL on console.
-    $(window).on('gameOver', function(e, score, replay, debug) {
+    $(window).on('gameOver', function(e, score, replay) {
       if (window.console === undefined) {
         return;
       }

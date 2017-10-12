@@ -6,12 +6,9 @@ m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
 ga('create', 'UA-1078484-7', 'auto');
 ga('send', 'pageview');
 
-$(window).on('gameOver', function(e, score, replay, debug) {
+$(window).on('gameOver', function(e, score, replay) {
   var section = Math.floor(score / 10) * 10;
   var label = section + '~' + (section + 9);
-  if (debug) {
-    label += ' (debug)';
-  }
   ga('send', {
     hitType: 'event',
     eventCategory: 'Game',

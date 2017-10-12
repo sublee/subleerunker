@@ -483,7 +483,8 @@ var Subleerunker = Game.$extend({
   gameOver: function() {
     this.player.die();
 
-    if (!this.replaying) {
+    var actuallyPlayed = !this.replaying;
+    if (actuallyPlayed) {
       if (this.records.prime < this.records.current) {
         this.records.prime = this.records.current;
         // Remember new prime score.
@@ -495,10 +496,11 @@ var Subleerunker = Game.$extend({
 
     this.beatChampion();
 
-    // Trigger custom event to track the score by outside.
-    var debug = Boolean(this.ctx.debug);
-    var args  = [this.records.current, Replay.clone(this.replay), debug];
-    $(window).trigger('gameOver', args);
+    if (this.ctx.triggerEvents) {
+      // Trigger custom event to track the score by outside.
+      var args  = [this.records.current, Replay.clone(this.replay)];
+      $(window).trigger('gameOver', args);
+    }
   },
 
   update: function(frame) {
