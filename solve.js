@@ -22,7 +22,7 @@ function encodeAsReplay(randomSeed, stream) {
 }
 
 function solve(randomSeed, goalScore, maxTries) {
-  var STREAM_SIZE = 50;
+  var STREAM_SIZE = 10;
 
   function ENCODE_REPLAY(stream) {
     return encodeAsReplay(randomSeed, stream);
