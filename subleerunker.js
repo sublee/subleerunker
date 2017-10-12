@@ -492,9 +492,9 @@ var Subleerunker = Game.$extend({
           expires: 2592000  // expires in 30 days.
         });
       }
-    }
 
-    this.beatChampion();
+      this.beatChampion();
+    }
 
     if (this.ctx.triggerEvents) {
       // Trigger custom event to track the score by outside.
