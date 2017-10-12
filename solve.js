@@ -73,7 +73,7 @@ function solve(randomSeed, goalScore, maxTries) {
 
     ++tried;
 
-    console.log([tried, score, ENCODE_REPLAY(stream)]);
+    console.log([tried, score, stream.length, ENCODE_REPLAY(stream)]);
   }
 
   return {
