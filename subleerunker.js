@@ -1041,11 +1041,11 @@ var Replay = Class.$extend({
       var frame = 0;
       var input = 0;
       while (words.length !== 0) {
-        var deltaFrameColonInput = words.shift();
-        var deltaFrameAndInput   = deltaFrameColonInput.split('.');
+        var control = words.shift();
 
-        var deltaFrameHex = deltaFrameAndInput[0];
-        var inputHex      = deltaFrameAndInput[1];
+        var deltaFrameAndInput = control.split('.');
+        var deltaFrameHex      = deltaFrameAndInput[0];
+        var inputHex           = deltaFrameAndInput[1];
 
         var deltaFrame = parseInt(deltaFrameHex, 16);
         input          = parseInt(inputHex, 16);
@@ -1081,11 +1081,11 @@ var Replay = Class.$extend({
       var frame = 0;
       var input = 0;
       while (words.length !== 0) {
-        var deltaFrameColonInput = words.shift();
-        var deltaFrameAndInput   = deltaFrameColonInput.split(':');
+        var control = words.shift();
 
-        var deltaFrameHex = deltaFrameAndInput[0];
-        var inputHex      = deltaFrameAndInput[1];
+        var deltaFrameAndInput = control.split(':');
+        var deltaFrameHex      = deltaFrameAndInput[0];
+        var inputHex           = deltaFrameAndInput[1];
 
         var deltaFrame = parseInt(deltaFrameHex, 16);
         input          = parseInt(inputHex, 16);
