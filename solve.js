@@ -13,7 +13,7 @@ function generateStream(length) {
 
 function generateControl() {
   var deltaFrame = randInt(30);
-  var input      = randInt(2) ? randInt(8) : 0;
+  var input      = randInt(3);
   return deltaFrame.toString(16) + '.' + input;
 }
 
