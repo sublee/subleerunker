@@ -63,6 +63,7 @@ function solve(randomSeed, goalScore, maxTries) {
       }
     }
 
+    // Shake to avoid stillness.
     if (stream.length === beforeLength) {
       var control = stream.pop();
       if (control !== undefined) {
