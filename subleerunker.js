@@ -912,8 +912,9 @@ $.extend(Subleerunker, {
 var Replay = Class.$extend({
 
   __init__: function(randomSeed) {
-    this.randomSeed = randomSeed;
-    this.inputHistory = {};
+    this.randomSeed        = randomSeed;
+    this.inputHistory      = {};
+    this.length            = 0;
     this.lastRecordedInput = 0;
     this.rewind();
   },
@@ -922,8 +923,10 @@ var Replay = Class.$extend({
     if (input === this.lastRecordedInput) {
       return;
     }
-    this.inputHistory[frame] = input;
     this.lastRecordedInput   = input;
+
+    this.inputHistory[frame] = input;
+    this.length += 1;
   },
 
   next: function(expectedFrame) {
@@ -934,12 +937,18 @@ var Replay = Class.$extend({
     var input = this.inputHistory[frame];
 
     if (input !== undefined) {
-      this._lastReplayingInput = input;
-    } else {
-      input = this._lastReplayingInput;
+      this._replayedInputInfo.input = input;
+      this._replayedInputInfo.frame = frame;
+      this._replayedInputInfo.offset += 1;
     }
 
-    return {input: input};
+    return this.last();
+  },
+
+  last: function() {
+    var info = {};
+    $.extend(info, this._replayedInputInfo);  // copy
+    return info;
   },
 
   /**
@@ -948,7 +957,7 @@ var Replay = Class.$extend({
   rewind: function(baseFrame) {
     this._replayingBaseFrame = baseFrame || 0;
     this._replayingFrame     = 0;
-    this._lastReplayingInput = 0;
+    this._replayedInputInfo  = {input: 0, frame: 0, offset: 0};
   },
 
   __classvars__: {
@@ -1139,6 +1148,11 @@ function determineScore(encodedReplay) {
     time += dt;
   }
 
-  var score = game.scores.current;
-  return score;
+  var score         = game.scores.current;
+  var lastInputInfo = replay.last();
+  return {
+    score: score,
+    inputs: replay.length,
+    replayedInputs: lastInputInfo.offset + 1
+  };
 }
