@@ -87,6 +87,8 @@ function* solve(randomSeedOrEncodedReplay, goalScore, maxTries) {
     extendArray(stream, streamTail);
 
     let result = REPLAY_RESULT(stream);
+    score = result.score;
+
     console.log(result);
 
     // Discard records after death.
