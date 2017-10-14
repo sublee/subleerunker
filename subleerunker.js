@@ -965,7 +965,7 @@ var Replay = Class.$extend({
   rewind: function(baseFrame) {
     this._replayingBaseFrame = baseFrame || 0;
     this._replayingFrame     = 0;
-    this._replayedRecord  = {input: 0, frame: 0, offset: 0};
+    this._replayedRecord  = {input: 0, frame: 0, offset: -1};
   },
 
   __classvars__: {
@@ -1159,8 +1159,8 @@ function replayResult(encodedReplay) {
   var score      = game.scores.current;
   var lastRecord = replay.lastRecord();
   return {
-    score: score,
-    inputs: replay.length,
+    score:          score,
+    inputs:         replay.length,
     replayedInputs: lastRecord.offset + 1
   };
 }
