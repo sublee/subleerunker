@@ -21,7 +21,11 @@ function encodeAsReplay(randomSeed, stream) {
   return '2!' + randomSeed.toString(16) + '!' + stream.join('!');
 }
 
-function solve(randomSeed, goalScore, maxTries) {
+function extendArray(arr, tail) {
+  Array.prototype.push.apply(arr, tail);
+}
+
+function* solve(randomSeedOrEncodedReplay, goalScore, maxTries) {
   var STREAM_SIZE = 10;
 
   function ENCODE_REPLAY(stream) {
@@ -34,7 +38,18 @@ function solve(randomSeed, goalScore, maxTries) {
   goalScore = goalScore || 0;
   maxTries  = maxTries  || 50;
 
-  var stream = [];
+  let randomSeed;
+  let stream = [];
+
+  if (typeof randomSeedOrEncodedReplay === 'number') {
+    randomSeed = randomSeedOrEncodedReplay;
+  } else {
+    let words = randomSeedOrEncodedReplay.split('!');
+    words.shift();  // Discard version.  But it should be 2.
+    randomSeed = parseInt(words.shift(), 16);
+    extendArray(stream, words);
+  }
+
   var score  = 0;
   var tried  = 0;
 
@@ -42,33 +57,46 @@ function solve(randomSeed, goalScore, maxTries) {
     var beforeLength = stream.length;
 
     var streamTail = generateStream(STREAM_SIZE);
-    Array.prototype.push.apply(stream, streamTail);
+    extendArray(stream, streamTail);
 
     score = DETERMINE_SCORE(stream);
 
-    // Discard regardless controls.
-    var testingScore = score;
-    while (true) {
-      var control = stream.pop();
-      if (control === undefined) {
-        break;
-      }
-
-      testingScore = DETERMINE_SCORE(stream);
+    // Find the final control and discard controls after death.
+    let i;
+    for (i = stream.length - 1; i > 0; --i) {
+      console.log(i);
+      let testingStream = stream.slice(0, i);
+      let testingScore = DETERMINE_SCORE(testingStream);
 
       if (testingScore !== score) {
-        // Rollback last pop.
-        stream.push(control);
         break;
       }
+
+      yield;
     }
+    stream.splice(i + 1);
+
+    // while (true) {
+    //   var control = stream.pop();
+    //   if (control === undefined) {
+    //     break;
+    //   }
+
+    //   let testingScore = DETERMINE_SCORE(stream);
+
+    //   if (testingScore !== score) {
+    //     // Rollback last pop.
+    //     stream.push(control);
+    //     break;
+    //   }
+    // }
+
+    // How many inputs effected.
+    console.log(stream.length - beforeLength);
 
     // Shake to avoid stillness.
     if (stream.length === beforeLength) {
-      var control = stream.pop();
-      if (control !== undefined) {
-        score = DETERMINE_SCORE(stream);
-      }
+      stream.pop();
     }
 
     ++tried;
