@@ -77,7 +77,7 @@ function* solve(randomSeedOrEncodedReplay, goalScore, maxTries) {
   var score  = 0;
   var tried  = 0;
 
-  while (score < goalScore && tried <= maxTries) {
+  while (score < goalScore && tried < maxTries) {
     ++tried;
 
     let beforeLength = stream.length;
