@@ -61,7 +61,17 @@ function* solve(randomSeedOrEncodedReplay, goalScore, maxTries) {
     let words = randomSeedOrEncodedReplay.split('!');
     words.shift();  // Discard version.  But it should be 2.
     randomSeed = parseInt(words.shift(), 16);
-    extendArray(stream, words);
+    let inputs = words.map(function(word) {
+      let deltaFrameAndInput = word.split('.');
+      var deltaFrameHex      = deltaFrameAndInput[0];
+      var inputHex           = deltaFrameAndInput[1];
+
+      let deltaFrame = parseInt(deltaFrameHex, 16);
+      let input      = parseInt(inputHex, 16);
+
+      return {deltaFrame: deltaFrame, input: input};
+    });
+    extendArray(stream, inputs);
   }
 
   var score  = 0;
