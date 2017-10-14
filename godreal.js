@@ -619,7 +619,7 @@ var Game = GameObject.$extend({
     PIXI.loader.add(this.atlas).load($.proxy(function() {
       var tick = $.proxy(function(time) {
         before && before.call(this, time);
-        game.tick(time);
+        this.tick(time);
         if (!this._destroyed) {
           _requestAnimationFrame(tick);
         }
