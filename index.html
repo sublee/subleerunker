@@ -51,7 +51,7 @@
     // Parse querystring.
     function parseQuerystring(querystring) {
       var query = {};
-      var parts = querystring.replace(/^\?/, '').split('&');
+      var parts = querystring.slice(1).split('&');
       $.each(parts, function(i, part) {
         var words = part.split('=');
         var key = decodeURIComponent(words[0]);
@@ -60,7 +60,9 @@
       });
       return query;
     }
-    var QUERY = parseQuerystring(location.search);
+    var QUERY = {};
+    $.extend(QUERY, parseQuerystring(location.search));
+    $.extend(QUERY, parseQuerystring(location.hash));
 
     // Setup context and init debug mode.
     var ctx = {
