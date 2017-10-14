@@ -1,21 +1,21 @@
 'use strict';
 
-let IS_MOBILE   = (typeof window.orientation !== 'undefined');
-let FONT_FAMILY = '"Share Tech Mono", monospace';
+const IS_MOBILE   = (typeof window.orientation !== 'undefined');
+const FONT_FAMILY = '"Share Tech Mono", monospace';
 
-let LEFT_PRESSED  = 0;
-let RIGHT_PRESSED = 1;
-let RIGHT_PRIOR   = 2;
+const LEFT_PRESSED  = 0;
+const RIGHT_PRESSED = 1;
+const RIGHT_PRIOR   = 2;
 
-let makeRandomSeed = function() {
+const makeRandomSeed = function() {
   return Math.floor(Math.random() * 4294967295);
 };
 
-let rgb = function(color) {
+const rgb = function(color) {
   return '#' + ('000000' + color.toString(16)).slice(-6);
 };
 
-let Subleerunker = Game.$extend({
+const Subleerunker = Game.$extend({
 
   __name__: 'Subleerunker',
 
@@ -910,7 +910,7 @@ $.extend(Subleerunker, {
 
 });
 
-let Replay = Class.$extend({
+const Replay = Class.$extend({
 
   __init__: function(randomSeed) {
     this.randomSeed = randomSeed;
@@ -1118,7 +1118,7 @@ let Replay = Class.$extend({
  * A helper function to simulate a replay to get the result score.  It runs the
  * game in headless mode.  So the result can be determined very quickly.
  */
-function determineScore(encodedReplay) {
+const determineScore = function(encodedReplay) {
   let game   = Subleerunker();
   let replay = Replay.decode(encodedReplay);
   game.loadReplay(replay);

@@ -1,14 +1,14 @@
 'use strict';
 
-let X      = 0;
-let Y      = 1;
+const X      = 0;
+const Y      = 1;
 
-let TOP    = 0;
-let RIGHT  = 1;
-let BOTTOM = 2;
-let LEFT   = 3;
+const TOP    = 0;
+const RIGHT  = 1;
+const BOTTOM = 2;
+const LEFT   = 3;
 
-let KEYS = {
+const KEYS = {
    8: 'backspace',  9: 'tab',   13: 'enter',    16: 'shift',  17: 'ctrl',
   18: 'alt',       19: 'pause', 20: 'capsLock', 27: 'esc',    33: 'pageUp',
   34: 'pageDown',  35: 'end',   36: 'home',     37: 'left',   38: 'up',
@@ -23,14 +23,14 @@ let KEYS = {
 /**
  * Gets the next Id.  A new Id is greater than the Ids generated before.
  */
-let nextId = (function() {
+const nextId = (function() {
   let idSeq = 0;
   return function() {
     return idSeq++;
   };
 })();
 
-let limit = function(n, min, max) {
+const limit = function(n, min, max) {
   return Math.max(min, Math.min(max, n));
 };
 
@@ -52,7 +52,7 @@ let limit = function(n, min, max) {
  *   [1, 2, 3, 4]
  *
  */
-let normalizePadding = function(padding) {
+const normalizePadding = function(padding) {
   switch (padding ? padding.length : 0) {
     case 0:
       return [0, 0, 0, 0];
@@ -67,18 +67,18 @@ let normalizePadding = function(padding) {
   }
 };
 
-let calcFrame = function(fps, time) {
+const calcFrame = function(fps, time) {
   return Math.floor(time * fps / 1000);
 };
 
-let textureToCanvas = function(texture) {
+const textureToCanvas = function(texture) {
   let t = texture;
   let r = new PIXI.CanvasRenderer(t.width, t.height, {transparent: true});
   r.render(new PIXI.Sprite(t));
   return r.view;
 };
 
-let GameObject = Class.$extend({
+const GameObject = Class.$extend({
 
   __name__: 'GameObject',
 
@@ -484,7 +484,7 @@ let GameObject = Class.$extend({
 
 });
 
-let Game = GameObject.$extend({
+const Game = GameObject.$extend({
 
   'class': '',
 
