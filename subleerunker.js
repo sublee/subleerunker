@@ -577,9 +577,10 @@ var Subleerunker = Game.$extend({
 
     // Record or replay input.
     if (this.replaying) {
-      this.input = this.replay.nextInput(frame);
+      var inputInfo = this.replay.next(frame);
+      this.input    = inputInfo.input;
     } else {
-      this.replay.recordInput(frame, this.input);
+      this.replay.record(frame, this.input);
     }
 
     // Handle input.
@@ -917,7 +918,7 @@ var Replay = Class.$extend({
     this.rewind();
   },
 
-  recordInput: function(frame, input) {
+  record: function(frame, input) {
     if (input === this.lastRecordedInput) {
       return;
     }
@@ -925,7 +926,7 @@ var Replay = Class.$extend({
     this.lastRecordedInput   = input;
   },
 
-  nextInput: function(expectedFrame) {
+  next: function(expectedFrame) {
     var frame = ++this._replayingFrame;
     if (this._replayingBaseFrame + frame !== expectedFrame) {
       throw new Error('replaying frame and expected frame not same');
@@ -934,14 +935,15 @@ var Replay = Class.$extend({
 
     if (input !== undefined) {
       this._lastReplayingInput = input;
-      return input;
+    } else {
+      input = this._lastReplayingInput;
     }
 
-    return this._lastReplayingInput;
+    return {input: input};
   },
 
   /**
-   * Resets the cursor for nextInput().
+   * Resets the cursor for next().
    */
   rewind: function(baseFrame) {
     this._replayingBaseFrame = baseFrame || 0;
@@ -1054,7 +1056,7 @@ var Replay = Class.$extend({
         input          = parseInt(inputHex, 16);
 
         frame += deltaFrame;
-        replay.recordInput(frame, input);
+        replay.record(frame, input);
       }
       replay.lastRecordedInput = input;
 
@@ -1094,7 +1096,7 @@ var Replay = Class.$extend({
         input          = parseInt(inputHex, 16);
 
         frame += deltaFrame;
-        replay.recordInput(frame, input);
+        replay.record(frame, input);
       }
       replay.lastRecordedInput = input;
 
