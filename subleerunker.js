@@ -1,19 +1,21 @@
-var IS_MOBILE   = (typeof window.orientation !== 'undefined');
-var FONT_FAMILY = '"Share Tech Mono", monospace';
+'use strict';
 
-var LEFT_PRESSED  = 0;
-var RIGHT_PRESSED = 1;
-var RIGHT_PRIOR   = 2;
+let IS_MOBILE   = (typeof window.orientation !== 'undefined');
+let FONT_FAMILY = '"Share Tech Mono", monospace';
 
-var makeRandomSeed = function() {
+let LEFT_PRESSED  = 0;
+let RIGHT_PRESSED = 1;
+let RIGHT_PRIOR   = 2;
+
+let makeRandomSeed = function() {
   return Math.floor(Math.random() * 4294967295);
 };
 
-var rgb = function(color) {
+let rgb = function(color) {
   return '#' + ('000000' + color.toString(16)).slice(-6);
 };
 
-var Subleerunker = Game.$extend({
+let Subleerunker = Game.$extend({
 
   __name__: 'Subleerunker',
 
@@ -56,7 +58,7 @@ var Subleerunker = Game.$extend({
   },
 
   setupHUD: function() {
-    var $$ = $('<div class="records">').css({
+    let $$ = $('<div class="records">').css({
       position: 'absolute',
       right: 5,
       top: 3,
@@ -66,7 +68,7 @@ var Subleerunker = Game.$extend({
       cursor: 'default'
     }).appendTo(this.hudElem());
 
-    var nameStyle = {
+    let nameStyle = {
       display: 'inline',
       textAlign: 'right',
       fontSize: 12,
@@ -130,7 +132,7 @@ var Subleerunker = Game.$extend({
     ; // End of HUD building.
 
     // Cache elements for fast access.
-    var $$$ = {
+    let $$$ = {
       authorizedChampion: {
         container: $$.find('>.authorized-champion'),
         name: $$.find('>.authorized-champion .name'),
@@ -147,7 +149,7 @@ var Subleerunker = Game.$extend({
     this.recordElems = $$$;
 
     // Champion renaming events.
-    var inSubmit = false;
+    let inSubmit = false;
     $$$.authorizedChampion.container.on('submit', $.proxy(function(e) {
       e.preventDefault();
       this.renameChampion($$$.authorizedChampion.name.val());
@@ -169,8 +171,8 @@ var Subleerunker = Game.$extend({
   },
 
   hudElem: function() {
-    var elem = this.elem();
-    var hudElem = elem.find('>.ui:eq(0)');
+    let elem = this.elem();
+    let hudElem = elem.find('>.ui:eq(0)');
     if (!hudElem.length) {
       hudElem = $('<div class="hud">').css({
         position: 'absolute', top: 0, left: 0,
@@ -190,7 +192,7 @@ var Subleerunker = Game.$extend({
   },
 
   showSplash: function() {
-    var Logo = GameObject.$extend({
+    let Logo = GameObject.$extend({
       width: 148, height: 66,
       anchor: [0.5, 0],
       offset: [this.width / 2, 156],
@@ -201,7 +203,7 @@ var Subleerunker = Game.$extend({
     });
     this.logo = new Logo(this);
 
-    var control = {};
+    let control = {};
     if (IS_MOBILE) {
       $.extend(control, {
         width: 33, height: 35, animTextureNames: ['touch-0', 'touch-1']
@@ -211,7 +213,7 @@ var Subleerunker = Game.$extend({
         width: 65, height: 14, animTextureNames: ['key-0', 'key-1']
       });
     }
-    var Control = GameObject.$extend({
+    let Control = GameObject.$extend({
       width: control.width,
       height: control.height,
       anchor: [0.5, 1],
@@ -223,7 +225,7 @@ var Subleerunker = Game.$extend({
     });
     this.control = new Control(this);
 
-    var disp = this.disp();
+    let disp = this.disp();
     disp.addChild(this.logo.disp());
     disp.addChild(this.control.disp());
   },
@@ -281,10 +283,10 @@ var Subleerunker = Game.$extend({
         this.handlers.keyShift.call(this, !this.shiftPressed, true);
         return;
       }
-      var pressLeft = false;
-      var pressRight = false;
+      let pressLeft = false;
+      let pressRight = false;
       if (touches.length) {
-        var lastTouch = touches[touches.length - 1];
+        let lastTouch = touches[touches.length - 1];
         if (lastTouch.pageX / window.innerWidth < 0.5) {
           pressLeft = true;
         } else {
@@ -301,7 +303,7 @@ var Subleerunker = Game.$extend({
       return false;
     }
     // Touch on authorized champion elements is necessary.
-    var elem = this.recordElems.authorizedChampion.container;
+    let elem = this.recordElems.authorizedChampion.container;
     return !$.contains(elem.get(0), e.target);
   },
 
@@ -341,8 +343,8 @@ var Subleerunker = Game.$extend({
   },
 
   renderRecords: function() {
-    var $$$ = this.recordElems;
-    var r = this.records;
+    let $$$ = this.recordElems;
+    let r = this.records;
     $$$.current.text(r.current);
     if (r.prime <= r.current ||
         r.prime <= r.champion.score && r.champion.authorized) {
@@ -353,15 +355,15 @@ var Subleerunker = Game.$extend({
   },
 
   renderChampion: function() {
-    var $$$ = this.recordElems;
-    var r = this.records;
-    var champions = [$$$.champion, $$$.authorizedChampion];
+    let $$$ = this.recordElems;
+    let r = this.records;
+    let champions = [$$$.champion, $$$.authorizedChampion];
     if (r.champion.score <= 0) {
       $.each(champions, function() { this.container.hide(); });
       return;
     }
-    var i = Number(r.champion.authorized);
-    var j = Number(!r.champion.authorized);
+    let i = Number(r.champion.authorized);
+    let j = Number(!r.champion.authorized);
     champions[i].container.show();
     champions[i].score.text(r.champion.score);
     champions[i].name.val(r.champion.name);
@@ -369,16 +371,16 @@ var Subleerunker = Game.$extend({
   },
 
   _championReceived: function(data) {
-    var score = Number(data.score);
-    var name = String(data.name);
+    let score = Number(data.score);
+    let name = String(data.name);
 
     this.records.champion.score = score;
     this.records.champion.name = name;
 
-    var justBeaten = Boolean(data.token);
+    let justBeaten = Boolean(data.token);
 
     if (justBeaten) {
-      var token = String(data.token);
+      let token = String(data.token);
       this.records.champion.token = token;
       this.records.champion.authorized = true;
       if (data.expiresAt && Cookies('champion-token') !== token) {
@@ -390,7 +392,7 @@ var Subleerunker = Game.$extend({
       this.records.champion.authorized = Boolean(data.authorized);
     }
 
-    var cachedName = Cookies('champion-name');
+    let cachedName = Cookies('champion-name');
     if (this.records.champion.authorized) {
       Cookies('champion-name', name, {expires: Infinity});
     }
@@ -400,14 +402,14 @@ var Subleerunker = Game.$extend({
 
     if (justBeaten && !cachedName) {
       // Suggest renaming.
-      var input = this.recordElems.authorizedChampion.name;
+      let input = this.recordElems.authorizedChampion.name;
       input.focus();
     }
   },
 
   _authChampion: function(headers) {
     headers = $.extend({}, headers);
-    var championToken = Cookies('champion-token');
+    let championToken = Cookies('champion-token');
     if (championToken) {
       headers['Authorization'] = 'Basic ' + btoa(':' + championToken);
     }
@@ -428,7 +430,7 @@ var Subleerunker = Game.$extend({
 
   beatChampion: function() {
     // Gameplay duration should not be calculated in an Ajax callback.
-    var duration = this.time - this.startedAt;
+    let duration = this.time - this.startedAt;
 
     this.loadChampion().then($.proxy(function() {
       if (this.records.champion.score === null) {
@@ -438,7 +440,7 @@ var Subleerunker = Game.$extend({
       }
 
       // Predict a success.
-      var name = Cookies('champion-name') || '';
+      let name = Cookies('champion-name') || '';
       this._championReceived({
         score: this.records.current,
         name: name,
@@ -453,8 +455,8 @@ var Subleerunker = Game.$extend({
         return;
       }
 
-      var durationSeconds = duration / 1000;
-      var encodedReplay = Replay.encode(this.replay);
+      let durationSeconds = duration / 1000;
+      let encodedReplay = Replay.encode(this.replay);
 
       $.ajax(this.ctx.championURL, {
         method: 'PUT',
@@ -486,7 +488,7 @@ var Subleerunker = Game.$extend({
   gameOver: function() {
     this.player.die();
 
-    var actuallyPlayed = !this.replaying;
+    let actuallyPlayed = !this.replaying;
     if (actuallyPlayed) {
       if (this.records.prime < this.records.current) {
         this.records.prime = this.records.current;
@@ -501,7 +503,7 @@ var Subleerunker = Game.$extend({
 
     if (this.ctx.triggerEvents) {
       // Trigger custom event to track the score by outside.
-      var args  = [this.records.current, Replay.clone(this.replay)];
+      let args  = [this.records.current, Replay.clone(this.replay)];
       $(window).trigger('gameOver', args);
     }
   },
@@ -543,7 +545,7 @@ var Subleerunker = Game.$extend({
       this.replay.rewind();
       this.ctx.random = new Math.seedrandom(this.replay.randomSeed);
     } else {
-      var randomSeed = this.ctx.randomSeed || makeRandomSeed();
+      let randomSeed = this.ctx.randomSeed || makeRandomSeed();
       this.ctx.random = new Math.seedrandom(randomSeed);
       this.replay = new Replay(randomSeed);
     }
@@ -552,7 +554,7 @@ var Subleerunker = Game.$extend({
   updateGameplay: function(frame) {
     // Wait for all objects destroyed when the player is dead.
     if (this.player.dead) {
-      var done = true;
+      let done = true;
       $.each(this.children, function() {
         done = false;
         return false;
@@ -568,7 +570,7 @@ var Subleerunker = Game.$extend({
     // Spawn flames when the player is alive.
     if (frame % 2 === 0) {
       if (this.random() < this.difficulty) {
-        var flame = new Subleerunker.Flame(this, frame);
+        let flame = new Subleerunker.Flame(this, frame);
         flame.render();
         this.disp().addChild(flame.disp());
       }
@@ -583,14 +585,14 @@ var Subleerunker = Game.$extend({
     }
 
     // Handle input.
-    var movements = [
+    let movements = [
       {pressed: this.getInputBit(LEFT_PRESSED),  handler: this.player.left},
       {pressed: this.getInputBit(RIGHT_PRESSED), handler: this.player.right}
     ];
-    var rightPrior = this.getInputBit(RIGHT_PRIOR);
-    var pressed = false;
-    for (var i = 0; i < 2; ++i) {
-      var mov = movements[rightPrior ? 1 - i : i];
+    let rightPrior = this.getInputBit(RIGHT_PRIOR);
+    let pressed = false;
+    for (let i = 0; i < 2; ++i) {
+      let mov = movements[rightPrior ? 1 - i : i];
       if (mov.pressed) {
         mov.handler.call(this.player);
         pressed = true;
@@ -616,7 +618,7 @@ $.extend(Subleerunker, {
 
     update: function(frame) {
       // Decide a blink.
-      var BLINK_CONTINUANCE = 4;
+      let BLINK_CONTINUANCE = 4;
       if (frame - this.blink.frame < BLINK_CONTINUANCE) {
         // A blink decision is not changed for 4 frames.
         // To avoid too quick blink.
@@ -683,9 +685,9 @@ $.extend(Subleerunker, {
         return;
       }
       if (this.blink.active) {
-        var disp = this.disp();
-        var textureName = anim.textureNames[index] + '-eyelids';
-        var eyelidsTexture = this._getTexture(textureName);
+        let disp = this.disp();
+        let textureName = anim.textureNames[index] + '-eyelids';
+        let eyelidsTexture = this._getTexture(textureName);
         if (this._eyelids) {
           this._eyelids.texture = eyelidsTexture;
           this._eyelids.visible = true;
@@ -715,14 +717,14 @@ $.extend(Subleerunker, {
     direction: +1,
 
     setRunAnim: function(direction) {
-      var prevAnimName = this.animName;
+      let prevAnimName = this.animName;
       switch (prevAnimName) {
         case 'idle':
           this.rebaseAnimFrame(0);
           break;
         case 'run':
           if (direction !== this.direction) {
-            var flippedAnimFrame = this.animFrame() + 4;
+            let flippedAnimFrame = this.animFrame() + 4;
             this.rebaseAnimFrame(flippedAnimFrame);
           }
           break;
@@ -754,7 +756,7 @@ $.extend(Subleerunker, {
     },
 
     visualize: function(state) {
-      var disp = this.disp();
+      let disp = this.disp();
       if (disp && !disp._destroyed) {
         disp.x = state.position;
         switch (this.direction) {
@@ -790,8 +792,8 @@ $.extend(Subleerunker, {
     __init__: function(parent, id) {
       this.id = id;
       this.$super.apply(this, arguments);
-      var W = parent.width;
-      var w = this.width;
+      let W = parent.width;
+      let w = this.width;
       this.xPosition = (W - w * 2) * this.random() + w / 2;
       this.position = -this.height;
     },
@@ -805,16 +807,16 @@ $.extend(Subleerunker, {
         return;
       }
 
-      var player = this.parent.player;
+      let player = this.parent.player;
 
       // Ignore if it didn't enter into the hitbox.
-      var hitboxMin = this.parent.height - player.height;
+      let hitboxMin = this.parent.height - player.height;
       if (this.position < hitboxMin) {
         return;
       }
 
       // Check if just landed.
-      var hitboxMax = this.boundary()[1];
+      let hitboxMax = this.boundary()[1];
       if (this.position >= hitboxMax) {
         this.landed = true;
         this.setAnim('land');
@@ -872,7 +874,7 @@ $.extend(Subleerunker, {
     },
 
     visualize: function(state) {
-      var disp = this.disp();
+      let disp = this.disp();
       if (disp && !disp._destroyed) {
         disp.x = this.xPosition;
         disp.y = state.position;
@@ -882,24 +884,24 @@ $.extend(Subleerunker, {
     /* Own */
 
     hits: function(player, prevPosition) {
-      var H = this.parent.height;
+      let H = this.parent.height;
 
-      var top = prevPosition + this.innerPadding[TOP];
-      var bottom = this.position + this.height - this.innerPadding[2];
-      var left = this.xPosition + this.innerPadding[3];
-      var right = left + this.innerWidth();
+      let top = prevPosition + this.innerPadding[TOP];
+      let bottom = this.position + this.height - this.innerPadding[2];
+      let left = this.xPosition + this.innerPadding[3];
+      let right = left + this.innerWidth();
 
-      var pTop = player.height - player.innerPadding[0];
-      var pBottom = player.innerPadding[2];
-      var pLeft = player.position + player.innerPadding[3];
-      var pRight = pLeft + player.innerWidth();
+      let pTop = player.height - player.innerPadding[0];
+      let pBottom = player.innerPadding[2];
+      let pLeft = player.position + player.innerPadding[3];
+      let pRight = pLeft + player.innerWidth();
 
       pTop = H - pTop;
       pBottom = H - pBottom;
 
-      var checkAltitude = top <= pBottom && pTop <= bottom;
-      var checkLeft = pLeft <= left && left <= pRight;
-      var checkRight = pLeft <= right && right <= pRight;
+      let checkAltitude = top <= pBottom && pTop <= bottom;
+      let checkLeft = pLeft <= left && left <= pRight;
+      let checkRight = pLeft <= right && right <= pRight;
 
       return checkAltitude && (checkLeft || checkRight);
     }
@@ -908,7 +910,7 @@ $.extend(Subleerunker, {
 
 });
 
-var Replay = Class.$extend({
+let Replay = Class.$extend({
 
   __init__: function(randomSeed) {
     this.randomSeed = randomSeed;
@@ -926,11 +928,11 @@ var Replay = Class.$extend({
   },
 
   nextInput: function(expectedFrame) {
-    var frame = ++this._replayingFrame;
+    let frame = ++this._replayingFrame;
     if (this._replayingBaseFrame + frame !== expectedFrame) {
       throw new Error('replaying frame and expected frame not same');
     }
-    var input = this.inputHistory[frame];
+    let input = this.inputHistory[frame];
 
     if (input !== undefined) {
       this._lastReplayingInput = input;
@@ -965,16 +967,16 @@ var Replay = Class.$extend({
      *
      */
     encode: function(replay) {
-      var words = [];
+      let words = [];
 
-      var version = 2;
+      let version = 2;
       words.push(version.toString(10));
 
-      var randomSeedHex = replay.randomSeed.toString(16);
+      let randomSeedHex = replay.randomSeed.toString(16);
       words.push(randomSeedHex);
 
       // Sort input history by frame.
-      var sortedInputHistory = [];
+      let sortedInputHistory = [];
       $.each(replay.inputHistory, function(frame, input) {
         sortedInputHistory.push({frame: frame, input: input});
       });
@@ -982,16 +984,16 @@ var Replay = Class.$extend({
         return a.frame - b.frame;
       });
 
-      var frame = 0;
-      for (var i = 0; i < sortedInputHistory.length; ++i) {
+      let frame = 0;
+      for (let i = 0; i < sortedInputHistory.length; ++i) {
         // Use delta frame instead of raw frame to reduce result size.
-        var deltaFrame = sortedInputHistory[i].frame - frame;
+        let deltaFrame = sortedInputHistory[i].frame - frame;
         frame          = sortedInputHistory[i].frame;
 
-        var input      = sortedInputHistory[i].input;
+        let input      = sortedInputHistory[i].input;
 
-        var deltaFrameHex = deltaFrame.toString(16);
-        var inputHex      = input.toString(16);
+        let deltaFrameHex = deltaFrame.toString(16);
+        let inputHex      = input.toString(16);
         words.push(deltaFrameHex + '.' + inputHex);
       }
 
@@ -1008,7 +1010,7 @@ var Replay = Class.$extend({
       // The version number is at ahead of the encoded replay.
       // parseInt() can detect first digits of a string.
       // So parseInt() of the encoded replay returns the version number.
-      var version = parseInt(encodedReplay, 10);
+      let version = parseInt(encodedReplay, 10);
 
       switch (version) {
         case 2:
@@ -1032,25 +1034,25 @@ var Replay = Class.$extend({
      *
      */
     _decodeV2: function(encodedReplay) {
-      var words = encodedReplay.split('!');
+      let words = encodedReplay.split('!');
       words.shift();  // discard version
 
-      var randomSeedHex = words.shift();
-      var randomSeed    = parseInt(randomSeedHex, 16);
+      let randomSeedHex = words.shift();
+      let randomSeed    = parseInt(randomSeedHex, 16);
 
-      var replay = new Replay(randomSeed);
+      let replay = new Replay(randomSeed);
 
       // Read input history.
-      var frame = 0;
-      var input = 0;
+      let frame = 0;
+      let input = 0;
       while (words.length !== 0) {
-        var control = words.shift();
+        let control = words.shift();
 
-        var deltaFrameAndInput = control.split('.');
-        var deltaFrameHex      = deltaFrameAndInput[0];
-        var inputHex           = deltaFrameAndInput[1];
+        let deltaFrameAndInput = control.split('.');
+        let deltaFrameHex      = deltaFrameAndInput[0];
+        let inputHex           = deltaFrameAndInput[1];
 
-        var deltaFrame = parseInt(deltaFrameHex, 16);
+        let deltaFrame = parseInt(deltaFrameHex, 16);
         input          = parseInt(inputHex, 16);
 
         frame += deltaFrame;
@@ -1072,25 +1074,25 @@ var Replay = Class.$extend({
      *
      */
     _decodeV1: function(encodedReplay) {
-      var words = encodedReplay.split(';');
+      let words = encodedReplay.split(';');
       words.shift();  // discard version
 
-      var randomSeedHex = words.shift();
-      var randomSeed    = parseInt(randomSeedHex, 16);
+      let randomSeedHex = words.shift();
+      let randomSeed    = parseInt(randomSeedHex, 16);
 
-      var replay = new Replay(randomSeed);
+      let replay = new Replay(randomSeed);
 
       // Read input history.
-      var frame = 0;
-      var input = 0;
+      let frame = 0;
+      let input = 0;
       while (words.length !== 0) {
-        var control = words.shift();
+        let control = words.shift();
 
-        var deltaFrameAndInput = control.split(':');
-        var deltaFrameHex      = deltaFrameAndInput[0];
-        var inputHex           = deltaFrameAndInput[1];
+        let deltaFrameAndInput = control.split(':');
+        let deltaFrameHex      = deltaFrameAndInput[0];
+        let inputHex           = deltaFrameAndInput[1];
 
-        var deltaFrame = parseInt(deltaFrameHex, 16);
+        let deltaFrame = parseInt(deltaFrameHex, 16);
         input          = parseInt(inputHex, 16);
 
         frame += deltaFrame;
@@ -1102,7 +1104,7 @@ var Replay = Class.$extend({
     },
 
     clone: function(replay) {
-      var replayClone = new Replay(replay.randomSeed);
+      let replayClone = new Replay(replay.randomSeed);
       $.extend(replayClone.inputHistory, replay.inputHistory);
       replayClone.lastRecordedInput = replay.lastRecordedInput;
       return replayClone;
@@ -1117,12 +1119,12 @@ var Replay = Class.$extend({
  * game in headless mode.  So the result can be determined very quickly.
  */
 function determineScore(encodedReplay) {
-  var game   = Subleerunker();
-  var replay = Replay.decode(encodedReplay);
+  let game   = Subleerunker();
+  let replay = Replay.decode(encodedReplay);
   game.loadReplay(replay);
 
-  var time = 0;
-  var dt   = (1000 / 60) * 6;  // (second / fps) * max_steps
+  let time = 0;
+  let dt   = (1000 / 60) * 6;  // (second / fps) * max_steps
 
   // play the game
   game.shouldPlay = true;
@@ -1137,6 +1139,6 @@ function determineScore(encodedReplay) {
     time += dt;
   }
 
-  var score = game.records.current;
+  let score = game.records.current;
   return score;
 }

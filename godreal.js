@@ -1,12 +1,14 @@
-var X      = 0;
-var Y      = 1;
+'use strict';
 
-var TOP    = 0;
-var RIGHT  = 1;
-var BOTTOM = 2;
-var LEFT   = 3;
+let X      = 0;
+let Y      = 1;
 
-var KEYS = {
+let TOP    = 0;
+let RIGHT  = 1;
+let BOTTOM = 2;
+let LEFT   = 3;
+
+let KEYS = {
    8: 'backspace',  9: 'tab',   13: 'enter',    16: 'shift',  17: 'ctrl',
   18: 'alt',       19: 'pause', 20: 'capsLock', 27: 'esc',    33: 'pageUp',
   34: 'pageDown',  35: 'end',   36: 'home',     37: 'left',   38: 'up',
@@ -21,14 +23,14 @@ var KEYS = {
 /**
  * Gets the next Id.  A new Id is greater than the Ids generated before.
  */
-var nextId = (function() {
-  var idSeq = 0;
+let nextId = (function() {
+  let idSeq = 0;
   return function() {
     return idSeq++;
   };
 })();
 
-var limit = function(n, min, max) {
+let limit = function(n, min, max) {
   return Math.max(min, Math.min(max, n));
 };
 
@@ -50,7 +52,7 @@ var limit = function(n, min, max) {
  *   [1, 2, 3, 4]
  *
  */
-var normalizePadding = function(padding) {
+let normalizePadding = function(padding) {
   switch (padding ? padding.length : 0) {
     case 0:
       return [0, 0, 0, 0];
@@ -65,18 +67,18 @@ var normalizePadding = function(padding) {
   }
 };
 
-var calcFrame = function(fps, time) {
+let calcFrame = function(fps, time) {
   return Math.floor(time * fps / 1000);
 };
 
-var textureToCanvas = function(texture) {
-  var t = texture;
-  var r = new PIXI.CanvasRenderer(t.width, t.height, {transparent: true});
+let textureToCanvas = function(texture) {
+  let t = texture;
+  let r = new PIXI.CanvasRenderer(t.width, t.height, {transparent: true});
   r.render(new PIXI.Sprite(t));
   return r.view;
 };
 
-var GameObject = Class.$extend({
+let GameObject = Class.$extend({
 
   __name__: 'GameObject',
 
@@ -87,7 +89,7 @@ var GameObject = Class.$extend({
     this._destroyed = false;
 
     if (arg instanceof GameObject) {
-      var parent = arg;
+      let parent = arg;
       this.parent = parent;
       this.root = parent.root;
       parent.addChild(this);
@@ -117,7 +119,7 @@ var GameObject = Class.$extend({
   destroy: function() {
     this._destroyed = true;
 
-    var disp = this.disp();
+    let disp = this.disp();
     if (disp) {
       disp.destroy();
     }
@@ -142,7 +144,7 @@ var GameObject = Class.$extend({
 
   disp: function() {
     // Returns cached a PIXI.DisplayObject.
-    var disp = this.__disp__();
+    let disp = this.__disp__();
     if (disp) {
       if (disp.anchor) {
         disp.anchor.set(this.anchor[X], this.anchor[Y]);
@@ -164,11 +166,11 @@ var GameObject = Class.$extend({
   },
 
   __disp__: function() {
-    var anim = this.currentAnim();
+    let anim = this.currentAnim();
     if (!anim || !anim.textureNames) {
       return null;
     }
-    var texture = this.getTexture(anim.textureNames[0]);
+    let texture = this.getTexture(anim.textureNames[0]);
     return new PIXI.Sprite(texture);
   },
 
@@ -204,14 +206,14 @@ var GameObject = Class.$extend({
     if (!anim) {
       return 0;
     }
-    var fps   = anim.fps * this.timeScale();
-    var time  = this.time - this.animBaseTime;
-    var frame = calcFrame(fps, time);
+    let fps   = anim.fps * this.timeScale();
+    let time  = this.time - this.animBaseTime;
+    let frame = calcFrame(fps, time);
     return this.animBaseFrame + frame;
   },
 
   animIndex: function(anim, frame) {
-    var length = anim.textureNames.length;
+    let length = anim.textureNames.length;
     if (anim.once) {
       return Math.min(frame, length - 1);
     } else {
@@ -220,7 +222,7 @@ var GameObject = Class.$extend({
   },
 
   hasAnimEnded: function() {
-    var anim = this.currentAnim();
+    let anim = this.currentAnim();
     if (!anim) {
       return true;  // never started
     } else if (!anim.once) {
@@ -238,7 +240,7 @@ var GameObject = Class.$extend({
   },
 
   renderAnim: function(anim, index) {
-    var texture = this.getTexture(anim.textureNames[index]);
+    let texture = this.getTexture(anim.textureNames[index]);
     this.disp().texture = texture;
   },
 
@@ -282,21 +284,21 @@ var GameObject = Class.$extend({
     }
 
     // Accumulate lag.
-    var prevTime = this.time;
+    let prevTime = this.time;
     if (prevTime !== null) {
-      var deltaTime = time - prevTime;
+      let deltaTime = time - prevTime;
       this.lag += deltaTime;
     }
     this.time = time;
     $.each(this.children, function(__, c) { c.time = time; });
 
     // Game loop settings
-    var ts = this.timeScale();
-    var FPS       = 60;               // FPS for simulation
-    var TIME_STEP = 1000 / FPS / ts;  // ms per frame
-    var MAX_STEPS = 6 * ts;           // prevent the spiral of death.
+    let ts = this.timeScale();
+    let FPS       = 60;               // FPS for simulation
+    let TIME_STEP = 1000 / FPS / ts;  // ms per frame
+    let MAX_STEPS = 6 * ts;           // prevent the spiral of death.
 
-    var i = 0;
+    let i = 0;
     while (this.lag >= TIME_STEP) {
       // Each iteration is one frame.
       this.frame++;
@@ -316,7 +318,7 @@ var GameObject = Class.$extend({
     // The rendering time is behind of the simulation time.  The game objects
     // should be predicted to be rendered smoothly.
     if (this.lag > 0) {
-      var deltaFrame = this.lag / TIME_STEP;
+      let deltaFrame = this.lag / TIME_STEP;
       this._predict(deltaFrame);
     }
 
@@ -325,7 +327,7 @@ var GameObject = Class.$extend({
 
   _simulate: function() {
     // Simulate for the gameplay logic.
-    var state = this.simulate(this.state(), 1);
+    let state = this.simulate(this.state(), 1);
 
     this.position = state.position;
     this.speed    = state.speed;
@@ -369,12 +371,12 @@ var GameObject = Class.$extend({
   },
 
   simulate: function(state, deltaFrame) {
-    var impact = deltaFrame;
+    let impact = deltaFrame;
 
-    var speed = state.speed;
+    let speed = state.speed;
     speed += this.acceleration * impact;
     if (speed !== 0 && this.friction !== 0) {
-      var speedIsPositive = speed > 0;
+      let speedIsPositive = speed > 0;
       speed = Math.abs(speed);
       speed -= this.friction * impact;
       speed = Math.max(0, speed) * (speedIsPositive ? +1 : -1);
@@ -383,10 +385,10 @@ var GameObject = Class.$extend({
       speed = limit(speed, -this.maxVelocity, +this.maxVelocity);
     }
 
-    var position = state.position;
+    let position = state.position;
     position += speed * impact;
 
-    var boundary = this.boundary();
+    let boundary = this.boundary();
     if (position < boundary[0]) {
       position = boundary[0];
       speed = 0;
@@ -399,13 +401,13 @@ var GameObject = Class.$extend({
   },
 
   render: function() {
-    var state = this._prediction || this.state();
+    let state = this._prediction || this.state();
     this.visualize(state);
 
-    var anim = this.currentAnim();
+    let anim = this.currentAnim();
     if (anim) {
-      var f = this.animFrame(anim);
-      var i = this.animIndex(anim, f);
+      let f = this.animFrame(anim);
+      let i = this.animIndex(anim, f);
       this.renderAnim(anim, i);
     }
   },
@@ -439,16 +441,16 @@ var GameObject = Class.$extend({
     if (!this.ctx.debug) {
       return this._getTexture(name);
     }
-    var frameId = this.__name__ + '/' + name;
-    var texture;
+    let frameId = this.__name__ + '/' + name;
+    let texture;
     try {
       texture = PIXI.Texture.fromFrame(frameId);
     } catch (e) {
       // Draw bounding box.
-      var t = this._getTexture(name);
-      var canvas = textureToCanvas(t);
+      let t = this._getTexture(name);
+      let canvas = textureToCanvas(t);
       function drawRect(style, x, y, w, h) {
-        var c = canvas.getContext('2d');
+        let c = canvas.getContext('2d');
         c.fillStyle = style;
         c.fillRect(x, y, w - 1, 1);
         c.fillRect(x + w - 1, y, 1, h - 1);
@@ -472,17 +474,17 @@ var GameObject = Class.$extend({
     } else if (this._palette[name] !== undefined) {
       return this._palette[name];
     }
-    var t = this._getTexture('palette-' + name);
-    var canvas = textureToCanvas(t);
-    var pixel = canvas.getContext('2d').getImageData(0, 0, 1, 1).data;
-    var color = (pixel[0] << 16) | (pixel[1] << 8) | pixel[2];
+    let t = this._getTexture('palette-' + name);
+    let canvas = textureToCanvas(t);
+    let pixel = canvas.getContext('2d').getImageData(0, 0, 1, 1).data;
+    let color = (pixel[0] << 16) | (pixel[1] << 8) | pixel[2];
     this._palette[name] = color;  // cache
     return color;
   }
 
 });
 
-var Game = GameObject.$extend({
+let Game = GameObject.$extend({
 
   'class': '',
 
@@ -512,8 +514,8 @@ var Game = GameObject.$extend({
   },
 
   __elem__: function() {
-    var elem = $('<div>').addClass(this['class']);
-    var view = $(this.renderer.view).css('display', 'block');
+    let elem = $('<div>').addClass(this['class']);
+    let view = $(this.renderer.view).css('display', 'block');
     elem.css({position: 'relative', imageRendering: 'pixelated'});
     elem.append(view);
     return elem;
@@ -521,7 +523,7 @@ var Game = GameObject.$extend({
 
   elem: function() {
     /// Gets the cached element.
-    var elem = this.__elem__();
+    let elem = this.__elem__();
     if (elem) {
       this.elem = function() { return elem; }
     }
@@ -537,17 +539,17 @@ var Game = GameObject.$extend({
     handlers = handlers || {};
     // Keyboard events.
     function makeKeyHandler(pressed) {
-      var eventType = pressed ? 'keydown' : 'keyup';
+      let eventType = pressed ? 'keydown' : 'keyup';
       return $.proxy(function(e) {
-        var key = KEYS[e.which];
+        let key = KEYS[e.which];
         if (!key) {
           return;
         }
         if (!this.handlesKey(e)) {
           return;
         }
-        var handlerName = 'key' + key.charAt(0).toUpperCase() + key.slice(1);
-        var handler = this.handlers[handlerName];
+        let handlerName = 'key' + key.charAt(0).toUpperCase() + key.slice(1);
+        let handler = this.handlers[handlerName];
         handler && handler.call(this, pressed);
         handlers[eventType] && handlers[eventType].call(this, key);
       }, this);
@@ -575,7 +577,7 @@ var Game = GameObject.$extend({
     // Window events.
     $(window).on({
       resize: $.proxy(function() {
-        var scale = Math.max(1, Math.floor(window.innerHeight / this.height));
+        let scale = Math.max(1, Math.floor(window.innerHeight / this.height));
         this.zoom(scale);
         handlers.resize && handlers.resize.call(this, scale);
       }, this)
@@ -593,7 +595,7 @@ var Game = GameObject.$extend({
     if (e.target === document.body) {
       return true;
     }
-    var elem = this.elem();
+    let elem = this.elem();
     if (elem && $.contains(elem.get(0), e.target)) {
       return true;
     }
@@ -606,14 +608,14 @@ var Game = GameObject.$extend({
   },
 
   run: function(fps, before, after) {
-    var _requestAnimationFrame = window.requestAnimationFrame;
+    let _requestAnimationFrame = window.requestAnimationFrame;
     if (fps !== undefined) {
       _requestAnimationFrame = function(f) {
         setTimeout(function() { f(Date.now()); }, 1000 / fps);
       };
     }
     PIXI.loader.add(this.atlas).load($.proxy(function() {
-      var tick = $.proxy(function(time) {
+      let tick = $.proxy(function(time) {
         before && before.call(this, time);
         this.tick(time);
         if (!this._destroyed) {
