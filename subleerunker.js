@@ -941,8 +941,8 @@ var Replay = Class.$extend({
     } else if (this._replayingBaseFrame + frame !== expectedFrame) {
       throw new Error('replaying frame and expected frame not same');
     }
-    var input = this.inputHistory[frame];
 
+    var input = this.inputHistory[frame];
     if (input !== undefined) {
       this._replayedRecord.input = input;
       this._replayedRecord.frame = frame;
