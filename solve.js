@@ -80,43 +80,30 @@ function* solve(randomSeedOrEncodedReplay, goalScore, maxTries) {
   while (score < goalScore && tried <= maxTries) {
     ++tried;
 
-    var beforeLength = stream.length;
+    let beforeLength = stream.length;
     let lastRecord = stream[stream.length - 1];
 
-    var streamTail = generateStream(STREAM_SIZE, lastRecord);
+    let streamTail = generateStream(STREAM_SIZE, lastRecord);
     extendArray(stream, streamTail);
 
-    console.log(ENCODE_REPLAY(stream))
     let result = REPLAY_RESULT(stream);
-    console.log(ENCODE_REPLAY(stream))
+    console.log(result);
+
+    // Discard records after death.
     stream.splice(result.replayedInputs);
-    console.log(ENCODE_REPLAY(stream))
-    console.log(result)
 
-    // while (true) {
-    //   var control = stream.pop();
-    //   if (control === undefined) {
-    //     break;
-    //   }
-
-    //   let testingScore = REPLAY_RESULT(stream);
-
-    //   if (testingScore !== score) {
-    //     // Rollback last pop.
-    //     stream.push(control);
-    //     break;
-    //   }
-    // }
-
-    // How many inputs effected.
-    console.log(stream.length - beforeLength);
+    console.log({
+      tried: tried,
+      score: result.score,
+      inputs: stream.length,
+      increased: stream.length - beforeLength
+    });
+    console.log(ENCODE_REPLAY(stream));
 
     // Shake to avoid stillness.
     if (stream.length === beforeLength) {
       stream.pop();
     }
-
-    console.log([tried, result.score, stream.length, ENCODE_REPLAY(stream)]);
 
     yield;
   }
