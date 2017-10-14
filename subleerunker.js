@@ -1,5 +1,4 @@
-var IS_MOBILE = (typeof window.orientation !== 'undefined');
-var RESOLUTION = (window.devicePixelRatio || 1);
+var IS_MOBILE   = (typeof window.orientation !== 'undefined');
 var FONT_FAMILY = '"Share Tech Mono", monospace';
 
 var LEFT_PRESSED  = 0;
