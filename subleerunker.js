@@ -921,12 +921,14 @@ var Replay = Class.$extend({
 
   record: function(frame, input) {
     if (input === this.lastRecordedInput) {
-      return;
+      return false;
     }
     this.lastRecordedInput   = input;
 
     this.inputHistory[frame] = input;
     this.length += 1;
+
+    return true;
   },
 
   /**
