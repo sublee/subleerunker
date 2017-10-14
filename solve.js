@@ -2,23 +2,37 @@ function randInt(stop) {
   return Math.floor(Math.random() * stop);
 }
 
-function generateStream(length) {
-  var stream = [];
-  for (var i = 0; i < length; ++i) {
-    var control = generateControl();
-    stream.push(control);
+function generateStream(length, prevRecord) {
+  let stream = [];
+
+  for (let i = 0; i < length; ++i) {
+    let record = generateRecord(prevRecord);
+    prevRecord = record;
+
+    stream.push(record);
   }
+
   return stream;
 }
 
-function generateControl() {
-  var deltaFrame = randInt(30);
-  var input      = randInt(3);
-  return deltaFrame.toString(16) + '.' + input;
+function generateRecord(prevRecord) {
+  let deltaFrame = 1 + randInt(30);
+
+  // Randomize input but not samw with the previous input.
+  let prevInput = prevRecord ? prevRecord.input : 0;
+  let input     = prevInput;
+  while (input === prevInput) {
+    input = randInt(3);
+  }
+
+  return {deltaFrame: deltaFrame, input: input};
 }
 
 function encodeAsReplay(randomSeed, stream) {
-  return '2!' + randomSeed.toString(16) + '!' + stream.join('!');
+  let streamWords = stream.map(function(record) {
+     return record.deltaFrame.toString(16) + '.' + record.input.toString(16);
+  });
+  return '2!' + randomSeed.toString(16) + '!' + streamWords.join('!');
 }
 
 function extendArray(arr, tail) {
@@ -31,8 +45,8 @@ function* solve(randomSeedOrEncodedReplay, goalScore, maxTries) {
   function ENCODE_REPLAY(stream) {
     return encodeAsReplay(randomSeed, stream);
   }
-  function DETERMINE_SCORE(stream) {
-    return determineScore(ENCODE_REPLAY(stream));
+  function REPLAY_RESULT(stream) {
+    return replayResult(ENCODE_REPLAY(stream));
   }
 
   goalScore = goalScore || 0;
@@ -53,28 +67,21 @@ function* solve(randomSeedOrEncodedReplay, goalScore, maxTries) {
   var score  = 0;
   var tried  = 0;
 
-  while (score < goalScore && tried < maxTries) {
-    var beforeLength = stream.length;
+  while (score < goalScore && tried <= maxTries) {
+    ++tried;
 
-    var streamTail = generateStream(STREAM_SIZE);
+    var beforeLength = stream.length;
+    let lastRecord = stream[stream.length - 1];
+
+    var streamTail = generateStream(STREAM_SIZE, lastRecord);
     extendArray(stream, streamTail);
 
-    score = DETERMINE_SCORE(stream);
-
-    // Find the final control and discard controls after death.
-    let i;
-    for (i = stream.length - 1; i > 0; --i) {
-      console.log(i);
-      let testingStream = stream.slice(0, i);
-      let testingScore = DETERMINE_SCORE(testingStream);
-
-      if (testingScore !== score) {
-        break;
-      }
-
-      yield;
-    }
-    stream.splice(i + 1);
+    console.log(ENCODE_REPLAY(stream))
+    let result = REPLAY_RESULT(stream);
+    console.log(ENCODE_REPLAY(stream))
+    stream.splice(result.replayedInputs);
+    console.log(ENCODE_REPLAY(stream))
+    console.log(result)
 
     // while (true) {
     //   var control = stream.pop();
@@ -82,7 +89,7 @@ function* solve(randomSeedOrEncodedReplay, goalScore, maxTries) {
     //     break;
     //   }
 
-    //   let testingScore = DETERMINE_SCORE(stream);
+    //   let testingScore = REPLAY_RESULT(stream);
 
     //   if (testingScore !== score) {
     //     // Rollback last pop.
@@ -99,9 +106,9 @@ function* solve(randomSeedOrEncodedReplay, goalScore, maxTries) {
       stream.pop();
     }
 
-    ++tried;
+    console.log([tried, result.score, stream.length, ENCODE_REPLAY(stream)]);
 
-    console.log([tried, score, stream.length, ENCODE_REPLAY(stream)]);
+    yield;
   }
 
   return {
