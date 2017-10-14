@@ -32,8 +32,8 @@ var Subleerunker = Game.$extend({
     // Reset game state.
     this.reset();
 
-    // Init records.
-    this.records = {
+    // Init scores.
+    this.scores = {
       current: 0,
       prime: Number(
         // Fallback with deprecated cookie names.
@@ -49,14 +49,14 @@ var Subleerunker = Game.$extend({
       }
     };
 
-    // Render records.
+    // Render scores.
     this.setupHUD();
-    this.renderRecords();
+    this.renderScores();
     this.loadChampion();
   },
 
   setupHUD: function() {
-    var $$ = $('<div class="records">').css({
+    var $$ = $('<div class="scores">').css({
       position: 'absolute',
       right: 5,
       top: 3,
@@ -329,20 +329,20 @@ var Subleerunker = Game.$extend({
   },
 
   upScore: function() {
-    this.records.current++;
+    this.scores.current++;
     this.updateScore();
   },
 
   updateScore: function(score) {
     if (score !== undefined) {
-      this.records.current = score;
+      this.scores.current = score;
     }
-    this.renderRecords();
+    this.renderScores();
   },
 
-  renderRecords: function() {
+  renderScores: function() {
     var $$$ = this.recordElems;
-    var r = this.records;
+    var r = this.scores;
     $$$.current.text(r.current);
     if (r.prime <= r.current ||
         r.prime <= r.champion.score && r.champion.authorized) {
@@ -354,7 +354,7 @@ var Subleerunker = Game.$extend({
 
   renderChampion: function() {
     var $$$ = this.recordElems;
-    var r = this.records;
+    var r = this.scores;
     var champions = [$$$.champion, $$$.authorizedChampion];
     if (r.champion.score <= 0) {
       $.each(champions, function() { this.container.hide(); });
@@ -372,30 +372,30 @@ var Subleerunker = Game.$extend({
     var score = Number(data.score);
     var name = String(data.name);
 
-    this.records.champion.score = score;
-    this.records.champion.name = name;
+    this.scores.champion.score = score;
+    this.scores.champion.name = name;
 
     var justBeaten = Boolean(data.token);
 
     if (justBeaten) {
       var token = String(data.token);
-      this.records.champion.token = token;
-      this.records.champion.authorized = true;
+      this.scores.champion.token = token;
+      this.scores.champion.authorized = true;
       if (data.expiresAt && Cookies('champion-token') !== token) {
         Cookies('champion-token', token, {
           expires: new Date(data.expiresAt),
         });
       }
     } else {
-      this.records.champion.authorized = Boolean(data.authorized);
+      this.scores.champion.authorized = Boolean(data.authorized);
     }
 
     var cachedName = Cookies('champion-name');
-    if (this.records.champion.authorized) {
+    if (this.scores.champion.authorized) {
       Cookies('champion-name', name, {expires: Infinity});
     }
 
-    this.renderRecords();
+    this.renderScores();
     this.renderChampion();
 
     if (justBeaten && !cachedName) {
@@ -431,18 +431,18 @@ var Subleerunker = Game.$extend({
     var duration = this.time - this.startedAt;
 
     this.loadChampion().then($.proxy(function() {
-      if (this.records.champion.score === null) {
+      if (this.scores.champion.score === null) {
         return;
-      } else if (this.records.current <= this.records.champion.score) {
+      } else if (this.scores.current <= this.scores.champion.score) {
         return;
       }
 
       // Predict a success.
       var name = Cookies('champion-name') || '';
       this._championReceived({
-        score: this.records.current,
+        score: this.scores.current,
         name: name,
-        token: this.records.champion.token,
+        token: this.scores.champion.token,
         authorized: true
       });
 
@@ -459,7 +459,7 @@ var Subleerunker = Game.$extend({
       $.ajax(this.ctx.championURL, {
         method: 'PUT',
         data: {
-          score:    this.records.current,
+          score:    this.scores.current,
           name:     name,
           replay:   encodedReplay,
           duration: durationSeconds
@@ -471,7 +471,7 @@ var Subleerunker = Game.$extend({
   },
 
   renameChampion: function(name) {
-    if (name === this.records.champion.name) {
+    if (name === this.scores.champion.name) {
       return;
     }
     $.ajax(this.ctx.championURL, {
@@ -488,10 +488,10 @@ var Subleerunker = Game.$extend({
 
     var actuallyPlayed = !this.replaying;
     if (actuallyPlayed) {
-      if (this.records.prime < this.records.current) {
-        this.records.prime = this.records.current;
+      if (this.scores.prime < this.scores.current) {
+        this.scores.prime = this.scores.current;
         // Remember new prime score.
-        Cookies('prime-score', this.records.prime, {
+        Cookies('prime-score', this.scores.prime, {
           expires: 2592000  // expires in 30 days.
         });
       }
@@ -501,7 +501,7 @@ var Subleerunker = Game.$extend({
 
     if (this.ctx.triggerEvents) {
       // Trigger custom event to track the score by outside.
-      var args  = [this.records.current, Replay.clone(this.replay)];
+      var args  = [this.scores.current, Replay.clone(this.replay)];
       $(window).trigger('gameOver', args);
     }
   },
@@ -532,7 +532,7 @@ var Subleerunker = Game.$extend({
     }
     this.disp().addChild(this.player.disp());
 
-    this.records.current = 0;
+    this.scores.current = 0;
     this.updateScore();
     this.hideSplash();
     this.loadChampion();
@@ -1137,6 +1137,6 @@ function determineScore(encodedReplay) {
     time += dt;
   }
 
-  var score = game.records.current;
+  var score = game.scores.current;
   return score;
 }
