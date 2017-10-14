@@ -10,6 +10,10 @@ var makeRandomSeed = function() {
   return Math.floor(Math.random() * 4294967295);
 };
 
+var rgb = function(color) {
+  return '#' + ('000000' + color.toString(16)).slice(-6);
+};
+
 var Subleerunker = Game.$extend({
 
   __name__: 'Subleerunker',

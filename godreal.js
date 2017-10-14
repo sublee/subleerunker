@@ -69,10 +69,6 @@ var calcFrame = function(fps, time) {
   return Math.floor(time * fps / 1000);
 };
 
-var rgb = function(color) {
-  return '#' + ('000000' + color.toString(16)).slice(-6);
-};
-
 var textureToCanvas = function(texture) {
   var t = texture;
   var r = new PIXI.CanvasRenderer(t.width, t.height, {transparent: true});
