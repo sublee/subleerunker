@@ -1127,7 +1127,7 @@ var Replay = Class.$extend({
  * A helper function to simulate a replay to get the result score.  It runs the
  * game in headless mode.  So the result can be determined very quickly.
  */
-function determineScore(encodedReplay) {
+function replayResult(encodedReplay) {
   var game   = Subleerunker();
   var replay = Replay.decode(encodedReplay);
   game.loadReplay(replay);
