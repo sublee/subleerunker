@@ -577,8 +577,8 @@ var Subleerunker = Game.$extend({
 
     // Record or replay input.
     if (this.replaying) {
-      var inputInfo = this.replay.next(frame);
-      this.input    = inputInfo.input;
+      var record = this.replay.nextRecord(frame);
+      this.input = record.input;
     } else {
       this.replay.record(frame, this.input);
     }
@@ -929,35 +929,43 @@ var Replay = Class.$extend({
     this.length += 1;
   },
 
-  next: function(expectedFrame) {
+  /**
+   * Returns the last replayed record as a copied object.
+   */
+  nextRecord: function(expectedFrame) {
     var frame = ++this._replayingFrame;
-    if (this._replayingBaseFrame + frame !== expectedFrame) {
+    if (expectedFrame !== undefined) {
+      // pass checksum
+    } else if (this._replayingBaseFrame + frame !== expectedFrame) {
       throw new Error('replaying frame and expected frame not same');
     }
     var input = this.inputHistory[frame];
 
     if (input !== undefined) {
-      this._replayedInputInfo.input = input;
-      this._replayedInputInfo.frame = frame;
-      this._replayedInputInfo.offset += 1;
+      this._replayedRecord.input = input;
+      this._replayedRecord.frame = frame;
+      this._replayedRecord.offset += 1;
     }
 
-    return this.last();
-  },
-
-  last: function() {
-    var info = {};
-    $.extend(info, this._replayedInputInfo);  // copy
-    return info;
+    return this.lastRecord();
   },
 
   /**
-   * Resets the cursor for next().
+   * Returns the last replayed record as a copied object.
+   */
+  lastRecord: function() {
+    var record = {};
+    $.extend(record, this._replayedRecord);
+    return record;
+  },
+
+  /**
+   * Resets the cursor for nextRecord().
    */
   rewind: function(baseFrame) {
     this._replayingBaseFrame = baseFrame || 0;
     this._replayingFrame     = 0;
-    this._replayedInputInfo  = {input: 0, frame: 0, offset: 0};
+    this._replayedRecord  = {input: 0, frame: 0, offset: 0};
   },
 
   __classvars__: {
@@ -1148,11 +1156,11 @@ function replayResult(encodedReplay) {
     time += dt;
   }
 
-  var score         = game.scores.current;
-  var lastInputInfo = replay.last();
+  var score      = game.scores.current;
+  var lastRecord = replay.lastRecord();
   return {
     score: score,
     inputs: replay.length,
-    replayedInputs: lastInputInfo.offset + 1
+    replayedInputs: lastRecord.offset + 1
   };
 }
