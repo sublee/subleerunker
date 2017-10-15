@@ -41,6 +41,7 @@ function extendArray(arr, tail) {
 
 function* solve(randomSeedOrEncodedReplay, goalScore, maxTries) {
   var STREAM_SIZE = 10;
+  let startedAt = new Date();
 
   function ENCODE_REPLAY(stream) {
     return encodeAsReplay(randomSeed, stream);
@@ -95,10 +96,11 @@ function* solve(randomSeedOrEncodedReplay, goalScore, maxTries) {
     stream.splice(result.replayedInputs);
 
     console.log({
-      tried: tried,
-      score: result.score,
-      inputs: stream.length,
-      increased: stream.length - beforeLength
+      tried:     tried,
+      score:     result.score,
+      inputs:    stream.length,
+      increased: stream.length - beforeLength,
+      elapsed:   new Date() - startedAt
     });
     console.log(ENCODE_REPLAY(stream));
 
