@@ -1,3 +1,15 @@
+/**
+ * A SUBLEERUNKER solver.  It generates a replay to beat the goal score.
+ *
+ * Usage:
+ *
+ *   let s = solve(randomSeed or encodedReplay, score the goal, max tries);
+ *   let t = setInterval(function() {
+ *     let x = s.next();
+ *     if (x.done) clearInterval(t)
+ *   }, 10);
+ *
+ */
 function randInt(stop) {
   return Math.floor(Math.random() * stop);
 }
