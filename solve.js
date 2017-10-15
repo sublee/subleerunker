@@ -6,8 +6,13 @@
  *   let s = solve(randomSeed|encodedReplay, goalScore, 'gte'|'eq', maxTries);
  *   let t = setInterval(function() {
  *     let r = s.next();
+ *
+ *     let replay = r.value.replay;
+ *     delete r.value.replay;
+ *
  *     console.log(r.value);
- *     console.log(r.value.replay);
+ *     console.log(replay);
+ *
  *     if (r.done) clearInterval(t)
  *   }, 10);
  *
