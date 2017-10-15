@@ -155,7 +155,7 @@ function* solve(randomSeedOrEncodedReplay, goalScore, goalType, maxTries) {
       stream.splice(result.replayedInputs);
     } else {
       // Rewind to find less score.
-      stream.splice(stream.length - CHUNK_SIZE);
+      stream.splice(stream.length - Math.floor(CHUNK_SIZE / 2));
 
       // Evaluate the found score.
       result = REPLAY_RESULT(stream);
