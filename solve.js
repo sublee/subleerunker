@@ -3,10 +3,12 @@
  *
  * Usage:
  *
- *   let s = solve(randomSeed or encodedReplay, score the goal, max tries);
+ *   let s = solve(randomSeed|encodedReplay, goalScore, 'gte'|'eq', maxTries);
  *   let t = setInterval(function() {
- *     let x = s.next();
- *     if (x.done) clearInterval(t)
+ *     let r = s.next();
+ *     console.log(r.value);
+ *     console.log(r.value.replay);
+ *     if (r.done) clearInterval(t)
  *   }, 10);
  *
  */
