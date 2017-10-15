@@ -63,7 +63,7 @@ function* solve(randomSeedOrEncodedReplay, goalScore, maxTries) {
   }
 
   goalScore = goalScore || 0;
-  maxTries  = maxTries  || 50;
+  maxTries  = maxTries  || 100;
 
   let randomSeed;
   let stream = [];
