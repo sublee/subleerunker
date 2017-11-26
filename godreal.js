@@ -575,6 +575,28 @@ var Game = GameObject.$extend({
     // Window events.
     $(window).on({
       resize: $.proxy(function() {
+        // Fit to the shorter direction.
+        var ratio       = this.width / this.height;
+        var windowRatio = window.innerWidth / window.innerHeight;
+
+        var $viewport = $('meta[name=viewport]:eq(0)');
+        if ($viewport.length === 0) {
+          $viewport = $('<meta name="viewport">').appendTo(document.head);
+        }
+        if (ratio < windowRatio) {
+          $viewport.attr('content', 'user-scalable=0, height=' + this.height);
+        } else {
+          $viewport.attr('content', 'user-scalable=0, width=' + this.width);
+        }
+
+        // Fix iPad <body> size problem.  I designed the size of <body> as
+        // 100x100% but on iPad, the size was much greater.  That makes the
+        // game invisible, because the central positionion doesn't work
+        // correctly.
+        var $body = $(document.body);
+        $body.width(window.innerWidth).height(window.innerHeight);
+
+        // Scale the game to fit to the screen.
         var scale = Math.max(1, Math.floor(window.innerHeight / this.height));
         this.zoom(scale);
         handlers.resize && handlers.resize.call(this, scale);
