@@ -883,21 +883,26 @@ $.extend(Subleerunker, {
     /* Own */
 
     hits: function(player, prevPosition) {
+      var flameTop, flameBottom, flameLeft, flameRight;
+      var playerTop, playerBottom, playerLeft, playerRight;
+      var topHit, leftHit, rightHit;
+
+      flameTop    = prevPosition + this.innerPadding[TOP];
+      flameBottom = this.position + this.height - this.innerPadding[BOTTOM];
+      flameLeft   = this.xPosition + this.innerPadding[LEFT];
+      flameRight  = this.xPosition + this.width - this.innerPadding[RIGHT];
+
       var H = this.parent.height;
+      var p = player;
 
-      var flameTop    = prevPosition + this.innerPadding[TOP];
-      var flameBottom = this.position + this.height - this.innerPadding[2];
-      var flameLeft   = this.xPosition + this.innerPadding[3];
-      var flameRight  = flameLeft + this.innerWidth();
+      playerTop    = H - p.height + p.innerPadding[TOP];
+      playerBottom = H - p.innerPadding[BOTTOM];
+      playerLeft   = p.position + p.innerPadding[LEFT];
+      playerRight  = p.position + p.width - p.innerPadding[RIGHT];
 
-      var playerTop    = H - (player.height - player.innerPadding[0]);
-      var playerBottom = H - player.innerPadding[2];
-      var playerLeft   = player.position + player.innerPadding[3];
-      var playerRight  = playerLeft + player.innerWidth();
-
-      var topHit   = (flameTop <= playerBottom) && (playerTop <= flameBottom);
-      var leftHit  = playerLeft <= flameLeft&&flameLeft <= playerRight;
-      var rightHit = playerLeft <= flameRight&&flameRight <= playerRight;
+      topHit   = (flameTop <= playerBottom) && (playerTop <= flameBottom);
+      leftHit  = playerLeft <= flameLeft  && flameLeft  <= playerRight;
+      rightHit = playerLeft <= flameRight && flameRight <= playerRight;
 
       return topHit && (leftHit || rightHit);
     }
