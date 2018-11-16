@@ -32,39 +32,6 @@ var limit = function(n, min, max) {
   return Math.max(min, Math.min(max, n));
 };
 
-/**
- * Normalizes a padding array into a 4-element array by CSS padding
- * normalization rule.
- *
- * e.g.:
- *
- *   > normalizePadding([])
- *   [0, 0, 0, 0]
- *   > normalizePadding([3])
- *   [3, 3, 3, 3]
- *   > normalizePadding([2, 4])
- *   [2, 4, 2, 4]
- *   > normalizePadding([5, 10, 15])
- *   [5, 10, 15, 10]
- *   > normalizePadding([1, 2, 3, 4])
- *   [1, 2, 3, 4]
- *
- */
-var normalizePadding = function(padding) {
-  switch (padding ? padding.length : 0) {
-    case 0:
-      return [0, 0, 0, 0];
-    case 1:
-      return [padding[0], padding[0], padding[0], padding[0]];
-    case 2:
-      return [padding[0], padding[1], padding[0], padding[1]];
-    case 3:
-      return [padding[0], padding[1], padding[2], padding[1]];
-    default:
-      return padding;
-  }
-};
-
 var calcFrame = function(fps, time) {
   return Math.floor(time * fps / 1000);
 };
@@ -96,8 +63,6 @@ var GameObject = Class.$extend({
       this.root = this;
       this.ctx = arg ? arg : {};
     }
-
-    this.innerPadding = normalizePadding(this.innerPadding);
 
     if (this.animName) {
       this.setAnim(this.animName);
@@ -135,7 +100,10 @@ var GameObject = Class.$extend({
 
   width: null,
   height: null,
-  innerPadding: null,
+
+  // innerPadding is a 4-number array containing paddings in clockwise order:
+  // [top, right, bottom, left].
+  innerPadding: [0, 0, 0, 0],
 
   anchor: [0, 0],
   offset: [0, 0],

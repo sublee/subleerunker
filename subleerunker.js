@@ -703,7 +703,7 @@ $.extend(Subleerunker, {
 
     width: 48,
     height: 72,
-    innerPadding: [10, 18, 50],
+    innerPadding: [10, 18, 50, 18],
     anchor: [0, 1],
     offset: [0, -1],
 
@@ -837,7 +837,7 @@ $.extend(Subleerunker, {
 
     width: 24,
     height: 16,
-    innerPadding: [8, 8, 2],
+    innerPadding: [8, 8, 2, 8],
     landingMargin: 2,
 
     /* Animation */
