@@ -885,24 +885,21 @@ $.extend(Subleerunker, {
     hits: function(player, prevPosition) {
       var H = this.parent.height;
 
-      var top = prevPosition + this.innerPadding[TOP];
-      var bottom = this.position + this.height - this.innerPadding[2];
-      var left = this.xPosition + this.innerPadding[3];
-      var right = left + this.innerWidth();
+      var flameTop    = prevPosition + this.innerPadding[TOP];
+      var flameBottom = this.position + this.height - this.innerPadding[2];
+      var flameLeft   = this.xPosition + this.innerPadding[3];
+      var flameRight  = flameLeft + this.innerWidth();
 
-      var pTop = player.height - player.innerPadding[0];
-      var pBottom = player.innerPadding[2];
-      var pLeft = player.position + player.innerPadding[3];
-      var pRight = pLeft + player.innerWidth();
+      var playerTop    = H - (player.height - player.innerPadding[0]);
+      var playerBottom = H - player.innerPadding[2];
+      var playerLeft   = player.position + player.innerPadding[3];
+      var playerRight  = playerLeft + player.innerWidth();
 
-      pTop = H - pTop;
-      pBottom = H - pBottom;
+      var topHit   = (flameTop <= playerBottom) && (playerTop <= flameBottom);
+      var leftHit  = playerLeft <= flameLeft&&flameLeft <= playerRight;
+      var rightHit = playerLeft <= flameRight&&flameRight <= playerRight;
 
-      var checkAltitude = top <= pBottom && pTop <= bottom;
-      var checkLeft = pLeft <= left && left <= pRight;
-      var checkRight = pLeft <= right && right <= pRight;
-
-      return checkAltitude && (checkLeft || checkRight);
+      return topHit && (leftHit || rightHit);
     }
 
   })
