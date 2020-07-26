@@ -37,9 +37,9 @@ var Subleerunker = Game.$extend({
       current: 0,
       prime: Number(
         // Fallback with deprecated cookie names.
-        Cookies('prime-score') ||
-        Cookies('best-score') ||
-        Cookies('my_best_score') ||
+        cookies.get('prime-score') ||
+        cookies.get('best-score') ||
+        cookies.get('my_best_score') ||
       0),
       champion: {
         score: null,
@@ -381,8 +381,8 @@ var Subleerunker = Game.$extend({
       var token = String(data.token);
       this.scores.champion.token = token;
       this.scores.champion.authorized = true;
-      if (data.expiresAt && Cookies('champion-token') !== token) {
-        Cookies('champion-token', token, {
+      if (data.expiresAt && cookies.get('champion-token') !== token) {
+        cookies.set('champion-token', token, {
           expires: new Date(data.expiresAt),
         });
       }
@@ -390,9 +390,9 @@ var Subleerunker = Game.$extend({
       this.scores.champion.authorized = Boolean(data.authorized);
     }
 
-    var cachedName = Cookies('champion-name');
+    var cachedName = cookies.get('champion-name');
     if (this.scores.champion.authorized) {
-      Cookies('champion-name', name, {expires: Infinity});
+      cookies.set('champion-name', name, {expires: Infinity});
     }
 
     this.renderScores();
@@ -407,7 +407,7 @@ var Subleerunker = Game.$extend({
 
   _authChampion: function(headers) {
     headers = $.extend({}, headers);
-    var championToken = Cookies('champion-token');
+    var championToken = cookies.get('champion-token');
     if (championToken) {
       headers['Authorization'] = 'Basic ' + btoa(':' + championToken);
     }
@@ -438,7 +438,7 @@ var Subleerunker = Game.$extend({
       }
 
       // Predict a success.
-      var name = Cookies('champion-name') || '';
+      var name = cookies.get('champion-name') || '';
       this._championReceived({
         score: this.scores.current,
         name: name,
@@ -491,7 +491,7 @@ var Subleerunker = Game.$extend({
       if (this.scores.prime < this.scores.current) {
         this.scores.prime = this.scores.current;
         // Remember new prime score.
-        Cookies('prime-score', this.scores.prime, {
+        cookies.set('prime-score', this.scores.prime, {
           expires: 2592000  // expires in 30 days.
         });
       }

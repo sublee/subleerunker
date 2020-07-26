@@ -41,7 +41,7 @@
   <script src="lib/pixi-4.5.1.min.js"></script>
   <script src="lib/classy-1.4.min.js"></script>
   <script src="lib/seedrandom-2.4.3.min.js"></script>
-  <script src="lib/cookies-1.2.3.min.js"></script>
+  <script src="lib/js.cookie-3.0.0-rc.0.min.js"></script>
   <script src="godreal.js"></script>
   <script src="subleerunker.js"></script>
 </head>
@@ -87,7 +87,11 @@
     }
 
     // Limit cookie scope.
-    Cookies.defaults = {path: location.pathname};
+    var cookies = Cookies.withAttributes({
+      path: location.pathname,
+      secure: true,
+      sameSite: 'none'
+    });
 
     // Set a champion URL.
     if (/^https:\/\/sublee.github.io/.exec(location.href)) {
