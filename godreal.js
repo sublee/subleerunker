@@ -565,7 +565,9 @@ var Game = GameObject.$extend({
         $body.width(window.innerWidth).height(window.innerHeight);
 
         // Scale the game to fit to the screen.
-        var scale = Math.max(1, Math.floor(window.innerHeight / this.height));
+        var scaleX = Math.max(1, Math.floor(window.innerWidth / this.width));
+        var scaleY = Math.max(1, Math.floor(window.innerHeight / this.height));
+        var scale = Math.min(scaleX, scaleY);
         this.zoom(scale);
         handlers.resize && handlers.resize.call(this, scale);
       }, this)
