@@ -1,4 +1,4 @@
-var IS_MOBILE   = (typeof window.orientation !== 'undefined');
+var IS_MOBILE   = 'ontouchstart' in document.documentElement;
 var FONT_FAMILY = '"Share Tech Mono", monospace';
 
 var LEFT_PRESSED  = 0;
